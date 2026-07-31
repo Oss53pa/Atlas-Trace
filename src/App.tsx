@@ -101,10 +101,10 @@ export default function App() {
 function TopBar({ vue }: { vue: Vue }) {
   const d = destOf(vue);
   return (
-    <header className="glass sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-r from-[#0A2E28] via-[#0C4238] to-[#0F5044] pt-[env(safe-area-inset-top)] shadow-soft backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Logo size="sm" />
-        <span className="rounded-full bg-sand-100/80 px-3 py-1 text-xs font-semibold text-muted ring-1 ring-sand-300/60">
+        <Logo size="sm" className="text-white" />
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/85 ring-1 ring-inset ring-white/15 backdrop-blur">
           {d.court}
         </span>
       </div>
