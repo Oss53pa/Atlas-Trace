@@ -1,36 +1,25 @@
 import { cn } from '../../lib/cn';
 
 interface LogoProps {
-  /** Taille du bloc logo */
+  /** Taille du nom */
   size?: 'sm' | 'md' | 'lg';
-  /** Affiche uniquement la marque (pictogramme) sans le nom */
+  /** Conservé pour compatibilité — sans effet (le logo est le nom seul). */
   markOnly?: boolean;
   className?: string;
 }
 
 const wordmarkSize: Record<NonNullable<LogoProps['size']>, string> = {
-  sm: 'text-2xl',
-  md: 'text-3xl',
-  lg: 'text-5xl',
-};
-
-const markSize: Record<NonNullable<LogoProps['size']>, string> = {
-  sm: 'h-8',
-  md: 'h-10',
-  lg: 'h-14',
+  sm: 'text-3xl',
+  md: 'text-4xl',
+  lg: 'text-6xl',
 };
 
 /**
- * Marque Atlas Trace : logo « AT » fourni par la cliente (image, non redessinée)
- * + nom de l'application en Grand Hotel.
+ * Nom affiché dans l'application : « Trace » en Grand Hotel.
+ * (L'application se nomme Atlas Trace ; l'icône d'accueil porte le logo AT.)
  */
-export function Logo({ size = 'md', markOnly = false, className }: LogoProps) {
+export function Logo({ size = 'md', className }: LogoProps) {
   return (
-    <div className={cn('flex items-center gap-2.5', className)}>
-      <img src="/logo-at.png" alt="Atlas Trace" className={cn('w-auto object-contain', markSize[size])} />
-      {!markOnly && (
-        <span className={cn('brand-wordmark', wordmarkSize[size])}>Atlas&nbsp;Trace</span>
-      )}
-    </div>
+    <span className={cn('brand-wordmark inline-block leading-none', wordmarkSize[size], className)}>Trace</span>
   );
 }

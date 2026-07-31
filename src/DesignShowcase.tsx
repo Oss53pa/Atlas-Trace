@@ -53,7 +53,7 @@ export default function DesignShowcase() {
       <main className="mx-auto max-w-5xl space-y-12 px-6 py-10">
         {/* Intro */}
         <div className="space-y-2">
-          <p className="brand-wordmark text-4xl">Atlas Trace</p>
+          <p className="brand-wordmark text-4xl">Trace</p>
           <p className="max-w-2xl text-muted">
             Contrôle d'accès et traçabilité matière sur site. Fondation visuelle de l'application :
             polices Urbanist &amp; Grand Hotel, palette vert / orange sur fond sable.
@@ -64,7 +64,7 @@ export default function DesignShowcase() {
         <Section title="Typographie">
           <Card className="space-y-5">
             <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-sand-200 pb-4">
-              <span className="brand-wordmark text-5xl">Atlas Trace</span>
+              <span className="brand-wordmark text-5xl">Trace</span>
               <Badge tone="neutral">Grand Hotel · nom de l'application</Badge>
             </div>
             <div className="flex flex-wrap items-baseline justify-between gap-3">

@@ -64,7 +64,7 @@ export function Accueil({ onOpen }: { onOpen: (vue: string) => void }) {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Suite Atlas Studio · maquette interactive
             </span>
-            <p className="brand-wordmark mt-6 text-6xl text-forest-600 sm:text-7xl">Atlas Trace</p>
+            <p className="brand-wordmark mt-6 text-7xl text-forest-600 sm:text-8xl">Trace</p>
             <span className="mt-3 h-1 w-16 rounded-full bg-amber-400" />
             <p className="mt-5 max-w-2xl text-lg text-ink/80">
               Contrôle d’accès et traçabilité matière sur site. Une application de <b className="text-ink">processus</b>,
