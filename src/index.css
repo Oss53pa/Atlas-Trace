@@ -10,11 +10,21 @@
   html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-sand-100 text-ink font-sans antialiased;
     font-feature-settings: 'cv11', 'ss01';
+    /* Fond premium : deux lavis très légers sur le crème, fixes au défilement */
+    background-image:
+      radial-gradient(1100px 560px at 100% -8%, rgba(255, 253, 248, 0.9), transparent 60%),
+      radial-gradient(820px 480px at -6% 108%, rgba(220, 234, 228, 0.45), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: rgba(15, 80, 68, 0.15);
   }
 
   /* Titres de section en Urbanist appuyé */
@@ -22,6 +32,11 @@
   h2,
   h3 {
     @apply font-sans font-bold tracking-tight;
+  }
+
+  /* Chiffres alignés (données, tableaux, compteurs) */
+  .tnum {
+    font-feature-settings: 'tnum', 'cv11';
   }
 }
 
@@ -34,6 +49,11 @@
 
   /* Carte standard de l'interface */
   .at-card {
-    @apply rounded-2xl bg-white shadow-card border border-sand-300/70;
+    @apply rounded-2xl bg-white shadow-card ring-1 ring-sand-300/50;
+  }
+
+  /* Surface vitrée — barres flottantes, en-têtes translucides */
+  .glass {
+    @apply bg-white/75 backdrop-blur-md ring-1 ring-sand-300/60;
   }
 }

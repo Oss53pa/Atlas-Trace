@@ -14,9 +14,9 @@ interface StatCardProps {
 }
 
 const toneStyles = {
-  forest: 'bg-forest-500 text-white',
-  amber: 'bg-amber-500 text-white',
-  plain: 'bg-white text-ink',
+  forest: 'bg-gradient-to-br from-forest-400 to-forest-600 text-white ring-1 ring-inset ring-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]',
+  amber: 'bg-gradient-to-br from-amber-400 to-amber-500 text-white ring-1 ring-inset ring-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]',
+  plain: 'bg-white text-ink ring-1 ring-sand-300/50',
 };
 
 const iconTone = {
@@ -38,7 +38,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'rounded-2xl p-5 shadow-card border border-sand-200/60',
+        'rounded-2xl p-5 shadow-card transition-shadow duration-200 hover:shadow-card-lg',
         toneStyles[tone],
         className,
       )}
@@ -64,7 +64,7 @@ export function StatCard({
         )}
       </div>
       <div className="mt-3 flex items-baseline gap-1.5">
-        <span className="text-3xl font-extrabold tracking-tight">{value}</span>
+        <span className="tnum text-3xl font-extrabold tracking-tight">{value}</span>
         {unit && (
           <span className={cn('text-sm font-medium', inverted ? 'text-white/70' : 'text-muted')}>
             {unit}

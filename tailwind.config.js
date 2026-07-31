@@ -62,8 +62,22 @@ export default {
         '3xl': '2rem',
       },
       boxShadow: {
-        card: '0 1px 2px rgba(18, 33, 29, 0.04), 0 8px 24px rgba(18, 33, 29, 0.06)',
-        'card-lg': '0 4px 8px rgba(18, 33, 29, 0.05), 0 16px 40px rgba(18, 33, 29, 0.08)',
+        xs: '0 1px 2px rgba(18, 33, 29, 0.05)',
+        soft: '0 1px 2px rgba(18, 33, 29, 0.04), 0 4px 14px -6px rgba(18, 33, 29, 0.10)',
+        card: '0 1px 3px rgba(18, 33, 29, 0.04), 0 14px 32px -16px rgba(18, 33, 29, 0.16)',
+        'card-lg': '0 10px 24px -12px rgba(18, 33, 29, 0.14), 0 32px 72px -28px rgba(18, 33, 29, 0.22)',
+      },
+      transitionTimingFunction: {
+        premium: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      },
+      keyframes: {
+        'fade-up': {
+          '0%': { opacity: '0', transform: 'translateY(6px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-up': 'fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both',
       },
     },
   },

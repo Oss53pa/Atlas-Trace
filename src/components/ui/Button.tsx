@@ -14,15 +14,18 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-colors ' +
+  'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-150 ease-premium ' +
   'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-forest-400 ' +
-  'disabled:opacity-50 disabled:pointer-events-none select-none';
+  'disabled:opacity-50 disabled:pointer-events-none select-none active:translate-y-px';
+
+// Liseré interne clair en haut = matière premium sur les boutons pleins.
+const gloss = 'shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-forest-500 text-white hover:bg-forest-600 active:bg-forest-700 shadow-card',
-  accent: 'bg-amber-500 text-white hover:bg-amber-600 active:bg-amber-700 shadow-card',
-  danger: 'bg-danger-500 text-white hover:bg-danger-600 shadow-card',
-  outline: 'border border-forest-200 text-forest-700 bg-white hover:bg-forest-50',
+  primary: `bg-forest-500 text-white hover:bg-forest-600 active:bg-forest-700 shadow-soft hover:shadow-card ${gloss}`,
+  accent: `bg-amber-500 text-white hover:bg-amber-600 active:bg-amber-700 shadow-soft hover:shadow-card ${gloss}`,
+  danger: `bg-danger-500 text-white hover:bg-danger-600 shadow-soft hover:shadow-card ${gloss}`,
+  outline: 'border border-sand-300 text-forest-700 bg-white hover:border-forest-300 hover:bg-forest-50 shadow-xs',
   ghost: 'text-forest-700 hover:bg-forest-50',
 };
 

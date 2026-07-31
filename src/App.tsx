@@ -179,8 +179,10 @@ function Basculeur({ vue, onChange }: { vue: Vue; onChange: (v: Vue) => void }) 
   const onglet = (v: Vue, label: string, icon: React.ReactNode) => (
     <button
       onClick={() => onChange(v)}
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-        vue === v ? 'bg-forest-500 text-white' : 'text-muted'
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-150 ease-premium ${
+        vue === v
+          ? 'bg-forest-500 text-white shadow-soft shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
+          : 'text-muted hover:bg-sand-100 hover:text-ink'
       }`}
     >
       {icon}
@@ -188,7 +190,7 @@ function Basculeur({ vue, onChange }: { vue: Vue; onChange: (v: Vue) => void }) 
     </button>
   );
   return (
-    <div className="fixed right-4 top-4 z-50 flex max-w-[calc(100vw-2rem)] flex-wrap justify-end gap-1 rounded-3xl bg-white/90 p-1 shadow-card ring-1 ring-sand-300 backdrop-blur">
+    <div className="glass fixed right-4 top-4 z-50 flex max-w-[calc(100vw-2rem)] flex-wrap justify-end gap-1 rounded-[1.4rem] p-1.5 shadow-card-lg">
       {onglet('espaces', 'Espaces', <Users className="h-3.5 w-3.5" />)}
       {onglet('accueil', 'Accueil', <Home className="h-3.5 w-3.5" />)}
       {onglet('poste', 'Poste', <MonitorSmartphone className="h-3.5 w-3.5" />)}
