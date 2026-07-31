@@ -64,3 +64,11 @@ export function litJeton(jeton: string): ChargeAcces | null {
     return null;
   }
 }
+
+/** Jeton d'ACTIVATION (invitation référent) : usage unique + expiration réels,
+ *  signature serveur en production. Encodé dans le QR d'activation. */
+export function jetonActivation(charge: { ent: string; ref: string; jeton: string; exp: string }): string {
+  const c = { v: 1, t: 'ACTIV', jti: `${charge.jeton}-${charge.exp}`, ...charge };
+  const p = b64url(JSON.stringify(c));
+  return `AT1.${p}.${empreinte(p)}`;
+}
