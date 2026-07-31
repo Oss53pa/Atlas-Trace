@@ -19,6 +19,8 @@ export interface MaterielParc {
   visaDate?: string;
   /** Contrôlé par échantillon lors du visa. */
   echantillon?: boolean;
+  /** Référence du bordereau de déclaration groupant plusieurs matériels (BM-AAAA-NNN). */
+  bordereau?: string;
 }
 
 /** Catégories à déclaration obligatoire (référentiel site, chap. 8). */
