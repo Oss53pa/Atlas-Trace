@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { Cloud, LogIn, LogOut, Building2, MapPin, KeyRound, ShieldCheck, Loader2, AlertTriangle, Check, Users, CreditCard } from 'lucide-react';
+import { Cloud, LogIn, LogOut, Building2, MapPin, KeyRound, ShieldCheck, Loader2, AlertTriangle, Check, Users, CreditCard, ClipboardList, Link2 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
@@ -11,6 +11,8 @@ interface Role { id: string; libelle: string; pouvoirs: string[] }
 interface Entreprise { id: string; raison_sociale: string; categorie: string; statut: string }
 interface Personne { id: string; nom: string; prenom: string; fonction: string; induction_statut: string }
 interface Badge_ { id: string; numero: string; type: string; statut: string; personne_id: string | null }
+interface LigneListe { prenom: string; nom: string; present: boolean; tournant: boolean; sous_traitant: string | null }
+interface Liste { id: string; entreprise: string; date_liste: string; statut: string; effectif: number; depose_par: string | null; deposee_at: string; at_lignes_liste: LigneListe[] }
 
 const chipStatut = (s: string) =>
   s === 'ACTIVE' || s === 'ACTIF' ? 'forest' : s === 'EN_VALIDATION' ? 'amber' : s === 'SUSPENDU' || s === 'SUSPENDUE' ? 'danger' : 'neutral';
@@ -99,23 +101,26 @@ function Donnees() {
   const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
   const [personnes, setPersonnes] = useState<Personne[]>([]);
   const [badges, setBadges] = useState<Badge_[]>([]);
+  const [listes, setListes] = useState<Liste[]>([]);
   const [charge, setCharge] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const [o, s, r, e, p, b] = await Promise.all([
+      const [o, s, r, e, p, b, l] = await Promise.all([
         supabase.from('at_organisations').select('*'),
         supabase.from('at_sites').select('*'),
         supabase.from('at_roles').select('*').order('libelle'),
         supabase.from('at_entreprises').select('id,raison_sociale,categorie,statut').order('raison_sociale'),
         supabase.from('at_personnes').select('id,nom,prenom,fonction,induction_statut').order('nom'),
         supabase.from('at_badges').select('id,numero,type,statut,personne_id').order('numero'),
+        supabase.from('at_listes_journalieres').select('id,entreprise,date_liste,statut,effectif,depose_par,deposee_at, at_lignes_liste(prenom,nom,present,tournant,sous_traitant)').order('deposee_at', { ascending: false }),
       ]);
-      const err = o.error || s.error || r.error || e.error || p.error || b.error;
+      const err = o.error || s.error || r.error || e.error || p.error || b.error || l.error;
       if (err) setErreur(err.message);
       setOrgs(o.data ?? []); setSites(s.data ?? []); setRoles(r.data ?? []);
       setEntreprises(e.data ?? []); setPersonnes(p.data ?? []); setBadges(b.data ?? []);
+      setListes((l.data as Liste[]) ?? []);
       setCharge(false);
     })();
   }, []);
@@ -193,7 +198,40 @@ function Donnees() {
         </div>
       </Bloc>
 
-      <p className="flex items-center gap-1.5 text-xs text-muted"><Check className="h-3.5 w-3.5 text-forest-500" /> {orgs.length} organisation · {sites.length} site · {roles.length} rôles · {entreprises.length} entreprises · {personnes.length} personnes · {badges.length} badges — lus en direct des tables at_ sous RLS.</p>
+      <Bloc titre="Listes journalières déposées" icon={<ClipboardList className="h-4 w-4" />} compte={listes.length}>
+        {listes.length === 0 ? (
+          <p className="text-sm text-muted">Aucune liste déposée pour l’instant.</p>
+        ) : (
+          <ul className="space-y-2">
+            {listes.map((l) => {
+              const presents = l.at_lignes_liste?.filter((x) => x.present) ?? [];
+              return (
+                <li key={l.id} className="rounded-xl bg-sand-50 p-3 ring-1 ring-sand-200">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-bold text-ink">{l.entreprise} <span className="font-normal text-muted">· {l.date_liste}</span></p>
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-amber-700"><Link2 className="h-3 w-3" /> Déposée par le référent {l.depose_par} (accès par lien, sans compte)</p>
+                    </div>
+                    <div className="text-right">
+                      {l.statut === 'HORS_DELAI' ? <Badge tone="amber" dot>Hors délai</Badge> : <Badge tone="forest" dot>Déposée</Badge>}
+                      <p className="mt-1 text-xs font-bold text-ink">{l.effectif} présents</p>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {presents.map((x, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-ink ring-1 ring-sand-300">
+                        {x.prenom} {x.nom}{x.tournant && <span className="text-amber-600">·T</span>}{x.sous_traitant && <span className="text-forest-600">·S-T</span>}
+                      </span>
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Bloc>
+
+      <p className="flex items-center gap-1.5 text-xs text-muted"><Check className="h-3.5 w-3.5 text-forest-500" /> {orgs.length} organisation · {sites.length} site · {roles.length} rôles · {entreprises.length} entreprises · {personnes.length} personnes · {badges.length} badges · {listes.length} liste(s) — lus en direct sous RLS.</p>
     </div>
   );
 }
