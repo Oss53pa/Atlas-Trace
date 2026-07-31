@@ -11,10 +11,10 @@ export function Listes() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-sand-200 via-sand-100 to-forest-50">
       {/* Sous-navigation M4 */}
-      <div className="flex justify-center px-4 pt-6">
-        <div className="flex gap-1 rounded-full bg-white/90 p-1 shadow-card ring-1 ring-sand-300">
-          {onglet('referent', 'Référent', <Smartphone className="h-3.5 w-3.5" />)}
-          {onglet('suivi', 'Suivi encadrement', <ClipboardList className="h-3.5 w-3.5" />)}
+      <div className="sticky top-14 z-20 overflow-x-auto bg-sand-100/85 px-4 py-3 backdrop-blur [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mx-auto flex w-max gap-1.5 rounded-full bg-white/90 p-1 shadow-card ring-1 ring-sand-300">
+          {onglet('referent', 'Référent', <Smartphone className="h-4 w-4" />)}
+          {onglet('suivi', 'Suivi encadrement', <ClipboardList className="h-4 w-4" />)}
         </div>
       </div>
 
@@ -39,8 +39,8 @@ export function Listes() {
     return (
       <button
         onClick={() => setSousVue(v)}
-        className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
-          sousVue === v ? 'bg-forest-500 text-white' : 'text-muted'
+        className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold transition-all duration-150 ease-premium ${
+          sousVue === v ? 'bg-forest-500 text-white shadow-soft' : 'text-muted hover:text-ink'
         }`}
       >
         {icon}
