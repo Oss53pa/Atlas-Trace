@@ -28,7 +28,7 @@ export function Referentiels() {
       <div className="mb-5">
         <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500"><SlidersHorizontal className="h-3.5 w-3.5" /> M19 · Paramétrage</p>
         <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Référentiels paramétrables</h1>
-        <p className="mt-1 text-sm text-muted">Aucun de ces éléments n'existe dans le code (chap. 8). Portée par site ou par organisation.</p>
+        <p className="mt-1 text-sm text-muted">Listes éditables, portées par site ou par organisation. Renommer une valeur se propage à toute l'interface.</p>
       </div>
 
       {/* Catégories de badges & couleurs */}

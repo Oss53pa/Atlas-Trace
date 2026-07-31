@@ -50,7 +50,7 @@ export const MODELES: ModeleSectoriel[] = [
     id: 'btp',
     nom: 'Chantier BTP',
     description: 'Chantier avec preneurs et cellules commerciales (cas Cosmos Angré).',
-    donneurOrdreLabel: 'Propriétaire (maître d’œuvre)',
+    donneurOrdreLabel: 'Maître d’ouvrage',
     empriseLabel: 'Cellule commerciale',
     roles: [
       { nom: 'Direction du site', pouvoirs: ['CONSULTER_TABLEAU', 'CONSULTER_AUDIT', 'EXPORTER', 'SUSPENDRE_ACCES', 'ADMINISTRER_ORGANISATION'] },
@@ -61,7 +61,7 @@ export const MODELES: ModeleSectoriel[] = [
       { nom: 'Agent de contrôle', pouvoirs: ['CONTROLER_AU_POSTE'] },
       { nom: 'Référent entreprise', pouvoirs: ['DECLARER_ENTREPRISE', 'DECLARER_PERSONNEL', 'DEPOSER_LISTE', 'DECLARER_MATERIEL', 'DEMANDER_SORTIE', 'DEMANDER_LIVRAISON'] },
     ],
-    categories: ['Maître d’œuvre', 'Équipes de la MOA', 'Entreprise de chantier', 'Aménagement de preneur', 'Visiteur'],
+    categories: ['Entreprise de chantier', 'Aménagement de preneur', 'Visiteur'],
   },
   {
     id: 'minier',
