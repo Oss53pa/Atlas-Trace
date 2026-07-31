@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-sand-100 text-ink font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  /* Titres de section en Urbanist appuyé */
+  h1,
+  h2,
+  h3 {
+    @apply font-sans font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Nom de l'application — signature Grand Hotel */
+  .brand-wordmark {
+    @apply font-display leading-none text-forest-500;
+    font-weight: 400;
+  }
+
+  /* Carte standard de l'interface */
+  .at-card {
+    @apply rounded-2xl bg-white shadow-card border border-sand-300/70;
+  }
+}
