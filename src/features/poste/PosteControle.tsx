@@ -19,6 +19,9 @@ import { Avatar } from '../../components/ui/Avatar';
 import { StatusBanner } from '../../components/ui/StatusBanner';
 import { evaluerAcces } from './evaluate';
 import { MOTIFS } from './motifs';
+import { Scanner } from '../../components/device/Scanner';
+import { PhotoCapture } from '../../components/device/PhotoCapture';
+import { litJeton } from '../../lib/token';
 import {
   CONTEXTE,
   DEMO_SCANS,
@@ -56,6 +59,12 @@ export function PosteControle() {
     }
     return { entrees, sorties };
   }, [mouvements]);
+
+  function surDetection(texte: string) {
+    // Un QR peut porter un jeton signé (AT1.…) ou directement un identifiant.
+    const charge = litJeton(texte);
+    scanner(charge ? charge.badge : texte);
+  }
 
   function scanner(badgeId: string | null) {
     const resolu = resoudreScan(badgeId);
@@ -121,10 +130,9 @@ export function PosteControle() {
       <SensSwitch sens={sens} onChange={setSens} />
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <Viseur sens={sens} />
+        <ScanZone sens={sens} onScan={scanner} onDetect={surDetection} />
         <Compteurs entrees={compteurs.entrees} sorties={compteurs.sorties} />
         <DerniersPassages mouvements={mouvements} />
-        <SimulationStrip onScan={scanner} />
       </div>
 
       {courant && (
@@ -197,6 +205,37 @@ function SensSwitch({ sens, onChange }: { sens: Sens; onChange: (s: Sens) => voi
       {opt('ENTREE', 'Entrée', <LogIn className="h-4 w-4" />)}
       {opt('SORTIE', 'Sortie', <LogOut className="h-4 w-4" />)}
     </div>
+  );
+}
+
+/* ---------- Zone de scan : caméra réelle ou visée + simulation ---------- */
+function ScanZone({ sens, onScan, onDetect }: { sens: Sens; onScan: (id: string | null) => void; onDetect: (t: string) => void }) {
+  const [camera, setCamera] = useState(false);
+
+  if (camera) {
+    return (
+      <div className="mt-4">
+        <Scanner
+          onDetect={(t) => { setCamera(false); onDetect(t); }}
+          fallback={() => <SimulationStrip onScan={(id) => { setCamera(false); onScan(id); }} />}
+        />
+        <button onClick={() => setCamera(false)} className="mx-auto mt-3 block text-xs font-semibold text-muted hover:text-ink">
+          Arrêter la caméra
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Viseur sens={sens} />
+      <div className="mt-3 flex justify-center">
+        <Button variant="primary" size="lg" icon={<Camera className="h-5 w-5" />} onClick={() => setCamera(true)} className="w-full max-w-[300px]">
+          Activer la caméra
+        </Button>
+      </div>
+      <SimulationStrip onScan={onScan} />
+    </>
   );
 }
 
@@ -455,17 +494,9 @@ function ForcageSheet({
           className="w-full resize-none rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100"
         />
 
-        <button
-          onClick={() => setPhotoPrise((v) => !v)}
-          className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-colors ${
-            photoPrise
-              ? 'border-forest-200 bg-forest-50 text-forest-700'
-              : 'border-sand-300 bg-white text-muted'
-          }`}
-        >
-          {photoPrise ? <Check className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
-          {photoPrise ? 'Photo prise' : 'Prendre la photo'}
-        </button>
+        <div className="mt-3">
+          <PhotoCapture label="Photographier la situation" onCapture={() => setPhotoPrise(true)} />
+        </div>
 
         <div className="mt-4 flex gap-2">
           <Button variant="ghost" size="lg" onClick={onAnnuler} className="flex-none px-5">
