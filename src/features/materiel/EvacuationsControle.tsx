@@ -13,6 +13,7 @@ import {
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
+import { PhotoCapture } from '../../components/device/PhotoCapture';
 import {
   AUTORISATIONS_EVAC,
   CONTROLES_INOPINES_INIT,
@@ -231,13 +232,9 @@ function ControleSheet({
           contrôle du fond de benne, photo exigée avant validation.
         </p>
 
-        <button onClick={() => setPhoto((v) => !v)}
-          className={`mb-4 flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-colors ${
-            photo ? 'border-forest-200 bg-forest-50 text-forest-700' : 'border-sand-300 bg-white text-muted'
-          }`}>
-          {photo ? <Check className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
-          {photo ? 'Photo du fond de benne prise ✓' : 'Prendre la photo du fond de benne'}
-        </button>
+        <div className="mb-4">
+          <PhotoCapture label="Photographier le fond de benne" onCapture={() => setPhoto(true)} />
+        </div>
 
         <div className="flex gap-2">
           <Button variant="danger" size="lg" block disabled={!photo} icon={<ShieldAlert className="h-5 w-5" />} onClick={() => onEnregistrer('ANOMALIE')}>

@@ -3,6 +3,7 @@ import { Plus, Camera, Check, X, Package, LogOut, Clock, AlertTriangle } from 'l
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
+import { PhotoCapture } from '../../components/device/PhotoCapture';
 import { ENTREES_PONCTUEL, UNITES, type EntreePonctuel, type StatutPonctuel } from '../../data/entrees';
 import { ENTREPRISES_MATERIEL } from '../../data/materiel';
 
@@ -198,13 +199,9 @@ function EntreeSheet({
           </label>
         </div>
 
-        <button onClick={() => setPhoto((v) => !v)}
-          className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-colors ${
-            photo ? 'border-forest-200 bg-forest-50 text-forest-700' : 'border-sand-300 bg-white text-muted'
-          }`}>
-          {photo ? <Check className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
-          {photo ? 'Photo prise ✓' : 'Prendre la photo (au poste)'}
-        </button>
+        <div className="mt-3">
+          <PhotoCapture label="Photographier l'entrée" onCapture={() => setPhoto(true)} />
+        </div>
 
         <div className="mt-4 flex gap-2">
           <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onAnnuler}>Annuler</Button>
