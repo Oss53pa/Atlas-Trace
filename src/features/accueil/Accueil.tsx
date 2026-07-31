@@ -60,7 +60,7 @@ export function Accueil({ onOpen }: { onOpen: (vue: string) => void }) {
       <header className="relative overflow-hidden border-b border-sand-300/70 bg-sand-50">
         <div className="pointer-events-none absolute inset-0 opacity-70 [background:radial-gradient(60%_60%_at_15%_-10%,#DCEAE4_0%,transparent_60%),radial-gradient(45%_45%_at_100%_0%,#FBEFCF_0%,transparent_55%)]" />
         <div className="relative mx-auto max-w-5xl px-5 py-16 sm:py-20">
-          <div className="flex flex-col items-center text-center">
+          <div className="flex animate-fade-up flex-col items-center text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Suite Atlas Studio · maquette interactive
             </span>
@@ -74,9 +74,20 @@ export function Accueil({ onOpen }: { onOpen: (vue: string) => void }) {
               <button onClick={() => onOpen('poste')} className="inline-flex items-center gap-2 rounded-xl bg-forest-500 px-5 py-3 text-sm font-bold text-white shadow-card transition-colors hover:bg-forest-600">
                 <MonitorSmartphone className="h-4 w-4" /> Entrer au poste de contrôle
               </button>
-              <button onClick={() => onOpen('tableau')} className="inline-flex items-center gap-2 rounded-xl border border-sand-300 bg-white px-5 py-3 text-sm font-bold text-ink shadow-card transition-colors hover:bg-sand-50">
+              <button onClick={() => onOpen('tableau')} className="inline-flex items-center gap-2 rounded-xl border border-sand-300 bg-white px-5 py-3 text-sm font-bold text-ink shadow-soft transition-all hover:border-forest-300 hover:shadow-card">
                 <LayoutDashboard className="h-4 w-4 text-amber-500" /> Voir le tableau de bord
               </button>
+            </div>
+
+            {/* Bande de repères */}
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-muted">
+              <span className="flex items-center gap-1.5"><span className="tnum text-base font-extrabold text-forest-600">20</span> modules maquettés</span>
+              <span className="hidden h-3 w-px bg-sand-300 sm:block" />
+              <span className="flex items-center gap-1.5"><span className="text-forest-600">Multitenant</span> · cloisonnement RLS</span>
+              <span className="hidden h-3 w-px bg-sand-300 sm:block" />
+              <span className="flex items-center gap-1.5"><WifiOff className="h-3.5 w-3.5 text-amber-500" /> Hors-ligne au poste</span>
+              <span className="hidden h-3 w-px bg-sand-300 sm:block" />
+              <span className="flex items-center gap-1.5"><Link2 className="h-3.5 w-3.5 text-amber-500" /> Référent par lien</span>
             </div>
           </div>
         </div>
@@ -114,7 +125,7 @@ export function Accueil({ onOpen }: { onOpen: (vue: string) => void }) {
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                 {lot.modules.map((m) => (
                   <button key={m.code} onClick={() => onOpen(m.vue)}
-                    className="group flex items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-card ring-1 ring-sand-300/70 transition-all hover:-translate-y-0.5 hover:ring-forest-300">
+                    className="group flex items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-card ring-1 ring-sand-300/60 transition-all duration-200 ease-premium hover:-translate-y-0.5 hover:shadow-card-lg hover:ring-forest-300">
                     <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: lot.hex }}>{m.icon}</span>
                     <div className="min-w-0 flex-1">
                       <p className="text-[11px] font-bold uppercase tracking-wide text-muted">{m.code}</p>
