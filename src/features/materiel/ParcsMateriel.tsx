@@ -16,6 +16,7 @@ import {
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
+import { PhotoCapture } from '../../components/device/PhotoCapture';
 import {
   CATEGORIES_MATERIEL,
   ENTREPRISES_MATERIEL,
@@ -40,6 +41,7 @@ export function ParcsMateriel() {
   const [parc, setParc] = useState<MaterielParc[]>(MATERIELS_PARC);
   const [filtre, setFiltre] = useState('TOUTES');
   const [sheet, setSheet] = useState(false);
+  const [photoPour, setPhotoPour] = useState<MaterielParc | null>(null);
   const [nbBordereaux, setNbBordereaux] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -61,8 +63,9 @@ export function ParcsMateriel() {
 
   const lignes = parc.filter((m) => filtre === 'TOUTES' || m.entreprise === filtre);
 
-  function photographier(id: string) {
-    setParc((p) => p.map((m) => (m.id === id ? { ...m, statut: 'MARQUE', photoMarquage: true } : m)));
+  function photographier(id: string, photo: string) {
+    setParc((p) => p.map((m) => (m.id === id ? { ...m, statut: 'MARQUE', photoMarquage: true, photo } : m)));
+    setPhotoPour(null);
     flash('Photo du marquage enregistrée · en attente de visa');
   }
   function viser(id: string) {
@@ -155,7 +158,7 @@ export function ParcsMateriel() {
 
         <ul className="space-y-2">
           {lignes.map((m) => (
-            <MaterielRow key={m.id} m={m} onPhoto={() => photographier(m.id)} onViser={() => viser(m.id)} />
+            <MaterielRow key={m.id} m={m} onPhoto={() => setPhotoPour(m)} onViser={() => viser(m.id)} />
           ))}
         </ul>
       </div>
@@ -166,6 +169,14 @@ export function ParcsMateriel() {
           onConfirmer={declarerBordereau}
           bordereauRef={bordereauRef}
           baseMarquage={baseMarquage}
+        />
+      )}
+
+      {photoPour && (
+        <PhotoMarquageSheet
+          materiel={photoPour}
+          onAnnuler={() => setPhotoPour(null)}
+          onPhoto={(url) => photographier(photoPour.id, url)}
         />
       )}
 
@@ -191,8 +202,14 @@ function MaterielRow({ m, onPhoto, onViser }: { m: MaterielParc; onPhoto: () => 
   return (
     <li className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-sand-300/70">
       {/* Vignette photo du marquage */}
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sand-100 text-muted ring-1 ring-sand-200">
-        {m.photoMarquage ? <Image className="h-5 w-5 text-forest-500" /> : <Camera className="h-5 w-5" />}
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-sand-100 text-muted ring-1 ring-sand-200">
+        {m.photo ? (
+          <img src={m.photo} alt="Marquage" className="h-full w-full object-cover" />
+        ) : m.photoMarquage ? (
+          <Image className="h-5 w-5 text-forest-500" />
+        ) : (
+          <Camera className="h-5 w-5" />
+        )}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -239,6 +256,28 @@ function MaterielRow({ m, onPhoto, onViser }: { m: MaterielParc; onPhoto: () => 
         )}
       </div>
     </li>
+  );
+}
+
+/* ---------- Photo du marquage (capture réelle) ---------- */
+function PhotoMarquageSheet({ materiel, onAnnuler, onPhoto }: { materiel: MaterielParc; onAnnuler: () => void; onPhoto: (url: string) => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="w-full max-w-md rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-card-lg ring-1 ring-sand-300/60 sm:rounded-3xl">
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="text-lg font-extrabold text-ink">Photo du marquage</h3>
+          <button onClick={onAnnuler} className="rounded-full p-1.5 text-muted transition-colors hover:bg-sand-100 hover:text-ink">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <p className="mb-4 text-xs text-muted">
+          <b className="font-mono text-ink">{materiel.numeroMarquage}</b> · {materiel.designation} — {materiel.entreprise}.
+          Photographiez le marquage <b className="text-ink">apposé physiquement</b> ; il est obligatoire avant le visa.
+        </p>
+        <PhotoCapture label="Photographier le marquage" onCapture={onPhoto} />
+        <p className="mt-3 text-[11px] text-muted">La photo est enregistrée dans l'appli et rattachée au matériel (horodatée en production).</p>
+      </div>
+    </div>
   );
 }
 

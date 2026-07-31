@@ -21,6 +21,8 @@ export interface MaterielParc {
   echantillon?: boolean;
   /** Référence du bordereau de déclaration groupant plusieurs matériels (BM-AAAA-NNN). */
   bordereau?: string;
+  /** Photo du marquage apposé, capturée dans l'appli (data URL). */
+  photo?: string;
 }
 
 /** Catégories à déclaration obligatoire (référentiel site, chap. 8). */
