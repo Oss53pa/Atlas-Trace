@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { Cloud, LogIn, LogOut, Building2, MapPin, KeyRound, ShieldCheck, Loader2, AlertTriangle, Check } from 'lucide-react';
+import { Cloud, LogIn, LogOut, Building2, MapPin, KeyRound, ShieldCheck, Loader2, AlertTriangle, Check, Users, CreditCard } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
@@ -8,6 +8,12 @@ import { supabase } from '../../lib/supabase';
 interface Org { id: string; raison_sociale: string; pays: string; hebergement: string; statut: string }
 interface Site { id: string; libelle: string; adresse: string; statut: string }
 interface Role { id: string; libelle: string; pouvoirs: string[] }
+interface Entreprise { id: string; raison_sociale: string; categorie: string; statut: string }
+interface Personne { id: string; nom: string; prenom: string; fonction: string; induction_statut: string }
+interface Badge_ { id: string; numero: string; type: string; statut: string; personne_id: string | null }
+
+const chipStatut = (s: string) =>
+  s === 'ACTIVE' || s === 'ACTIF' ? 'forest' : s === 'EN_VALIDATION' ? 'amber' : s === 'SUSPENDU' || s === 'SUSPENDUE' ? 'danger' : 'neutral';
 
 export function Live() {
   const [session, setSession] = useState<Session | null>(null);
@@ -90,19 +96,26 @@ function Donnees() {
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
+  const [personnes, setPersonnes] = useState<Personne[]>([]);
+  const [badges, setBadges] = useState<Badge_[]>([]);
   const [charge, setCharge] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const [o, s, r] = await Promise.all([
+      const [o, s, r, e, p, b] = await Promise.all([
         supabase.from('at_organisations').select('*'),
         supabase.from('at_sites').select('*'),
         supabase.from('at_roles').select('*').order('libelle'),
+        supabase.from('at_entreprises').select('id,raison_sociale,categorie,statut').order('raison_sociale'),
+        supabase.from('at_personnes').select('id,nom,prenom,fonction,induction_statut').order('nom'),
+        supabase.from('at_badges').select('id,numero,type,statut,personne_id').order('numero'),
       ]);
-      const err = o.error || s.error || r.error;
+      const err = o.error || s.error || r.error || e.error || p.error || b.error;
       if (err) setErreur(err.message);
       setOrgs(o.data ?? []); setSites(s.data ?? []); setRoles(r.data ?? []);
+      setEntreprises(e.data ?? []); setPersonnes(p.data ?? []); setBadges(b.data ?? []);
       setCharge(false);
     })();
   }, []);
@@ -148,7 +161,39 @@ function Donnees() {
         </div>
       </Bloc>
 
-      <p className="flex items-center gap-1.5 text-xs text-muted"><Check className="h-3.5 w-3.5 text-forest-500" /> {orgs.length} organisation, {sites.length} site(s), {roles.length} rôles — provenant des tables at_ du socle.</p>
+      <Bloc titre="Entreprises intervenantes" icon={<Building2 className="h-4 w-4" />} compte={entreprises.length}>
+        <ul className="space-y-1.5">
+          {entreprises.map((e) => (
+            <li key={e.id} className="flex items-center justify-between rounded-xl bg-sand-50 px-3 py-2 ring-1 ring-sand-200">
+              <div><p className="text-sm font-semibold text-ink">{e.raison_sociale}</p><p className="text-xs text-muted">{e.categorie}</p></div>
+              <Badge tone={chipStatut(e.statut)} dot>{e.statut}</Badge>
+            </li>
+          ))}
+        </ul>
+      </Bloc>
+
+      <Bloc titre="Personnes" icon={<Users className="h-4 w-4" />} compte={personnes.length}>
+        <ul className="space-y-1.5">
+          {personnes.map((p) => (
+            <li key={p.id} className="flex items-center justify-between rounded-xl bg-sand-50 px-3 py-2 ring-1 ring-sand-200">
+              <div><p className="text-sm font-semibold text-ink">{p.prenom} {p.nom}</p><p className="text-xs text-muted">{p.fonction}</p></div>
+              <Badge tone={p.induction_statut === 'VALIDE' ? 'forest' : p.induction_statut === 'EXPIREE' ? 'danger' : 'amber'} dot>Induction {p.induction_statut.toLowerCase()}</Badge>
+            </li>
+          ))}
+        </ul>
+      </Bloc>
+
+      <Bloc titre="Badges" icon={<CreditCard className="h-4 w-4" />} compte={badges.length}>
+        <div className="flex flex-wrap gap-1.5">
+          {badges.map((b) => (
+            <span key={b.id} className="inline-flex items-center gap-1.5 rounded-full bg-sand-50 px-2.5 py-1 text-xs font-semibold text-ink ring-1 ring-sand-200">
+              <span className="font-mono">{b.numero}</span><Badge tone={chipStatut(b.statut)}>{b.statut}</Badge>
+            </span>
+          ))}
+        </div>
+      </Bloc>
+
+      <p className="flex items-center gap-1.5 text-xs text-muted"><Check className="h-3.5 w-3.5 text-forest-500" /> {orgs.length} organisation · {sites.length} site · {roles.length} rôles · {entreprises.length} entreprises · {personnes.length} personnes · {badges.length} badges — lus en direct des tables at_ sous RLS.</p>
     </div>
   );
 }
