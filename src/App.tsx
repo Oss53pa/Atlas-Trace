@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MonitorSmartphone, Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2, Package, BookText, Key, Settings, SlidersHorizontal, Boxes, Home, Cloud, Link2 } from 'lucide-react';
+import { MonitorSmartphone, Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2, Package, BookText, Key, Settings, SlidersHorizontal, Boxes, Home, Cloud, Link2, Users } from 'lucide-react';
 import { PosteHub } from './features/poste/PosteHub';
 import { Registres } from './features/registres/Registres';
 import { Listes } from './features/listes/Listes';
@@ -15,12 +15,22 @@ import { Editeur } from './features/editeur/Editeur';
 import { Accueil } from './features/accueil/Accueil';
 import { Live } from './features/live/Live';
 import { PortailReferent } from './features/referent/PortailReferent';
+import { Espaces } from './features/espaces/Espaces';
 import DesignShowcase from './DesignShowcase';
 
-type Vue = 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel' | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design';
+type Vue = 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel' | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design';
 
 export default function App() {
-  const [vue, setVue] = useState<Vue>('accueil');
+  const [vue, setVue] = useState<Vue>('espaces');
+
+  if (vue === 'espaces') {
+    return (
+      <div className="relative">
+        <Basculeur vue={vue} onChange={setVue} />
+        <Espaces onOpen={(v) => setVue(v as Vue)} />
+      </div>
+    );
+  }
 
   if (vue === 'accueil') {
     return (
@@ -179,6 +189,7 @@ function Basculeur({ vue, onChange }: { vue: Vue; onChange: (v: Vue) => void }) 
   );
   return (
     <div className="fixed right-4 top-4 z-50 flex max-w-[calc(100vw-2rem)] flex-wrap justify-end gap-1 rounded-3xl bg-white/90 p-1 shadow-card ring-1 ring-sand-300 backdrop-blur">
+      {onglet('espaces', 'Espaces', <Users className="h-3.5 w-3.5" />)}
       {onglet('accueil', 'Accueil', <Home className="h-3.5 w-3.5" />)}
       {onglet('poste', 'Poste', <MonitorSmartphone className="h-3.5 w-3.5" />)}
       {onglet('tableau', 'Tableau', <LayoutDashboard className="h-3.5 w-3.5" />)}
