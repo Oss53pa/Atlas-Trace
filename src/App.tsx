@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MonitorSmartphone, Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2, Package, BookText, Key, Settings, SlidersHorizontal, Boxes, Home } from 'lucide-react';
+import { MonitorSmartphone, Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2, Package, BookText, Key, Settings, SlidersHorizontal, Boxes, Home, Cloud } from 'lucide-react';
 import { PosteHub } from './features/poste/PosteHub';
 import { Registres } from './features/registres/Registres';
 import { Listes } from './features/listes/Listes';
@@ -13,9 +13,10 @@ import { Administration } from './features/admin/Administration';
 import { Parametrage } from './features/parametrage/Parametrage';
 import { Editeur } from './features/editeur/Editeur';
 import { Accueil } from './features/accueil/Accueil';
+import { Live } from './features/live/Live';
 import DesignShowcase from './DesignShowcase';
 
-type Vue = 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel' | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'registres' | 'design';
+type Vue = 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel' | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'registres' | 'design';
 
 export default function App() {
   const [vue, setVue] = useState<Vue>('accueil');
@@ -128,6 +129,15 @@ export default function App() {
     );
   }
 
+  if (vue === 'live') {
+    return (
+      <div className="relative">
+        <Basculeur vue={vue} onChange={setVue} />
+        <Live />
+      </div>
+    );
+  }
+
   if (vue === 'registres') {
     return (
       <div className="relative">
@@ -171,6 +181,7 @@ function Basculeur({ vue, onChange }: { vue: Vue; onChange: (v: Vue) => void }) 
       {onglet('admin', 'Admin', <Settings className="h-3.5 w-3.5" />)}
       {onglet('parametrage', 'Paramétrage', <SlidersHorizontal className="h-3.5 w-3.5" />)}
       {onglet('editeur', 'Éditeur', <Boxes className="h-3.5 w-3.5" />)}
+      {onglet('live', 'Live', <Cloud className="h-3.5 w-3.5" />)}
       {onglet('registres', 'Registres', <Table2 className="h-3.5 w-3.5" />)}
       {onglet('design', 'Design', <Palette className="h-3.5 w-3.5" />)}
     </div>
