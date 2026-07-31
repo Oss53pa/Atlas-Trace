@@ -206,7 +206,7 @@ function Viseur({ sens }: { sens: Sens }) {
     <div className="mt-4 flex flex-col items-center">
       <div className="relative aspect-square w-full max-w-[280px] overflow-hidden rounded-3xl bg-forest-900">
         {/* trames décoratives */}
-        <div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_50%_40%,#3E7D54_0%,transparent_60%)]" />
+        <div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_50%_40%,#0F5044_0%,transparent_60%)]" />
         {/* coins */}
         {['left-5 top-5 border-l-4 border-t-4', 'right-5 top-5 border-r-4 border-t-4', 'left-5 bottom-5 border-l-4 border-b-4', 'right-5 bottom-5 border-r-4 border-b-4'].map(
           (c) => (

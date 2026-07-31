@@ -10,7 +10,7 @@ interface Lot { titre: string; hex: string; modules: Module[] }
 
 const LOTS: Lot[] = [
   {
-    titre: 'Lot 1 — Accès & présence', hex: '#2F6B45', modules: [
+    titre: 'Lot 1 — Accès & présence', hex: '#0F5044', modules: [
       { code: 'M1', nom: 'Entreprises intervenantes', vue: 'entreprises', icon: <Building2 className="h-4 w-4" /> },
       { code: 'M2', nom: 'Donneurs d’ordre & conditions', vue: 'entreprises', icon: <Building className="h-4 w-4" /> },
       { code: 'M3', nom: 'Personnes & badges', vue: 'badges', icon: <CreditCard className="h-4 w-4" /> },
@@ -21,7 +21,7 @@ const LOTS: Lot[] = [
     ],
   },
   {
-    titre: 'Lot 2 — Matière', hex: '#DE7826', modules: [
+    titre: 'Lot 2 — Matière', hex: '#C08A2A', modules: [
       { code: 'M7', nom: 'Parcs & marquage', vue: 'materiel', icon: <Tag className="h-4 w-4" /> },
       { code: 'M8', nom: 'Entrées ponctuelles', vue: 'materiel', icon: <PackagePlus className="h-4 w-4" /> },
       { code: 'M9', nom: 'Autorisations de sortie', vue: 'materiel', icon: <FileOutput className="h-4 w-4" /> },
@@ -32,14 +32,14 @@ const LOTS: Lot[] = [
     ],
   },
   {
-    titre: 'Lot 3 — Exploitation', hex: '#6B7A6E', modules: [
+    titre: 'Lot 3 — Exploitation', hex: '#6F7C75', modules: [
       { code: 'M16', nom: 'Main courante & incidents', vue: 'maincourante', icon: <BookText className="h-4 w-4" /> },
       { code: 'M17', nom: 'Clés & zones sensibles', vue: 'cles', icon: <Key className="h-4 w-4" /> },
       { code: 'M18', nom: 'Administration, audit & mode dégradé', vue: 'admin', icon: <Settings className="h-4 w-4" /> },
     ],
   },
   {
-    titre: 'Généralisation', hex: '#B4761F', modules: [
+    titre: 'Généralisation', hex: '#A87C1E', modules: [
       { code: 'M19', nom: 'Paramétrage & modèles sectoriels', vue: 'parametrage', icon: <SlidersHorizontal className="h-4 w-4" /> },
       { code: 'M20', nom: 'Back office éditeur', vue: 'editeur', icon: <Boxes className="h-4 w-4" /> },
     ],
@@ -58,7 +58,7 @@ export function Accueil({ onOpen }: { onOpen: (vue: string) => void }) {
     <div className="min-h-screen bg-sand-100">
       {/* Hero clair */}
       <header className="relative overflow-hidden border-b border-sand-300/70 bg-sand-50">
-        <div className="pointer-events-none absolute inset-0 opacity-70 [background:radial-gradient(60%_60%_at_15%_-10%,#E4EFE2_0%,transparent_60%),radial-gradient(45%_45%_at_100%_0%,#FBE1CC_0%,transparent_55%)]" />
+        <div className="pointer-events-none absolute inset-0 opacity-70 [background:radial-gradient(60%_60%_at_15%_-10%,#DCEAE4_0%,transparent_60%),radial-gradient(45%_45%_at_100%_0%,#FBEFCF_0%,transparent_55%)]" />
         <div className="relative mx-auto max-w-5xl px-5 py-16 sm:py-20">
           <div className="flex flex-col items-center text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">

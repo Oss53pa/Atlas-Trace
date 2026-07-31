@@ -112,8 +112,8 @@ export function Tableau() {
               data={PASSAGES_HEURE.map((p) => ({ label: p.heure, entrees: p.entrees, sorties: p.sorties }))}
             />
             <div className="mt-3 flex gap-4 text-xs font-medium text-muted">
-              <Legende hex="#2F6B45" label="Entrées" />
-              <Legende hex="#A9D3AE" label="Sorties" />
+              <Legende hex="#0F5044" label="Entrées" />
+              <Legende hex="#A7CEC3" label="Sorties" />
             </div>
           </Panneau>
           <Panneau titre="Résultats des contrôles (24 h)">
@@ -121,8 +121,8 @@ export function Tableau() {
               centre={String(c.autorises + c.refus + c.forcages)}
               sousTitre="contrôles"
               segments={[
-                { label: 'Autorisés', value: c.autorises, color: '', hex: '#6FB07C' },
-                { label: 'Forçages', value: c.forcages, color: '', hex: '#E8A33D' },
+                { label: 'Autorisés', value: c.autorises, color: '', hex: '#2E7C68' },
+                { label: 'Forçages', value: c.forcages, color: '', hex: '#F2C14E' },
                 { label: 'Refus', value: c.refus, color: '', hex: '#C0392B' },
               ]}
             />

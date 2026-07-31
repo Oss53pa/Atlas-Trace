@@ -12,7 +12,7 @@ export function FakeQR({ value, size = 84 }: { value: string; size?: number }) {
       {grid.flatMap((ligne, r) =>
         ligne.map((on, c) =>
           on ? (
-            <rect key={`${r}-${c}`} x={c * cell} y={r * cell} width={cell} height={cell} fill="#16281B" />
+            <rect key={`${r}-${c}`} x={c * cell} y={r * cell} width={cell} height={cell} fill="#12211D" />
           ) : null,
         ),
       )}

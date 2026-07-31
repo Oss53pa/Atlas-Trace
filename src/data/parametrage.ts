@@ -132,10 +132,10 @@ export interface BadgeCategorieConf {
   hex: string;
 }
 export const BADGE_CATEGORIES_CONF: BadgeCategorieConf[] = [
-  { libelle: 'Chantier', hex: '#2F6B45' },
-  { libelle: 'Aménagement preneur', hex: '#DE7826' },
-  { libelle: 'Visiteur', hex: '#6B7A6E' },
-  { libelle: 'Personnel propre', hex: '#245537' },
+  { libelle: 'Chantier', hex: '#0F5044' },
+  { libelle: 'Aménagement preneur', hex: '#C08A2A' },
+  { libelle: 'Visiteur', hex: '#6F7C75' },
+  { libelle: 'Personnel propre', hex: '#0A362E' },
 ];
 
 export const PARAMETRES_SCALAIRES = [

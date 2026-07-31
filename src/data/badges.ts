@@ -13,9 +13,9 @@ export interface CategorieBadge {
 }
 
 export const CATEGORIES: Record<string, CategorieBadge> = {
-  chantier: { id: 'chantier', libelle: 'Chantier', hex: '#2F6B45', zones: ['circulation', 'travaux'], zoneLabel: 'Travaux · circulation' },
-  amenagement: { id: 'amenagement', libelle: 'Aménagement preneur', hex: '#DE7826', zones: ['circulation', 'galerie'], zoneLabel: 'Galerie · circulation' },
-  visiteur: { id: 'visiteur', libelle: 'Visiteur', hex: '#6B7A6E', zones: ['circulation'], zoneLabel: 'Circulation accompagnée' },
+  chantier: { id: 'chantier', libelle: 'Chantier', hex: '#0F5044', zones: ['circulation', 'travaux'], zoneLabel: 'Travaux · circulation' },
+  amenagement: { id: 'amenagement', libelle: 'Aménagement preneur', hex: '#C08A2A', zones: ['circulation', 'galerie'], zoneLabel: 'Galerie · circulation' },
+  visiteur: { id: 'visiteur', libelle: 'Visiteur', hex: '#6F7C75', zones: ['circulation'], zoneLabel: 'Circulation accompagnée' },
 };
 
 export interface Personne {

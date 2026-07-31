@@ -24,7 +24,7 @@ export function Donut({
   return (
     <div className="flex items-center gap-4">
       <svg viewBox="0 0 100 100" className="h-32 w-32 -rotate-90">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="#E9EDE5" strokeWidth="12" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="#F1EBDC" strokeWidth="12" />
         {segments.map((seg) => {
           const len = (seg.value / total) * c;
           const el = (

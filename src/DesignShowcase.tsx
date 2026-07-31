@@ -87,18 +87,18 @@ export default function DesignShowcase() {
         {/* Palette */}
         <Section title="Palette">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-            <Swatch name="Forest 500" value="#3E7D54" className="bg-forest-500" />
-            <Swatch name="Forest 700" value="#274F35" className="bg-forest-700" />
-            <Swatch name="Forest 200" value="#AFD1B8" className="bg-forest-200" dark />
-            <Swatch name="Amber 500" value="#DE7826" className="bg-amber-500" />
-            <Swatch name="Amber 200" value="#F4C79A" className="bg-amber-200" dark />
-            <Swatch name="Danger 500" value="#D3383D" className="bg-danger-500" />
-            <Swatch name="Sand 50" value="#FBFAF6" className="bg-sand-50" dark />
-            <Swatch name="Sand 100" value="#F6F5EF" className="bg-sand-100" dark />
-            <Swatch name="Sand 200" value="#EDEBE1" className="bg-sand-200" dark />
-            <Swatch name="Sand 300" value="#DED9C9" className="bg-sand-300" dark />
-            <Swatch name="Forest 50" value="#EEF5EF" className="bg-forest-50" dark />
-            <Swatch name="Amber 50" value="#FDF4EB" className="bg-amber-50" dark />
+            <Swatch name="Fond" value="#FAF6EC" className="bg-sand-100" dark />
+            <Swatch name="Surface" value="#FFFFFF" className="bg-white" dark />
+            <Swatch name="Bordure" value="#EAE4D6" className="bg-sand-300" dark />
+            <Swatch name="Teinte verte" value="#DCEAE4" className="bg-forest-100" dark />
+            <Swatch name="Série médiane" value="#2E7C68" className="bg-forest-400" />
+            <Swatch name="Vert pin · marque" value="#0F5044" className="bg-forest-500" />
+            <Swatch name="Vert profond · scan" value="#0A2E28" className="bg-forest-800" />
+            <Swatch name="Or · attente" value="#F2C14E" className="bg-amber-300" dark />
+            <Swatch name="Teinte or" value="#FBEFCF" className="bg-amber-50" dark />
+            <Swatch name="Encre" value="#12211D" className="bg-ink" />
+            <Swatch name="Texte secondaire" value="#6F7C75" className="bg-muted" />
+            <Swatch name="Refus" value="#C0392B" className="bg-danger-500" />
           </div>
         </Section>
 

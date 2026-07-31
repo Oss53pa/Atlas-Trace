@@ -140,7 +140,7 @@ export function ControleSortie() {
         {/* Viseur */}
         <div className="mt-4 flex flex-col items-center">
           <div className="relative aspect-square w-full max-w-[260px] overflow-hidden rounded-3xl bg-forest-900">
-            <div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_50%_40%,#2F6B45_0%,transparent_60%)]" />
+            <div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_50%_40%,#0F5044_0%,transparent_60%)]" />
             {['left-5 top-5 border-l-4 border-t-4', 'right-5 top-5 border-r-4 border-t-4', 'left-5 bottom-5 border-l-4 border-b-4', 'right-5 bottom-5 border-r-4 border-b-4'].map((c) => (
               <span key={c} className={`absolute h-9 w-9 rounded-md border-white/80 ${c}`} />
             ))}
@@ -244,7 +244,7 @@ function ResultatSortie({
       </div>
 
       <div className="flex flex-1 flex-col items-center overflow-y-auto px-5 pb-4">
-        <div className="mt-1 flex h-24 w-24 items-center justify-center rounded-3xl ring-4 ring-white shadow-card-lg" style={{ background: autorise ? '#EDF4EC' : '#F8E7E4' }}>
+        <div className="mt-1 flex h-24 w-24 items-center justify-center rounded-3xl ring-4 ring-white shadow-card-lg" style={{ background: autorise ? '#EAF3EF' : '#F8E7E4' }}>
           {d.voie === 'AUTORISATION' ? (
             <FileOutput className={`h-11 w-11 ${autorise ? 'text-forest-500' : 'text-danger-500'}`} />
           ) : d.voie === 'MARQUAGE' ? (
