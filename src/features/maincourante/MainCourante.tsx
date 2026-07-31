@@ -17,6 +17,7 @@ import {
   Clock,
   ChevronRight,
 } from 'lucide-react';
+import { PhotoCapture } from '../../components/device/PhotoCapture';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
@@ -314,11 +315,9 @@ function SaisieSheet({
             className="w-full resize-none rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
         </label>
 
-        <button onClick={() => setPhoto((v) => !v)}
-          className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-colors ${photo ? 'border-forest-200 bg-forest-50 text-forest-700' : 'border-sand-300 bg-white text-muted'}`}>
-          {photo ? <Check className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
-          {photo ? 'Photo prise ✓' : 'Prendre une photo (au poste)'}
-        </button>
+        <div className="mt-3">
+          <PhotoCapture label="Photographier l'incident" onCapture={() => setPhoto(true)} />
+        </div>
 
         <div className="mt-4 flex gap-2">
           <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onAnnuler}>Annuler</Button>

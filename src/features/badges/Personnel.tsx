@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { UserPlus, Camera, Check, X, ShieldCheck, CreditCard, AlertTriangle } from 'lucide-react';
+import { PhotoCapture } from '../../components/device/PhotoCapture';
 import { Avatar } from '../../components/ui/Avatar';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -163,22 +164,8 @@ function DeclarerSheet({
         </div>
 
         {/* Photo in-app (jamais depuis la galerie) */}
-        <div className="mb-4 flex items-center gap-3">
-          {photo ? (
-            <Avatar nom={nom || '?'} prenom={prenom || '?'} size="md" />
-          ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sand-200 text-muted">
-              <Camera className="h-5 w-5" />
-            </div>
-          )}
-          <button
-            onClick={() => setPhoto((v) => !v)}
-            className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
-              photo ? 'border-forest-200 bg-forest-50 text-forest-700' : 'border-sand-300 bg-white text-muted'
-            }`}
-          >
-            {photo ? 'Photo prise ✓' : 'Prendre la photo (dans l’app)'}
-          </button>
+        <div className="mb-4">
+          <PhotoCapture label="Prendre la photo (dans l’app)" onCapture={() => setPhoto(true)} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
