@@ -30,7 +30,7 @@ export function Livraisons() {
   const [preavis, setPreavis] = useState<Preavis[]>(PREAVIS);
   const [creneaux, setCreneaux] = useState<Creneau[]>(CRENEAUX);
   const [sheet, setSheet] = useState(false);
-  const [reception, setReception] = useState<Preavis | null>(null);
+  const [pec, setPec] = useState<Preavis | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   function flash(m: string) {
@@ -40,27 +40,27 @@ export function Livraisons() {
 
   const stats = useMemo(() => ({
     total: preavis.length,
-    aReceptionner: preavis.filter((p) => p.statut === 'VALIDE').length,
-    nonRecues: preavis.filter((p) => p.arriveeNonRecue && p.statut !== 'RECEPTIONNE').length,
+    aPrendreEnCharge: preavis.filter((p) => p.statut === 'VALIDE').length,
+    nonPrises: preavis.filter((p) => p.arriveeNonPriseEnCharge && p.statut !== 'PRIS_EN_CHARGE').length,
   }), [preavis]);
 
-  const nonRecues = preavis.filter((p) => p.arriveeNonRecue && p.statut !== 'RECEPTIONNE');
+  const nonPrises = preavis.filter((p) => p.arriveeNonPriseEnCharge && p.statut !== 'PRIS_EN_CHARGE');
 
   function viser(id: string) {
     setPreavis((ps) => ps.map((p) => (p.id === id ? { ...p, statut: 'VALIDE', code: `PL-${p.numero.slice(-2)}-VISA` } : p)));
     flash('Visa conditionnel apposé · créneau validé · code transmis');
   }
 
-  function receptionner(id: string, recu: number) {
+  function prendreEnCharge(id: string, reserve: string) {
     setPreavis((ps) =>
-      ps.map((p) => {
-        if (p.id !== id) return p;
-        const ecart = recu - p.quantitePrevue;
-        return { ...p, statut: 'RECEPTIONNE', arriveeNonRecue: false, reception: { recu, ecart, photo: true, receptionnaire: 'M. Sanou (magasin)', heure: '31/07 09:40' } };
-      }),
+      ps.map((p) =>
+        p.id !== id
+          ? p
+          : { ...p, statut: 'PRIS_EN_CHARGE', arriveeNonPriseEnCharge: false, priseEnCharge: { responsable: 'M. Sanou (entité destinataire)', heure: '31/07 09:40', reserve: reserve.trim() || undefined, photo: true } },
+      ),
     );
-    setReception(null);
-    flash('Livraison réceptionnée · entrée en stock');
+    setPec(null);
+    flash('Prise en charge accusée · responsabilité de l’entité engagée');
   }
 
   function creer(p: Preavis, creneauId: string) {
@@ -78,10 +78,10 @@ export function Livraisons() {
             <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
               <Truck className="h-3.5 w-3.5" /> M12 / M13 · Lot matière
             </p>
-            <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Livraisons &amp; réception</h1>
+            <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Livraisons &amp; prise en charge</h1>
             <p className="mt-1 text-sm text-muted">
               Préavis dans le délai, visa si levage ou matières dangereuses, créneau sous quota, code
-              transmis. Réception en stock avec écarts.
+              transmis. Prise en charge oui/non par l’entité destinataire — aucune quantité, aucun écart.
             </p>
           </div>
           <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setSheet(true)}>
@@ -91,15 +91,15 @@ export function Livraisons() {
 
         <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <StatCard tone="forest" label="Préavis du jour" value={stats.total} icon={<CalendarClock className="h-5 w-5" />} />
-          <StatCard tone="amber" label="À réceptionner" value={stats.aReceptionner} icon={<PackageCheck className="h-5 w-5" />} />
-          <DangerStat label="Non reçues > 24 h" value={stats.nonRecues} />
+          <StatCard tone="amber" label="À prendre en charge" value={stats.aPrendreEnCharge} icon={<PackageCheck className="h-5 w-5" />} />
+          <DangerStat label="Non prises en charge > 24 h" value={stats.nonPrises} />
         </div>
 
-        {/* Alerte cas 34 */}
-        {nonRecues.length > 0 && (
+        {/* Alerte : livraison arrivée non prise en charge sous 24 h */}
+        {nonPrises.length > 0 && (
           <div className="mb-5 flex items-center gap-2 rounded-2xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-600 ring-1 ring-danger-100">
             <AlertTriangle className="h-4 w-4" />
-            {nonRecues.length} livraison(s) entrée(s) non réceptionnée(s) sous 24 h — à traiter au magasin
+            {nonPrises.length} livraison(s) arrivée(s) non prise(s) en charge sous 24 h — relancer l’entité destinataire
           </div>
         )}
 
@@ -114,13 +114,13 @@ export function Livraisons() {
         <h2 className="mb-2 text-sm font-bold text-ink">Préavis</h2>
         <ul className="space-y-2">
           {preavis.map((p) => (
-            <PreavisRow key={p.id} p={p} creneaux={creneaux} onViser={() => viser(p.id)} onReceptionner={() => setReception(p)} />
+            <PreavisRow key={p.id} p={p} creneaux={creneaux} onViser={() => viser(p.id)} onPrendreEnCharge={() => setPec(p)} />
           ))}
         </ul>
       </div>
 
       {sheet && <PreavisSheet numero={`PL-2026-000${45 + preavis.filter((p) => p.id.startsWith('new')).length}`} creneaux={creneaux} onAnnuler={() => setSheet(false)} onConfirmer={creer} />}
-      {reception && <ReceptionSheet p={reception} onAnnuler={() => setReception(null)} onConfirmer={(recu) => receptionner(reception.id, recu)} />}
+      {pec && <PriseEnChargeSheet p={pec} onAnnuler={() => setPec(null)} onConfirmer={(reserve) => prendreEnCharge(pec.id, reserve)} />}
 
       {toast && (
         <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
@@ -154,15 +154,15 @@ function CreneauCard({ c }: { c: Creneau }) {
 const statutChip: Record<StatutPreavis, React.ReactNode> = {
   SOUMIS: <Badge tone="amber" dot>À viser</Badge>,
   VALIDE: <Badge tone="forest" dot>Validé · créneau</Badge>,
-  RECEPTIONNE: <Badge tone="neutral" dot>Réceptionné</Badge>,
+  PRIS_EN_CHARGE: <Badge tone="neutral" dot>Pris en charge</Badge>,
   REFUSE: <Badge tone="danger" dot>Refusé</Badge>,
   EXPIRE: <Badge tone="danger" dot>Expiré</Badge>,
 };
 
-function PreavisRow({ p, creneaux, onViser, onReceptionner }: { p: Preavis; creneaux: Creneau[]; onViser: () => void; onReceptionner: () => void }) {
+function PreavisRow({ p, creneaux, onViser, onPrendreEnCharge }: { p: Preavis; creneaux: Creneau[]; onViser: () => void; onPrendreEnCharge: () => void }) {
   const cr = creneaux.find((c) => c.id === p.creneauId);
   return (
-    <li className={`rounded-2xl bg-white p-4 shadow-card ring-1 ${p.arriveeNonRecue && p.statut !== 'RECEPTIONNE' ? 'ring-danger-200' : 'ring-sand-300/70'}`}>
+    <li className={`rounded-2xl bg-white p-4 shadow-card ring-1 ${p.arriveeNonPriseEnCharge && p.statut !== 'PRIS_EN_CHARGE' ? 'ring-danger-200' : 'ring-sand-300/70'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -177,9 +177,10 @@ function PreavisRow({ p, creneaux, onViser, onReceptionner }: { p: Preavis; cren
           </p>
           {p.code && <p className="mt-0.5 font-mono text-[11px] text-muted">Code {p.code}</p>}
           {p.derogation && <p className="mt-0.5 text-[11px] font-semibold text-amber-700">Dérogation : {p.derogation}</p>}
-          {p.reception && (
+          {p.priseEnCharge && (
             <p className="mt-0.5 text-[11px] text-muted">
-              Reçu {p.reception.recu} {p.unite} · écart {p.reception.ecart > 0 ? '+' : ''}{p.reception.ecart} · {p.reception.receptionnaire}
+              Pris en charge · {p.priseEnCharge.responsable}
+              {p.priseEnCharge.reserve && <span className="text-amber-700"> · réserve : {p.priseEnCharge.reserve}</span>}
             </p>
           )}
         </div>
@@ -195,8 +196,8 @@ function PreavisRow({ p, creneaux, onViser, onReceptionner }: { p: Preavis; cren
       )}
       {p.statut === 'VALIDE' && (
         <div className="mt-3 border-t border-sand-200 pt-3">
-          <Button variant="accent" size="sm" icon={<PackageCheck className="h-4 w-4" />} onClick={onReceptionner}>
-            Réceptionner
+          <Button variant="accent" size="sm" icon={<PackageCheck className="h-4 w-4" />} onClick={onPrendreEnCharge}>
+            Accuser la prise en charge
           </Button>
         </div>
       )}
@@ -218,37 +219,32 @@ function DangerStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-/* ---------- Réception (M13) ---------- */
-function ReceptionSheet({ p, onAnnuler, onConfirmer }: { p: Preavis; onAnnuler: () => void; onConfirmer: (recu: number) => void }) {
-  const [recu, setRecu] = useState(String(p.quantitePrevue));
+/* ---------- Prise en charge (M13) ---------- */
+function PriseEnChargeSheet({ p, onAnnuler, onConfirmer }: { p: Preavis; onAnnuler: () => void; onConfirmer: (reserve: string) => void }) {
+  const [reserve, setReserve] = useState('');
   const [photo, setPhoto] = useState(false);
-  const ecart = Number(recu) - p.quantitePrevue;
-  const pret = Number(recu) >= 0 && photo;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
       <div className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-3xl bg-white p-5 shadow-card-lg">
         <div className="mb-1 flex items-center justify-between">
-          <h3 className="text-lg font-extrabold text-ink">Réception · {p.numero}</h3>
+          <h3 className="text-lg font-extrabold text-ink">Prise en charge · {p.numero}</h3>
           <button onClick={onAnnuler} className="text-muted"><X className="h-5 w-5" /></button>
         </div>
         <p className="mb-4 text-xs text-muted">{p.fournisseur} · {p.nature}</p>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-sand-50 p-3 ring-1 ring-sand-200">
-            <p className="text-xs text-muted">Prévu</p>
-            <p className="text-lg font-bold text-ink">{p.quantitePrevue} {p.unite}</p>
-          </div>
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-muted">Reçu</span>
-            <input type="number" min="0" value={recu} onChange={(e) => setRecu(e.target.value)}
-              className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-lg font-bold text-ink outline-none focus:border-forest-400" />
-          </label>
+        <div className="rounded-xl bg-sand-50 p-3 text-sm text-ink ring-1 ring-sand-200">
+          L’entité destinataire confirme-t-elle la <b>prise en charge</b> de cette livraison ?
+          <span className="mt-1 block text-[11px] text-muted">
+            Aucune quantité, aucun écart. L’accusé engage la responsabilité de l’entité sur ce qui est entré chez elle. Le litige commercial avec le fournisseur reste hors périmètre.
+          </span>
         </div>
 
-        <div className={`mt-3 rounded-xl px-3 py-2 text-sm font-semibold ${ecart === 0 ? 'bg-forest-50 text-forest-700' : 'bg-amber-50 text-amber-700'}`}>
-          Écart : {ecart > 0 ? '+' : ''}{ecart} {p.unite} {ecart === 0 ? '· conforme' : '· à signaler'}
-        </div>
+        <label className="mt-3 block">
+          <span className="mb-1 block text-xs font-semibold text-muted">Réserve (facultative, texte libre)</span>
+          <textarea value={reserve} onChange={(e) => setReserve(e.target.value)} rows={2} placeholder="Ex. : emballage endommagé, palette entamée…"
+            className="w-full resize-none rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
+        </label>
 
         <div className="mt-3">
           <PhotoCapture label="Photographier la livraison" onCapture={() => setPhoto(true)} />
@@ -256,8 +252,8 @@ function ReceptionSheet({ p, onAnnuler, onConfirmer }: { p: Preavis; onAnnuler: 
 
         <div className="mt-4 flex gap-2">
           <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onAnnuler}>Annuler</Button>
-          <Button variant="primary" size="lg" block disabled={!pret} onClick={() => onConfirmer(Number(recu))}>
-            Valider la réception
+          <Button variant="primary" size="lg" block disabled={!photo} onClick={() => onConfirmer(reserve)}>
+            Oui, prise en charge
           </Button>
         </div>
       </div>
