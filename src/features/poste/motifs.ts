@@ -50,4 +50,8 @@ export const MOTIFS: Record<MotifCode, { libelle: string; consigne: string }> = 
     libelle: 'Photo non concordante',
     consigne: 'Le porteur ne correspond pas à la photo — refuser.',
   },
+  SORTIE_SANS_ENTREE: {
+    libelle: 'Sortie sans entrée enregistrée',
+    consigne: 'Aucune entrée tracée — vérifier le partage de badge. Sortie autorisée et signalée.',
+  },
 };

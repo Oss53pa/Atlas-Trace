@@ -11,6 +11,7 @@ import {
   LogOut,
   UserCheck,
   ArrowLeft,
+  AlertTriangle,
 } from 'lucide-react';
 import type { Mode, MouvementAcces, Resultat, Sens } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -421,6 +422,13 @@ function ResultatOverlay({
             )
           }
         />
+
+        {autorise && decision.alerte && (
+          <div className="mt-3 flex w-full items-start gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+            <span><b>{MOTIFS[decision.alerte].libelle}.</b> {MOTIFS[decision.alerte].consigne}</span>
+          </div>
+        )}
       </div>
 
       {/* Actions — un geste (R3) */}

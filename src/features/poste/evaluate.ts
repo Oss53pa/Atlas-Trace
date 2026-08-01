@@ -18,12 +18,20 @@ export interface ContexteControle {
 export interface Decision {
   resultat: 'AUTORISE' | 'REFUSE';
   motif?: MotifCode;
+  /** Anomalie signalée SANS bloquer (ex. sortie de quelqu'un jamais entré). */
+  alerte?: MotifCode;
 }
 
 /**
- * Moteur de décision du poste (M5). Contrôles enchaînés, dans l'ordre du cahier
- * des charges ; le premier échec l'emporte et produit le motif. Aucun accès n'est
- * accordé sans passer toute la chaîne.
+ * Moteur de décision du poste (M5).
+ *
+ * Deux régimes selon le sens :
+ * - ENTRÉE : chaîne de contrôles complète, premier échec l'emporte, aucun accès
+ *   sans passer toute la chaîne.
+ * - SORTIE : on laisse **toujours** sortir (impératif de sécurité — ne jamais
+ *   piéger une personne sur site parce que son badge a expiré, etc.), mais on
+ *   TRACE, et une sortie sans entrée enregistrée est signalée (badge partagé).
+ * Un badge non identifiable est refusé dans les deux sens.
  */
 export function evaluerAcces(
   badge: Badge | null,
@@ -33,11 +41,20 @@ export function evaluerAcces(
   sens: Sens,
   ctx: ContexteControle,
 ): Decision {
-  // 1. Badge connu
+  // 1. Badge identifiable — bloquant dans les deux sens
   if (!badge || !personne || !entreprise) {
     return { resultat: 'REFUSE', motif: 'BADGE_INCONNU' };
   }
 
+  // ---- SORTIE : autorisée par principe, tracée, anomalie signalée ----
+  if (sens === 'SORTIE') {
+    if (ctx.presents.size > 0 && !ctx.presents.has(personne.id)) {
+      return { resultat: 'AUTORISE', alerte: 'SORTIE_SANS_ENTREE' };
+    }
+    return { resultat: 'AUTORISE' };
+  }
+
+  // ---- ENTRÉE : chaîne complète ----
   // 2. Badge actif / non expiré
   if (badge.statut === 'SUSPENDU') return refus('BADGE_SUSPENDU');
   if (badge.statut === 'EXPIRE' || badge.validiteFin < ctx.dateDuJour) {
@@ -53,8 +70,8 @@ export function evaluerAcces(
   // 5. Induction valide (statut d'induction bloquant)
   if (!personne.inductionValide) return refus('INDUCTION_EXPIREE');
 
-  // 6. Présence sur la liste du jour (à l'entrée uniquement)
-  if (sens === 'ENTREE' && !ctx.listeDuJour.has(personne.id)) {
+  // 6. Présence sur la liste du jour
+  if (!ctx.listeDuJour.has(personne.id)) {
     return refus('HORS_LISTE');
   }
 
@@ -77,7 +94,7 @@ export function evaluerAcces(
   }
 
   // 10. Appairage entrée / sortie
-  if (sens === 'ENTREE' && ctx.presents.has(personne.id)) {
+  if (ctx.presents.has(personne.id)) {
     return refus('DEJA_ENTRE');
   }
 

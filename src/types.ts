@@ -29,7 +29,8 @@ export type MotifCode =
   | 'HORS_PLAGE'
   | 'DEJA_ENTRE'
   | 'INDUCTION_EXPIREE'
-  | 'PHOTO_NON_CONCORDANTE';
+  | 'PHOTO_NON_CONCORDANTE'
+  | 'SORTIE_SANS_ENTREE';
 
 export interface DonneurOrdre {
   id: string;
