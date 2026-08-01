@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Plus, X, Check, Loader2, LogIn, UserPlus } from 'lucide-react';
+import { Users, X, Check, Loader2, LogIn, UserPlus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthz, Gate } from '../../lib/authz';
 import { Button } from '../../components/ui/Button';
