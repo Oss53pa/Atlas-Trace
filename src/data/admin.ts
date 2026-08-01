@@ -60,7 +60,7 @@ export const LIENS_EXTERNES: LienExterne[] = [
 
 export const AUDIT: EvenementAudit[] = [
   { id: 'a1', horodatage: '31/07 09:32', utilisateur: 'M. Bamba', action: 'APPROBATION', entite: 'Habilitation · Toiture Plus', avant: 'EN_VALIDATION', apres: 'ACTIVE', appareil: 'Tablette poste · 10.0.2.15' },
-  { id: 'a2', horodatage: '31/07 09:20', utilisateur: 'Mme Aka', action: 'LEVÉE CONDITION', entite: 'Donneur d’ordre · Boutique X', avant: 'Bloqué', apres: 'Autorisé', appareil: 'Poste direction · 10.0.2.4' },
+  { id: 'a2', horodatage: '31/07 09:20', utilisateur: 'Mme Aka', action: 'LEVÉE CONDITION', entite: 'Preneur · Boutique X', avant: 'Bloqué', apres: 'Autorisé', appareil: 'Poste direction · 10.0.2.4' },
   { id: 'a3', horodatage: '31/07 08:50', utilisateur: 'M. Bamba', action: 'MODIFICATION', entite: 'Fiche entreprise · Bâti-Sud', avant: 'Assurance éch. 31/12/2026', apres: 'Assurance éch. 15/01/2027', appareil: 'Poste direction · 10.0.2.4' },
   { id: 'a4', horodatage: '31/07 08:14', utilisateur: 'M. Bamba', action: 'APPROBATION SORTIE', entite: 'AS-2026-00185', avant: 'VISA', apres: 'APPROUVÉE · code généré', appareil: 'Mobile · 10.0.2.31' },
   { id: 'a5', horodatage: '31/07 07:08', utilisateur: 'M. Koné', action: 'FORÇAGE ACCÈS', entite: 'Personne · Kouadio I.', avant: 'REFUSÉ (hors liste)', apres: 'FORCÉ', appareil: 'Tablette poste · 10.0.2.15' },

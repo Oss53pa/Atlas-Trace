@@ -51,10 +51,10 @@ export function DonneursOrdre({
     <div className="mx-auto max-w-5xl px-5 py-8">
       <div className="mb-5">
         <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
-          <Building className="h-3.5 w-3.5" /> M2 · Donneurs d'ordre
+          <Building className="h-3.5 w-3.5" /> M2 · Preneurs
         </p>
         <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">
-          Donneurs d'ordre &amp; conditions bloquantes
+          Preneurs &amp; conditions bloquantes
         </h1>
         <p className="mt-1 text-sm text-muted">
           État des baux, encaissements et dossiers par cellule. Statut d'accès calculé, toute bascule

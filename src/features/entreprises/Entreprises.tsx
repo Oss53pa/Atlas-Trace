@@ -152,11 +152,11 @@ function EntrepriseRow({
         {statutChip[e.statut]}
       </div>
 
-      {/* Fiche bloquée par donneur d'ordre */}
+      {/* Fiche bloquée par preneur */}
       {e.statut === 'BROUILLON' && bloque && (
         <div className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">
           <ShieldAlert className="mr-1 inline h-3.5 w-3.5" />
-          Donneur d'ordre bloqué — soumission impossible ({conditionsManquantes(donneur!).length} condition(s) manquante(s))
+          Preneur bloqué — soumission impossible ({conditionsManquantes(donneur!).length} condition(s) manquante(s))
         </div>
       )}
 
@@ -299,7 +299,7 @@ function FicheSheet({
 
           {requiertDO && (
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-muted">Donneur d'ordre (preneur)</span>
+              <span className="mb-1 block text-xs font-semibold text-muted">Preneur</span>
               <select value={donneurId} onChange={(e) => { setDonneurId(e.target.value); setRefus(null); }}
                 className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400">
                 {donneurs.map((d) => (
@@ -322,11 +322,11 @@ function FicheSheet({
           </div>
         )}
 
-        {/* Refus : donneur d'ordre bloqué (cas 20) */}
+        {/* Refus : preneur bloqué (cas 20) */}
         {refus && (
           <div className="mt-3 rounded-xl bg-danger-50 p-3 ring-1 ring-danger-100">
             <p className="flex items-center gap-1.5 text-xs font-bold text-danger-600">
-              <ShieldAlert className="h-4 w-4" /> Soumission refusée — donneur d'ordre bloqué
+              <ShieldAlert className="h-4 w-4" /> Soumission refusée — preneur bloqué
             </p>
             <p className="mt-1 text-[11px] font-semibold text-danger-600">Conditions manquantes :</p>
             <ul className="mt-1 list-inside list-disc text-[11px] text-danger-600">
@@ -334,7 +334,7 @@ function FicheSheet({
             </ul>
             <p className="mt-2 text-[11px] text-muted">
               La fiche peut être conservée en brouillon ; aucun badge n'est possible tant que le
-              donneur d'ordre reste bloqué.
+              preneur reste bloqué.
             </p>
           </div>
         )}

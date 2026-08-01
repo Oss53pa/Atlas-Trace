@@ -1,4 +1,4 @@
-/** Données mock des modules M1 (entreprises) et M2 (donneurs d'ordre & conditions). */
+/** Données mock des modules M1 (entreprises) et M2 (preneurs & conditions). */
 
 export type StatutEntreprise = 'BROUILLON' | 'EN_VALIDATION' | 'ACTIVE' | 'SUSPENDUE';
 
@@ -27,7 +27,7 @@ export interface Emprise {
 export interface CategorieIntervenant {
   id: string;
   libelle: string;
-  /** La catégorie relève-t-elle d'un donneur d'ordre (chap. 8.1) ? */
+  /** La catégorie relève-t-elle d'un preneur (chap. 8.1) ? */
   requiertDonneurOrdre: boolean;
 }
 

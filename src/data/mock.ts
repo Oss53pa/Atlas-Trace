@@ -14,7 +14,7 @@ export const POSTE = {
   plage: { debut: h(6, 30), fin: h(18, 30) },
 };
 
-// --- Donneurs d'ordre (preneurs) ---
+// --- Preneurs (preneurs) ---
 export const DONNEURS_ORDRE: DonneurOrdre[] = [
   { id: 'do1', libelle: 'Preneur — Enseigne A', bloque: false },
   { id: 'do2', libelle: 'Preneur — Boutique X', bloque: true }, // bail non signé

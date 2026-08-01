@@ -5,7 +5,7 @@ export type RegimeVisiteurs = 'AUCUN' | 'ESCORTE' | 'LIBRE';
 /** Configuration structurelle d'un site. Chaque axe est posé explicitement. */
 export interface AxesProfil {
   donneurOrdre: boolean;
-  /** Libellé de l'entité donneur d'ordre quand elle existe (maître d'ouvrage, client, exploitant, concédant…). */
+  /** Libellé de l'entité preneur quand elle existe (maître d'ouvrage, client, exploitant, concédant…). */
   donneurOrdreLabel: string;
   /** 1 à 4 niveaux d'emprise, chacun librement nommé (du plus large au plus fin). */
   niveauxEmprise: string[];
@@ -51,7 +51,7 @@ export interface Prereglage {
 
 export const PROFIL_VIERGE: AxesProfil = {
   donneurOrdre: false,
-  donneurOrdreLabel: 'Donneur d’ordre',
+  donneurOrdreLabel: 'Preneur',
   niveauxEmprise: ['Site'],
   populationTournante: false,
   fluxMatiereSortant: false,
@@ -102,7 +102,7 @@ export const PREREGLAGES: Prereglage[] = [
     description: 'Site en exploitation avec magasin central, personnel propre et rotations postées.',
     axes: {
       donneurOrdre: false,
-      donneurOrdreLabel: 'Donneur d’ordre',
+      donneurOrdreLabel: 'Preneur',
       niveauxEmprise: ['Site', 'Secteur'],
       populationTournante: true,
       fluxMatiereSortant: true,
@@ -168,7 +168,7 @@ export const PREREGLAGES: Prereglage[] = [
 
 /** Effet affiché en temps réel pour chaque axe de l'assistant. */
 export const EFFET_AXE = {
-  donneurOrdreOn: 'Entité « donneur d’ordre » activée, entreprises rattachables, conditions préalables gérées.',
+  donneurOrdreOn: 'Entité « preneur » activée, entreprises rattachables, conditions préalables gérées.',
   donneurOrdreOff: 'Pas d’entité intermédiaire : les conditions préalables portent directement sur l’entreprise.',
   tournanteOn: 'Vacations et plages d’accès par vacation activées, badges temporaires journaliers.',
   tournanteOff: 'Population fixe uniquement, badges nominatifs permanents.',

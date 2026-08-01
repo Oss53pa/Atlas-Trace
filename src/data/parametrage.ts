@@ -5,7 +5,7 @@ export const POUVOIRS: { code: string; effet: string }[] = [
   { code: 'DECLARER_ENTREPRISE', effet: 'Créer et modifier une fiche entreprise' },
   { code: 'VISER_HABILITATION', effet: 'Viser un dossier d’entreprise ou de personne' },
   { code: 'APPROUVER_HABILITATION', effet: 'Approuver définitivement une habilitation' },
-  { code: 'GERER_CONDITIONS_BLOQUANTES', effet: 'Renseigner les conditions préalables d’un donneur d’ordre' },
+  { code: 'GERER_CONDITIONS_BLOQUANTES', effet: 'Renseigner les conditions préalables d’un preneur' },
   { code: 'DECLARER_PERSONNEL', effet: 'Déclarer des personnes et leurs photos' },
   { code: 'DEPOSER_LISTE', effet: 'Déposer une liste journalière' },
   { code: 'DELIVRER_BADGE', effet: 'Imprimer un badge, attribuer un badge temporaire' },
@@ -66,7 +66,7 @@ export const MODELES: ModeleSectoriel[] = [
   {
     id: 'minier',
     nom: 'Site industriel / minier',
-    description: 'Site en exploitation, magasin central, rotations postées, sans donneur d’ordre externe.',
+    description: 'Site en exploitation, magasin central, rotations postées, sans preneur externe.',
     donneurOrdreLabel: null,
     empriseLabel: 'Secteur',
     roles: [

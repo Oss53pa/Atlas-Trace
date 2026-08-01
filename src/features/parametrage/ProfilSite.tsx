@@ -136,7 +136,7 @@ function Etape2({ axes, maj, onRetour, onSuite }: { axes: AxesProfil; maj: <K ex
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]">
       <div className="space-y-3">
-        <Toggle label="Donneur d’ordre externe" aide={axes.donneurOrdre ? EFFET_AXE.donneurOrdreOn : EFFET_AXE.donneurOrdreOff} on={axes.donneurOrdre} onToggle={() => maj('donneurOrdre', !axes.donneurOrdre)}>
+        <Toggle label="Preneur externe" aide={axes.donneurOrdre ? EFFET_AXE.donneurOrdreOn : EFFET_AXE.donneurOrdreOff} on={axes.donneurOrdre} onToggle={() => maj('donneurOrdre', !axes.donneurOrdre)}>
           {axes.donneurOrdre && (
             <label className="mt-2 block">
               <span className="mb-1 block text-[11px] font-semibold text-muted">Libellé de l’entité</span>
@@ -244,7 +244,7 @@ function Etape3({ base, axes, etiquette, onRetour, onAppliquer }: { base: Prereg
       </Bloc>
 
       {axes.donneurOrdre && (
-        <Bloc titre="Donneur d’ordre" icon={<Building2 className="h-4 w-4" />}>
+        <Bloc titre="Preneur" icon={<Building2 className="h-4 w-4" />}>
           <p className="text-sm font-semibold text-ink">{axes.donneurOrdreLabel}</p>
           <p className="text-xs text-muted">Les entreprises lui sont rattachables ; il porte les conditions préalables.</p>
         </Bloc>
@@ -347,7 +347,7 @@ function Etape4({ base, etiquette, modifie, checklist, onToggle, onModele, onRev
 function modulesActifs(a: AxesProfil) {
   return [
     { label: 'Contrôle d’accès au poste', on: true },
-    { label: 'Donneur d’ordre & conditions', on: a.donneurOrdre },
+    { label: 'Preneur & conditions', on: a.donneurOrdre },
     { label: 'Listes journalières & badges temporaires', on: a.populationTournante },
     { label: 'Personnel propre', on: a.personnelPropre },
     { label: 'Bons de sortie matière', on: a.fluxMatiereSortant },

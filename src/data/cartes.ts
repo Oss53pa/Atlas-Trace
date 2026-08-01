@@ -84,10 +84,10 @@ export const PROFILS: Profil[] = [
   { id: 'representant', nom: 'Entreprise d’exécution — représentant', typeEntite: 'Entreprise d’exécution', portee: 'Entité', acces: 'LIEN', invitePar: 'Maîtrise d’ouvrage',
     cartes: ['fiche_entite', 'sortie_demande', 'exports'],
     note: 'Engage l’entité, désigne/révoque référent et adjoint. Notifications contractuelles bloquantes uniquement (§4.1).' },
-  { id: 'donneur_ordre', nom: 'Donneur d’ordre (preneur)', typeEntite: 'Donneur d’ordre', portee: 'Emprise', acces: 'LIEN', invitePar: 'Maîtrise d’ouvrage',
+  { id: 'donneur_ordre', nom: 'Preneur', typeEntite: 'Preneur', portee: 'Emprise', acces: 'LIEN', invitePar: 'Maîtrise d’ouvrage',
     cartes: ['conditions', 'entites', 'presence', 'sortie_visa', 'exports'],
     note: 'Traité par la portée « emprise », pas par une hiérarchie récursive (§3.3). Invite sa propre chaîne.' },
-  { id: 'moe_preneur', nom: 'Maîtrise d’œuvre de preneur', typeEntite: 'Maître d’œuvre', portee: 'Emprise', acces: 'LIEN', invitePar: 'Donneur d’ordre',
+  { id: 'moe_preneur', nom: 'Maîtrise d’œuvre de preneur', typeEntite: 'Maître d’œuvre', portee: 'Emprise', acces: 'LIEN', invitePar: 'Preneur',
     cartes: ['presence', 'hab_visa', 'sortie_visa', 'ecarts', 'exports'],
     note: 'Mêmes cartes que la MOE, portée réduite à l’emprise — même code, filtré par la portée.' },
 ];
@@ -102,5 +102,5 @@ export const FONCTIONS_ACCES = [
 /** §3.5 — types d'entité livrés en standard (extensibles sans développement). */
 export const TYPES_ENTITE = [
   'Maître d’ouvrage', 'Maître d’œuvre', 'HSE', 'Prestataire de gardiennage', 'Pilote de coordination',
-  'Entreprise d’exécution', 'Donneur d’ordre', 'Bureau de contrôle', 'Fournisseur', 'Visiteur',
+  'Entreprise d’exécution', 'Preneur', 'Bureau de contrôle', 'Fournisseur', 'Visiteur',
 ];

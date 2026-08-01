@@ -19,7 +19,7 @@ export const MOTIFS: Record<MotifCode, { libelle: string; consigne: string }> = 
     consigne: 'Aucun accès pour cette entreprise — voir la direction du site.',
   },
   DONNEUR_ORDRE_BLOQUE: {
-    libelle: 'Donneur d’ordre bloqué',
+    libelle: 'Preneur bloqué',
     consigne: 'Condition préalable non levée — se rapprocher du référent.',
   },
   HORS_LISTE: {

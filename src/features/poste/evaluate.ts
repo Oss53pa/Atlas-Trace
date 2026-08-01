@@ -64,7 +64,7 @@ export function evaluerAcces(
   // 3. Entreprise active
   if (entreprise.statut === 'SUSPENDUE') return refus('ENTREPRISE_SUSPENDUE');
 
-  // 4. Donneur d'ordre autorisé
+  // 4. Preneur autorisé
   if (donneurOrdreBloque) return refus('DONNEUR_ORDRE_BLOQUE');
 
   // 5. Induction valide (statut d'induction bloquant)
