@@ -22,7 +22,7 @@ export interface BadgeCardData {
  */
 export function BadgeCard({ data }: { data: BadgeCardData }) {
   return (
-    <div className="w-[340px] overflow-hidden rounded-2xl bg-white shadow-card-lg ring-1 ring-sand-300">
+    <div className="w-full max-w-[340px] overflow-hidden rounded-2xl bg-white shadow-card-lg ring-1 ring-sand-300">
       {/* Bande de catégorie */}
       <div className="flex items-center justify-between px-4 py-2 text-white" style={{ background: data.categorieHex }}>
         <span className="font-display text-xl leading-none">Trace</span>

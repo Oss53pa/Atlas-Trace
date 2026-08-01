@@ -21,7 +21,7 @@ export function Listes() {
       {sousVue === 'referent' ? (
         <div className="flex flex-col items-center px-4 pb-10 pt-4">
           <p className="mb-4 text-sm font-medium text-muted">M4 · Dépôt de la liste journalière</p>
-          <div className="h-[780px] w-full max-w-[400px] overflow-hidden rounded-[2.5rem] border-[10px] border-forest-900 bg-sand-100 shadow-card-lg">
+          <div className="h-[min(780px,calc(100dvh-9rem))] w-full max-w-[400px] overflow-hidden rounded-[2.5rem] border-8 border-forest-900 bg-sand-100 shadow-card-lg">
             <ListeReferent />
           </div>
           <p className="mt-5 max-w-md text-center text-xs text-muted">

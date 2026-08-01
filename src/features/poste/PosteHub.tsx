@@ -20,7 +20,7 @@ export function PosteHub() {
         </div>
 
         {/* Cadre téléphone — l'application vit sur le téléphone du poste (R1) */}
-        <div className="h-[760px] w-full max-w-[400px] overflow-hidden rounded-[2.5rem] border-[10px] border-forest-900 bg-sand-100 shadow-card-lg">
+        <div className="h-[min(760px,calc(100dvh-9rem))] w-full max-w-[400px] overflow-hidden rounded-[2.5rem] border-8 border-forest-900 bg-sand-100 shadow-card-lg">
           {sousVue === 'acces' ? <PosteControle /> : <ControleSortie />}
         </div>
 

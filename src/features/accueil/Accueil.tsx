@@ -36,7 +36,7 @@ export function Accueil({ onOpen }: { onOpen: (vue: string) => void }) {
         <div className="pointer-events-none absolute -right-16 -top-12 h-56 w-56 rounded-full bg-amber-400/25 blur-3xl" />
         <div className="pointer-events-none absolute -left-12 top-24 h-52 w-52 rounded-full bg-forest-300/20 blur-3xl" />
 
-        <div className="relative mx-auto max-w-3xl">
+        <div className="relative mx-auto max-w-5xl">
           <header className="flex animate-fade-up items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-medium text-white/60">Aujourd'hui · 31/07/2026</p>
@@ -49,7 +49,7 @@ export function Accueil({ onOpen }: { onOpen: (vue: string) => void }) {
           </header>
 
           {/* KPI en verre */}
-          <div className="mt-5 grid animate-fade-up grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="mt-5 grid animate-fade-up grid-cols-2 gap-3 md:grid-cols-4">
             {kpis.map((k) => (
               <div
                 key={k.label}
@@ -75,7 +75,7 @@ export function Accueil({ onOpen }: { onOpen: (vue: string) => void }) {
 
       {/* ---- Feuille de contenu surélevée ---- */}
       <div className="relative z-10 -mt-8 rounded-t-[2rem] bg-sand-50 px-5 pb-10 pt-7 shadow-[0_-14px_44px_-16px_rgba(10,46,40,0.55)]">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-5xl">
           {/* Actions rapides */}
           <section>
             <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Actions rapides</h2>
