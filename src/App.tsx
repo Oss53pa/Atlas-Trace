@@ -4,7 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import {
   Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Boxes, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut,
+  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
 import { supabase } from './lib/supabase';
@@ -28,11 +28,12 @@ const Accueil = lazy(() => import('./features/accueil/Accueil').then((m) => ({ d
 const Live = lazy(() => import('./features/live/Live').then((m) => ({ default: m.Live })));
 const PortailReferent = lazy(() => import('./features/referent/PortailReferent').then((m) => ({ default: m.PortailReferent })));
 const Espaces = lazy(() => import('./features/espaces/Espaces').then((m) => ({ default: m.Espaces })));
+const PreneursLive = lazy(() => import('./features/preneurs/PreneursLive').then((m) => ({ default: m.PreneursLive })));
 const DesignShowcase = lazy(() => import('./DesignShowcase'));
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
-  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design';
+  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs';
 
 interface Dest {
   vue: Vue;
@@ -50,6 +51,7 @@ const DESTINATIONS: Dest[] = [
   { vue: 'tableau', label: 'Tableau de bord', court: 'Tableau', icon: <LayoutDashboard className="h-5 w-5" />, pouvoir: ['CONSULTER_TABLEAU'] },
   { vue: 'espaces', label: 'Espaces & profils', court: 'Espaces', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'entreprises', label: 'Entreprises', court: 'Entreprises', icon: <Building2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'VISER_HABILITATION', 'APPROUVER_HABILITATION', 'GERER_CONDITIONS_BLOQUANTES'] },
+  { vue: 'preneurs', label: 'Preneurs & emprises', court: 'Preneurs', icon: <Store className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION', 'GERER_CONDITIONS_BLOQUANTES'] },
   { vue: 'listes', label: 'Listes journalières', court: 'Listes', icon: <ClipboardList className="h-5 w-5" />, pouvoir: ['DEPOSER_LISTE', 'CONSULTER_TABLEAU'] },
   { vue: 'badges', label: 'Personnes & badges', court: 'Badges', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE', 'DECLARER_PERSONNEL'] },
   { vue: 'maincourante', label: 'Main courante', court: 'Main courante', icon: <BookText className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE', 'CONSULTER_TABLEAU'] },
@@ -71,6 +73,7 @@ const destOf = (v: Vue) => DESTINATIONS.find((d) => d.vue === v)!;
 function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
   switch (vue) {
     case 'espaces': return <Espaces onOpen={go} />;
+    case 'preneurs': return <PreneursLive />;
     case 'accueil': return <Accueil onOpen={go} />;
     case 'design': return <DesignShowcase />;
     case 'tableau': return <Tableau />;
