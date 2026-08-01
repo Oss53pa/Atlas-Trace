@@ -20,6 +20,7 @@ const CATEGORIES = ['Construction', 'MOE', 'Gardiennage', 'Bureau de contrôle',
 export function EntreprisesRegistre() {
   const { connecte, chargement, portees } = useAuthz();
   const orgId = portees[0]?.organisationId ?? null;
+  const siteId0 = portees.find((p) => p.siteId)?.siteId ?? null;
   const [entites, setEntites] = useState<Entite[]>([]);
   const [pret, setPret] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -45,10 +46,18 @@ export function EntreprisesRegistre() {
 
   async function creer(raison: string, categorie: string, parentId: string | null) {
     if (!orgId) return;
-    const { error } = await supabase.from('at_entites').insert({
+    // 1) l'entité (identité + hiérarchie)
+    const { data: ent, error } = await supabase.from('at_entites').insert({
       organisation_id: orgId, type: 'ENTREPRISE', categorie, raison_sociale: raison, parent_id: parentId,
-    });
+    }).select('id').single();
     if (error) { flash('Refusé : ' + error.message); return; }
+    // 2) sa fiche d'accès at_entreprises (reliée par entite_id) — c'est elle que voient
+    //    personnes, badges et le Poste. Une seule chaîne cohérente (option A).
+    const { error: eFiche } = await supabase.from('at_entreprises').insert({
+      organisation_id: orgId, site_id: siteId0, raison_sociale: raison, categorie,
+      entite_id: ent.id, donneur_ordre: parentId ? 'Preneur' : 'Site', statut: 'ACTIVE',
+    });
+    if (eFiche) { flash('Entité créée, mais fiche d\'accès : ' + eFiche.message); setSheet(false); charger(); return; }
     setSheet(false); flash(`Entreprise « ${raison} » créée`); charger();
   }
 

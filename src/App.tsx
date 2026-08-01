@@ -33,11 +33,12 @@ const EntreprisesRegistre = lazy(() => import('./features/preneurs/EntreprisesRe
 const RolesLive = lazy(() => import('./features/parametrage/RolesLive').then((m) => ({ default: m.RolesLive })));
 const ComptesLive = lazy(() => import('./features/admin/ComptesLive').then((m) => ({ default: m.ComptesLive })));
 const InvitationsLive = lazy(() => import('./features/admin/InvitationsLive').then((m) => ({ default: m.InvitationsLive })));
+const PersonnesLive = lazy(() => import('./features/badges/PersonnesLive').then((m) => ({ default: m.PersonnesLive })));
 const DesignShowcase = lazy(() => import('./DesignShowcase'));
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
-  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations';
+  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes';
 
 interface Dest {
   vue: Vue;
@@ -60,6 +61,7 @@ const DESTINATIONS: Dest[] = [
   { vue: 'roles', label: 'Rôles & pouvoirs', court: 'Rôles', icon: <KeyRound className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'comptes', label: 'Comptes internes', court: 'Comptes', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'invitations', label: 'Invitations référents', court: 'Invitations', icon: <Link2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'ADMINISTRER_ORGANISATION'] },
+  { vue: 'personnes', label: 'Personnes & badges', court: 'Personnes', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DECLARER_PERSONNEL', 'DELIVRER_BADGE'] },
   { vue: 'listes', label: 'Listes journalières', court: 'Listes', icon: <ClipboardList className="h-5 w-5" />, pouvoir: ['DEPOSER_LISTE', 'CONSULTER_TABLEAU'] },
   { vue: 'badges', label: 'Personnes & badges', court: 'Badges', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE', 'DECLARER_PERSONNEL'] },
   { vue: 'maincourante', label: 'Main courante', court: 'Main courante', icon: <BookText className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE', 'CONSULTER_TABLEAU'] },
@@ -86,6 +88,7 @@ function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
     case 'roles': return <RolesLive />;
     case 'comptes': return <ComptesLive />;
     case 'invitations': return <InvitationsLive />;
+    case 'personnes': return <PersonnesLive />;
     case 'accueil': return <Accueil onOpen={go} />;
     case 'design': return <DesignShowcase />;
     case 'tableau': return <Tableau />;
