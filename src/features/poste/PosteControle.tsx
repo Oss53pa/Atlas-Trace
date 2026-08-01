@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Check,
   X,
@@ -11,136 +11,190 @@ import {
   UserCheck,
   ArrowLeft,
   AlertTriangle,
+  Loader2,
+  Keyboard,
 } from 'lucide-react';
-import type { Mode, MouvementAcces, Resultat, Sens } from '../../types';
+import type { Mode, Resultat, Sens } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Avatar } from '../../components/ui/Avatar';
 import { StatusBanner } from '../../components/ui/StatusBanner';
-import { evaluerAcces } from './evaluate';
 import { MOTIFS } from './motifs';
 import { Scanner } from '../../components/device/Scanner';
 import { ViseurEteint } from '../../components/device/ViseurEteint';
 import { PhotoCapture } from '../../components/device/PhotoCapture';
 import { litJeton } from '../../lib/token';
+import { useAuthz } from '../../lib/authz';
 import {
-  CONTEXTE,
-  DEMO_SCANS,
-  POSTE,
-  minutesToLabel,
-  resoudreScan,
-  type ScanResolu,
-} from '../../data/mock';
-import type { Decision } from './evaluate';
-
-interface CourantScan extends ScanResolu {
-  decision: Decision;
-  sens: Sens;
-}
+  chargerPoste,
+  compteursDuJour,
+  derniersPassages,
+  enregistrerAcces,
+  evaluerAcces,
+  type Passage,
+  type Poste,
+  type Verdict,
+} from './api';
 
 export function PosteControle() {
-  const [sens, setSens] = useState<Sens>('ENTREE');
-  const [mode, setMode] = useState<Mode>('EN_LIGNE');
-  const [courant, setCourant] = useState<CourantScan | null>(null);
-  const [mouvements, setMouvements] = useState<MouvementAcces[]>([]);
-  const [forceOuvert, setForceOuvert] = useState(false);
-  const [toast, setToast] = useState<{ resultat: Resultat; label: string } | null>(null);
+  const { connecte, chargement: authEnCours, a } = useAuthz();
+  const peutControler = a('CONTROLER_AU_POSTE');
+  const peutForcer = a('FORCER_ACCES');
 
-  const seq = useRef(0);
-  const horloge = useRef(CONTEXTE.maintenantMinutes);
+  const [poste, setPoste] = useState<Poste | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [sens, setSens] = useState<Sens>('ENTREE');
+  const [mode, setMode] = useState<Mode>(navigator.onLine ? 'EN_LIGNE' : 'HORS_LIGNE');
+  const [courant, setCourant] = useState<{ verdict: Verdict; badgeRef: string } | null>(null);
+  const [passages, setPassages] = useState<Passage[]>([]);
+  const [compteurs, setCompteurs] = useState({ entrees: 0, sorties: 0 });
+  const [forceOuvert, setForceOuvert] = useState(false);
+  const [envoi, setEnvoi] = useState(false);
+  const [toast, setToast] = useState<{ resultat: Resultat; label: string } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const compteurs = useMemo(() => {
-    let entrees = 47;
-    let sorties = 12;
-    for (const m of mouvements) {
-      if (m.resultat === 'REFUSE') continue;
-      if (m.sens === 'ENTREE') entrees += 1;
-      else sorties += 1;
-    }
-    return { entrees, sorties };
-  }, [mouvements]);
-
-  function surDetection(texte: string) {
-    // Un QR peut porter un jeton signé (AT1.…) ou directement un identifiant.
-    const charge = litJeton(texte);
-    scanner(charge ? charge.badge : texte);
-  }
-
-  function scanner(badgeId: string | null) {
-    const resolu = resoudreScan(badgeId);
-    const decision = evaluerAcces(
-      resolu.badge,
-      resolu.personne,
-      resolu.entreprise,
-      resolu.donneurOrdreBloque,
-      sens,
-      CONTEXTE,
-    );
-    setCourant({ ...resolu, decision, sens });
-  }
-
-  function heure() {
-    horloge.current += 1;
-    return minutesToLabel(horloge.current);
-  }
-
-  function enregistrer(resultat: Resultat, options?: { commentaire?: string; photoForcage?: boolean }) {
-    if (!courant) return;
-    seq.current += 1;
-    const nom = courant.personne
-      ? `${courant.personne.prenom} ${courant.personne.nom}`
-      : 'Badge inconnu';
-    const mouvement: MouvementAcces = {
-      id: `mv-${seq.current}`,
-      badgeNumero: courant.badge?.numero ?? '—',
-      personneLabel: nom,
-      entrepriseLabel: courant.entreprise?.raisonSociale ?? '—',
-      sens: courant.sens,
-      resultat,
-      motif: resultat !== 'AUTORISE' ? courant.decision.motif : undefined,
-      mode,
-      posteLabel: POSTE.posteLabel,
-      agentLabel: POSTE.agentLabel,
-      horodatage: heure(),
-      commentaire: options?.commentaire,
-      photoForcage: options?.photoForcage,
+  // Le mode reflète l'état réel du réseau, il ne se décrète pas.
+  useEffect(() => {
+    const maj = () => setMode(navigator.onLine ? 'EN_LIGNE' : 'HORS_LIGNE');
+    window.addEventListener('online', maj);
+    window.addEventListener('offline', maj);
+    return () => {
+      window.removeEventListener('online', maj);
+      window.removeEventListener('offline', maj);
     };
-    setMouvements((prev) => [mouvement, ...prev].slice(0, 20));
-    setCourant(null);
-    setForceOuvert(false);
-    setToast({ resultat, label: `${nom} · ${courant.sens === 'ENTREE' ? 'entrée' : 'sortie'}` });
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  }, []);
+
+  const rafraichir = useCallback(async () => {
+    const [p, c] = await Promise.all([derniersPassages(), compteursDuJour()]);
+    setPassages(p);
+    setCompteurs(c);
+  }, []);
+
+  useEffect(() => {
+    if (!connecte || !peutControler) return;
+    let annule = false;
+    (async () => {
+      try {
+        const p = await chargerPoste();
+        if (annule) return;
+        setPoste(p);
+        await rafraichir();
+      } catch (e) {
+        if (!annule) setErreur((e as Error).message);
+      }
+    })();
+    return () => {
+      annule = true;
+    };
+  }, [connecte, peutControler, rafraichir]);
+
+  /** Un QR peut porter un jeton signé (AT1.…) ou directement le numéro de badge. */
+  async function surDetection(texte: string) {
+    const charge = litJeton(texte);
+    await controler(charge ? charge.badge : texte);
+  }
+
+  async function controler(badgeRef: string) {
+    if (!poste) return;
+    setErreur(null);
+    setEnvoi(true);
+    try {
+      const verdict = await evaluerAcces(poste.id, badgeRef, sens);
+      setCourant({ verdict, badgeRef });
+    } catch (e) {
+      setErreur((e as Error).message);
+    } finally {
+      setEnvoi(false);
+    }
+  }
+
+  async function agir(action: 'VALIDER' | 'REFUSER' | 'FORCER', commentaire?: string, photo?: boolean) {
+    if (!poste || !courant) return;
+    setEnvoi(true);
+    try {
+      const enregistre = await enregistrerAcces({
+        posteId: poste.id,
+        badgeRef: courant.badgeRef,
+        sens: courant.verdict.sens,
+        action,
+        commentaire,
+        mode,
+        photoForcage: photo,
+      });
+      setCourant(null);
+      setForceOuvert(false);
+      setToast({
+        resultat: enregistre.resultat_enregistre,
+        label: `${enregistre.personne_label} · ${enregistre.sens === 'ENTREE' ? 'entrée' : 'sortie'}`,
+      });
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setToast(null), 2400);
+      await rafraichir();
+    } catch (e) {
+      setErreur((e as Error).message);
+    } finally {
+      setEnvoi(false);
+    }
+  }
+
+  if (authEnCours) return <Etat icone={<Loader2 className="h-6 w-6 animate-spin" />} titre="Chargement…" />;
+  if (!connecte) {
+    return (
+      <Etat
+        icone={<LogIn className="h-7 w-7" />}
+        titre="Connexion requise"
+        detail="Le poste écrit dans le registre des passages : il faut un compte pour l'ouvrir."
+      />
+    );
+  }
+  if (!peutControler) {
+    return (
+      <Etat
+        icone={<ShieldAlert className="h-7 w-7" />}
+        titre="Accès au poste non autorisé"
+        detail="Le pouvoir CONTROLER_AU_POSTE est requis. Voir la direction du site pour l'affectation."
+      />
+    );
+  }
+  if (!poste) {
+    return erreur ? (
+      <Etat icone={<ShieldAlert className="h-7 w-7" />} titre="Poste indisponible" detail={erreur} />
+    ) : (
+      <Etat icone={<Loader2 className="h-6 w-6 animate-spin" />} titre="Ouverture du poste…" />
+    );
   }
 
   return (
     <div className="relative flex h-full flex-col bg-sand-100">
-      <Entete
-        mode={mode}
-        onToggleMode={() => setMode((m) => (m === 'EN_LIGNE' ? 'HORS_LIGNE' : 'EN_LIGNE'))}
-      />
+      <Entete poste={poste} mode={mode} />
 
       {mode === 'HORS_LIGNE' && (
         <div className="flex items-center gap-2 bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white">
           <WifiOff className="h-3.5 w-3.5" />
-          Mode hors ligne — contrôles maintenus, synchronisation différée
+          Hors ligne — le contrôle serveur est indisponible
         </div>
       )}
 
       <SensSwitch sens={sens} onChange={setSens} />
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <ScanZone sens={sens} onScan={scanner} onDetect={surDetection} />
+        <ScanZone sens={sens} occupe={envoi} onControler={controler} onDetect={surDetection} />
+        {erreur && (
+          <p className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">
+            {erreur}
+          </p>
+        )}
         <Compteurs entrees={compteurs.entrees} sorties={compteurs.sorties} />
-        <DerniersPassages mouvements={mouvements} />
+        <DerniersPassages passages={passages} />
       </div>
 
       {courant && (
         <ResultatOverlay
-          courant={courant}
-          onValider={() => enregistrer('AUTORISE')}
-          onRefuser={() => enregistrer('REFUSE')}
+          verdict={courant.verdict}
+          occupe={envoi}
+          peutForcer={peutForcer}
+          onValider={() => agir('VALIDER')}
+          onRefuser={() => agir('REFUSER')}
           onForcer={() => setForceOuvert(true)}
           onFermer={() => setCourant(null)}
         />
@@ -148,10 +202,9 @@ export function PosteControle() {
 
       {forceOuvert && courant && (
         <ForcageSheet
+          occupe={envoi}
           onAnnuler={() => setForceOuvert(false)}
-          onConfirmer={(commentaire) =>
-            enregistrer('FORCE', { commentaire, photoForcage: true })
-          }
+          onConfirmer={(commentaire) => agir('FORCER', commentaire, true)}
         />
       )}
 
@@ -160,19 +213,31 @@ export function PosteControle() {
   );
 }
 
+/* ---------- États pleine page (connexion, pouvoir, chargement) ---------- */
+function Etat({ icone, titre, detail }: { icone: React.ReactNode; titre: string; detail?: string }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 bg-sand-100 px-8 text-center text-muted">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-forest-600 shadow-card ring-1 ring-sand-200/60">
+        {icone}
+      </span>
+      <p className="text-base font-bold text-ink">{titre}</p>
+      {detail && <p className="max-w-xs text-sm">{detail}</p>}
+    </div>
+  );
+}
+
 /* ---------- En-tête ---------- */
-function Entete({ mode, onToggleMode }: { mode: Mode; onToggleMode: () => void }) {
+function Entete({ poste, mode }: { poste: Poste; mode: Mode }) {
   return (
     <header className="flex items-center justify-between border-b border-sand-200 bg-sand-50 px-4 py-3">
       <div className="min-w-0">
-        <p className="truncate text-sm font-bold text-ink">{POSTE.posteLabel}</p>
+        <p className="truncate text-sm font-bold text-ink">{poste.libelle}</p>
         <p className="truncate text-xs text-muted">
-          {POSTE.siteLabel} · {POSTE.agentLabel}
+          {poste.siteLabel} · {poste.agentLabel}
         </p>
       </div>
-      <button
-        onClick={onToggleMode}
-        className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset transition-colors ${
+      <span
+        className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset ${
           mode === 'EN_LIGNE'
             ? 'bg-forest-50 text-forest-700 ring-forest-200'
             : 'bg-amber-50 text-amber-700 ring-amber-200'
@@ -180,7 +245,7 @@ function Entete({ mode, onToggleMode }: { mode: Mode; onToggleMode: () => void }
       >
         {mode === 'EN_LIGNE' ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
         {mode === 'EN_LIGNE' ? 'En ligne' : 'Hors ligne'}
-      </button>
+      </span>
     </header>
   );
 }
@@ -209,16 +274,29 @@ function SensSwitch({ sens, onChange }: { sens: Sens; onChange: (s: Sens) => voi
   );
 }
 
-/* ---------- Zone de scan : caméra réelle ou visée + simulation ---------- */
-function ScanZone({ sens, onScan, onDetect }: { sens: Sens; onScan: (id: string | null) => void; onDetect: (t: string) => void }) {
+/* ---------- Zone de scan : caméra réelle, ou saisie du numéro si elle manque ---------- */
+function ScanZone({
+  sens,
+  occupe,
+  onControler,
+  onDetect,
+}: {
+  sens: Sens;
+  occupe: boolean;
+  onControler: (badgeRef: string) => void;
+  onDetect: (texte: string) => void;
+}) {
   const [camera, setCamera] = useState(false);
 
   if (camera) {
     return (
       <div className="mt-4">
         <Scanner
-          onDetect={(t) => { setCamera(false); onDetect(t); }}
-          fallback={() => <SimulationStrip onScan={(id) => { setCamera(false); onScan(id); }} />}
+          onDetect={(t) => {
+            setCamera(false);
+            onDetect(t);
+          }}
+          fallback={() => <SaisieBadge occupe={occupe} onValider={(n) => { setCamera(false); onControler(n); }} />}
         />
         <button onClick={() => setCamera(false)} className="mx-auto mt-3 block text-xs font-semibold text-muted hover:text-ink">
           Arrêter la caméra
@@ -231,11 +309,49 @@ function ScanZone({ sens, onScan, onDetect }: { sens: Sens; onScan: (id: string 
     <>
       <ViseurEteint detail={sens === 'ENTREE' ? 'Contrôle d’entrée' : 'Contrôle de sortie'} />
       <div className="mt-3 flex justify-center">
-        <Button variant="primary" size="lg" icon={<Camera className="h-5 w-5" />} onClick={() => setCamera(true)} className="w-full max-w-[300px]">
+        <Button
+          variant="primary"
+          size="lg"
+          icon={occupe ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+          onClick={() => setCamera(true)}
+          disabled={occupe}
+          className="w-full max-w-[300px]"
+        >
           Activer la caméra
         </Button>
       </div>
     </>
+  );
+}
+
+/* ---------- Repli sans caméra : l'agent saisit le numéro inscrit sur le badge ---------- */
+function SaisieBadge({ occupe, onValider }: { occupe: boolean; onValider: (numero: string) => void }) {
+  const [numero, setNumero] = useState('');
+  const pret = numero.trim().length >= 3 && !occupe;
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (pret) onValider(numero.trim());
+      }}
+      className="rounded-2xl border border-dashed border-sand-300 bg-sand-50 p-3"
+    >
+      <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
+        <Keyboard className="h-3.5 w-3.5" /> Saisir le numéro inscrit sur le badge
+      </p>
+      <div className="flex gap-2">
+        <input
+          value={numero}
+          onChange={(e) => setNumero(e.target.value)}
+          placeholder="Ex. : NOM-00142"
+          autoCapitalize="characters"
+          className="min-w-0 flex-1 rounded-xl border border-sand-300 bg-white px-3 py-2 font-mono text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100"
+        />
+        <Button type="submit" variant="primary" size="md" disabled={!pret} className="flex-none">
+          Contrôler
+        </Button>
+      </div>
+    </form>
   );
 }
 
@@ -256,8 +372,8 @@ function Compteurs({ entrees, sorties }: { entrees: number; sorties: number }) {
 }
 
 /* ---------- Derniers passages ---------- */
-function DerniersPassages({ mouvements }: { mouvements: MouvementAcces[] }) {
-  if (mouvements.length === 0) return null;
+function DerniersPassages({ passages }: { passages: Passage[] }) {
+  if (passages.length === 0) return null;
   const tone: Record<Resultat, string> = {
     AUTORISE: 'bg-forest-500',
     REFUSE: 'bg-danger-500',
@@ -265,22 +381,18 @@ function DerniersPassages({ mouvements }: { mouvements: MouvementAcces[] }) {
   };
   return (
     <div className="mt-4">
-      <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">
-        Derniers passages
-      </p>
+      <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">Derniers passages</p>
       <ul className="space-y-1.5">
-        {mouvements.slice(0, 4).map((m) => (
+        {passages.slice(0, 4).map((m) => (
           <li
             key={m.id}
             className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-2 text-sm shadow-card ring-1 ring-sand-200/60"
           >
             <span className={`h-2 w-2 shrink-0 rounded-full ${tone[m.resultat]}`} />
-            <span className="min-w-0 flex-1 truncate font-semibold text-ink">
-              {m.personneLabel}
-            </span>
+            <span className="min-w-0 flex-1 truncate font-semibold text-ink">{m.personneLabel}</span>
             <span className="shrink-0 text-xs text-muted">
               {m.sens === 'ENTREE' ? '→ entrée' : '← sortie'}
-              {m.motif ? ` · ${MOTIFS[m.motif].libelle}` : ''}
+              {m.motif && MOTIFS[m.motif] ? ` · ${MOTIFS[m.motif].libelle}` : ''}
             </span>
             <span className="shrink-0 text-xs tabular-nums text-muted">{m.horodatage}</span>
           </li>
@@ -290,115 +402,90 @@ function DerniersPassages({ mouvements }: { mouvements: MouvementAcces[] }) {
   );
 }
 
-/* ---------- Repli sans caméra (jamais affiché quand la caméra fonctionne) ---------- */
-function SimulationStrip({ onScan }: { onScan: (badgeId: string | null) => void }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-sand-300 bg-sand-50 p-3">
-      <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
-        <Camera className="h-3.5 w-3.5" />
-        Jeux d'essai — sans caméra
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {DEMO_SCANS.map((d) => (
-          <button
-            key={d.badgeId ?? 'inconnu'}
-            onClick={() => onScan(d.badgeId)}
-            className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-forest-700 ring-1 ring-inset ring-sand-300 transition-colors hover:bg-forest-50 hover:ring-forest-200"
-          >
-            {d.attendu}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /* ---------- Résultat plein écran ---------- */
 function ResultatOverlay({
-  courant,
+  verdict,
+  occupe,
+  peutForcer,
   onValider,
   onRefuser,
   onForcer,
   onFermer,
 }: {
-  courant: CourantScan;
+  verdict: Verdict;
+  occupe: boolean;
+  peutForcer: boolean;
   onValider: () => void;
   onRefuser: () => void;
   onForcer: () => void;
   onFermer: () => void;
 }) {
-  const { badge, personne, entreprise, decision, sens } = courant;
-  const autorise = decision.resultat === 'AUTORISE';
-  const motif = decision.motif ? MOTIFS[decision.motif] : undefined;
-  const inconnu = !badge || !personne;
+  const autorise = verdict.resultat === 'AUTORISE';
+  const motif = verdict.motif ? MOTIFS[verdict.motif] : undefined;
+  const inconnu = !verdict.personne_id;
 
   return (
     <div className="absolute inset-0 z-20 flex flex-col bg-sand-50">
       <div className="flex items-center justify-between px-4 py-3">
-        <button
-          onClick={onFermer}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-forest-500"
-        >
+        <button onClick={onFermer} className="inline-flex items-center gap-1 text-sm font-semibold text-forest-500">
           <ArrowLeft className="h-4 w-4" />
           Nouveau scan
         </button>
-        <Badge tone="neutral">{sens === 'ENTREE' ? 'Entrée' : 'Sortie'}</Badge>
+        <Badge tone="neutral">{verdict.sens === 'ENTREE' ? 'Entrée' : 'Sortie'}</Badge>
       </div>
 
       <div className="flex flex-1 flex-col items-center overflow-y-auto px-5 pb-5">
         {/* Photo — support du contrôle visuel (R2) */}
         <div className="mt-1">
           {inconnu ? (
-            <div className="flex h-44 w-44 items-center justify-center rounded-3xl bg-danger-50 ring-4 ring-white shadow-card-lg">
+            <div className="flex h-44 w-44 items-center justify-center rounded-3xl bg-danger-50 shadow-card-lg ring-4 ring-white">
               <ShieldAlert className="h-16 w-16 text-danger-400" />
             </div>
           ) : (
-            <Avatar nom={personne.nom} prenom={personne.prenom} photoUrl={personne.photoUrl} />
+            <Avatar
+              nom={verdict.personne_nom ?? ''}
+              prenom={verdict.personne_prenom ?? ''}
+              photoUrl={verdict.photo_url ?? undefined}
+            />
           )}
         </div>
 
         <div className="mt-4 text-center">
           <h2 className="text-3xl font-extrabold tracking-tight text-ink">
-            {inconnu ? 'Badge non reconnu' : `${personne.prenom} ${personne.nom}`}
+            {inconnu ? 'Badge non reconnu' : verdict.personne_label}
           </h2>
           {!inconnu && (
             <p className="mt-0.5 text-base font-medium text-muted">
-              {entreprise?.raisonSociale}
-              {personne.fonction ? ` · ${personne.fonction}` : ''}
+              {verdict.entreprise_label}
+              {verdict.fonction ? ` · ${verdict.fonction}` : ''}
             </p>
           )}
-          {badge && (
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-              <Badge tone="neutral">{badge.numero}</Badge>
-              <Badge tone="neutral">{badge.zoneLabel}</Badge>
-              {badge.type === 'VISITEUR' && badge.accompagnateur && (
-                <Badge tone="amber" dot>
-                  Accompagné · {badge.accompagnateur}
-                </Badge>
-              )}
-            </div>
-          )}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <Badge tone="neutral">{verdict.badge_numero}</Badge>
+            {verdict.zone_label && <Badge tone="neutral">{verdict.zone_label}</Badge>}
+            {verdict.badge_type === 'VISITEUR' && verdict.accompagnateur && (
+              <Badge tone="amber" dot>
+                Accompagné · {verdict.accompagnateur}
+              </Badge>
+            )}
+          </div>
         </div>
 
-        {/* Bandeau de décision */}
+        {/* Bandeau de décision — rendu par le serveur */}
         <StatusBanner
           className="mt-5 w-full"
           result={autorise ? 'AUTORISE' : 'REFUSE'}
           reason={autorise ? undefined : motif?.libelle}
           instruction={autorise ? 'Contrôle visuel de la photo — laisser passer' : motif?.consigne}
-          icon={
-            autorise ? (
-              <Check className="h-8 w-8" strokeWidth={3} />
-            ) : (
-              <X className="h-8 w-8" strokeWidth={3} />
-            )
-          }
+          icon={autorise ? <Check className="h-8 w-8" strokeWidth={3} /> : <X className="h-8 w-8" strokeWidth={3} />}
         />
 
-        {autorise && decision.alerte && (
+        {autorise && verdict.alerte && MOTIFS[verdict.alerte] && (
           <div className="mt-3 flex w-full items-start gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-            <span><b>{MOTIFS[decision.alerte].libelle}.</b> {MOTIFS[decision.alerte].consigne}</span>
+            <span>
+              <b>{MOTIFS[verdict.alerte].libelle}.</b> {MOTIFS[verdict.alerte].consigne}
+            </span>
           </div>
         )}
       </div>
@@ -407,14 +494,15 @@ function ResultatOverlay({
       <div className="border-t border-sand-200 bg-white px-4 py-3">
         {autorise ? (
           <div className="flex gap-2">
-            <Button variant="ghost" size="lg" onClick={onRefuser} className="flex-none px-5">
+            <Button variant="ghost" size="lg" onClick={onRefuser} disabled={occupe} className="flex-none px-5">
               Refuser
             </Button>
             <Button
               variant="primary"
               size="lg"
               block
-              icon={<UserCheck className="h-5 w-5" strokeWidth={2.5} />}
+              disabled={occupe}
+              icon={occupe ? <Loader2 className="h-5 w-5 animate-spin" /> : <UserCheck className="h-5 w-5" strokeWidth={2.5} />}
               onClick={onValider}
             >
               Confirmer le passage
@@ -422,16 +510,19 @@ function ResultatOverlay({
           </div>
         ) : (
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={onForcer}
-              className="flex-none border-amber-200 px-5 text-amber-700 hover:bg-amber-50"
-              icon={<ShieldAlert className="h-5 w-5" />}
-            >
-              Forcer
-            </Button>
-            <Button variant="danger" size="lg" block onClick={onRefuser}>
+            {peutForcer && (
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={onForcer}
+                disabled={occupe}
+                className="flex-none border-amber-200 px-5 text-amber-700 hover:bg-amber-50"
+                icon={<ShieldAlert className="h-5 w-5" />}
+              >
+                Forcer
+              </Button>
+            )}
+            <Button variant="danger" size="lg" block disabled={occupe} onClick={onRefuser}>
               Consigner le refus
             </Button>
           </div>
@@ -441,17 +532,19 @@ function ResultatOverlay({
   );
 }
 
-/* ---------- Forçage : motif + photo obligatoires ---------- */
+/* ---------- Forçage : motif + photo obligatoires (le serveur exige le motif) ---------- */
 function ForcageSheet({
+  occupe,
   onAnnuler,
   onConfirmer,
 }: {
+  occupe: boolean;
   onAnnuler: () => void;
   onConfirmer: (commentaire: string) => void;
 }) {
   const [motif, setMotif] = useState('');
   const [photoPrise, setPhotoPrise] = useState(false);
-  const pret = motif.trim().length >= 5 && photoPrise;
+  const pret = motif.trim().length >= 5 && photoPrise && !occupe;
 
   return (
     <div className="absolute inset-0 z-30 flex flex-col justify-end bg-forest-900/50">
@@ -461,8 +554,8 @@ function ForcageSheet({
           <h3 className="text-lg font-extrabold text-ink">Forçage d’accès</h3>
         </div>
         <p className="mb-4 text-sm text-muted">
-          Le forçage n’est jamais silencieux : motif et photo obligatoires, alerte immédiate au chef
-          de poste.
+          Le forçage n’est jamais silencieux : motif et photo obligatoires, passage tracé au registre
+          et à l’audit.
         </p>
 
         <label className="mb-1.5 block text-sm font-semibold text-forest-700">Motif du forçage</label>
@@ -482,13 +575,7 @@ function ForcageSheet({
           <Button variant="ghost" size="lg" onClick={onAnnuler} className="flex-none px-5">
             Annuler
           </Button>
-          <Button
-            variant="accent"
-            size="lg"
-            block
-            disabled={!pret}
-            onClick={() => onConfirmer(motif.trim())}
-          >
+          <Button variant="accent" size="lg" block disabled={!pret} onClick={() => onConfirmer(motif.trim())}>
             Confirmer le forçage
           </Button>
         </div>
@@ -502,14 +589,15 @@ function Toast({ resultat, label }: { resultat: Resultat; label: string }) {
   const cfg: Record<Resultat, { bg: string; texte: string }> = {
     AUTORISE: { bg: 'bg-forest-600', texte: 'Passage enregistré' },
     REFUSE: { bg: 'bg-danger-600', texte: 'Refus consigné' },
-    FORCE: { bg: 'bg-amber-600', texte: 'Forçage enregistré · alerte envoyée' },
+    FORCE: { bg: 'bg-amber-600', texte: 'Forçage enregistré · tracé à l’audit' },
   };
   const c = cfg[resultat];
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-4 z-40 flex justify-center px-4">
       <div className={`flex items-center gap-2 rounded-full ${c.bg} px-4 py-2.5 text-sm font-semibold text-white shadow-card-lg`}>
         <Check className="h-4 w-4" strokeWidth={3} />
-        {c.texte} · {label}
+        <span>{c.texte}</span>
+        <span className="opacity-80">· {label}</span>
       </div>
     </div>
   );

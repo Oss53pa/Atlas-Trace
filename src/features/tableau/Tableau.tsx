@@ -99,7 +99,7 @@ export function Tableau() {
         </div>
 
         {/* KPI par rôle */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {kpisRole.map((k) => (
             <KpiCard key={k.id} label={k.label} value={k.value} unit={k.unit} tone={k.tone} icon={k.icon} />
           ))}

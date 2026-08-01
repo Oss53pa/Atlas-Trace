@@ -105,7 +105,7 @@ export function Livraisons() {
 
         {/* Créneaux & quotas */}
         <h2 className="mb-2 text-sm font-bold text-ink">Créneaux &amp; quotas du jour</h2>
-        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
           {creneaux.map((c) => (
             <CreneauCard key={c.id} c={c} />
           ))}

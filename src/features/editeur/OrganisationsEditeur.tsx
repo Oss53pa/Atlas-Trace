@@ -26,7 +26,7 @@ export function OrganisationsEditeur() {
         <p className="mt-1 text-sm text-muted">Supervision multi-organisations. Cloisonnement absolu — aucune requête transverse hors de ce back office nominatif et journalisé.</p>
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard tone="forest" label="Organisations" value={totaux.orgs} icon={<Building className="h-5 w-5" />} />
         <StatCard label="Sites" value={totaux.sites} icon={<MapPin className="h-5 w-5" />} />
         <StatCard tone="amber" label="Badges actifs" value={totaux.badges.toLocaleString('fr-FR')} icon={<CreditCard className="h-5 w-5" />} />

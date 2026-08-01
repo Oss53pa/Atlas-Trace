@@ -88,7 +88,7 @@ export function Temporaires() {
         </div>
       ) : (
         <>
-          <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
             <StatCard tone="forest" label="Générés" value={c.generes} icon={<CreditCard className="h-5 w-5" />} />
             <StatCard label="Remis (en circulation)" value={c.remis} icon={<KeyRound className="h-5 w-5" />} />
             <StatCard label="Restitués" value={c.restitues} icon={<Check className="h-5 w-5" />} />

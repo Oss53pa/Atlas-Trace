@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Check,
   X,
@@ -9,171 +9,171 @@ import {
   ArrowLeft,
   Wifi,
   WifiOff,
+  Loader2,
+  Keyboard,
+  LogIn,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatusBanner } from '../../components/ui/StatusBanner';
 import { Scanner } from '../../components/device/Scanner';
 import { ViseurEteint } from '../../components/device/ViseurEteint';
+import { useAuthz } from '../../lib/authz';
+import { MOTIFS_SORTIE } from './motifs';
 import {
-  AUTOS_POSTE,
-  DEMO_SCANS_SORTIE,
-  MARQUAGES_POSTE,
-  type DemoScanSortie,
-} from '../../data/sortiesPoste';
+  chargerPoste,
+  derniersControlesSortie,
+  enregistrerSortie,
+  evaluerSortie,
+  type ControleSortieLigne,
+  type Poste,
+  type VerdictSortie,
+  type Voie,
+} from './api';
 
-type Voie = 'AUTORISATION' | 'MARQUAGE' | 'AUCUNE';
-interface Decision {
-  resultat: 'AUTORISE' | 'REFUSE';
-  voie: Voie;
-  titre: string;
-  sousTitre?: string;
-  lignes?: string[];
-  motif?: string;
-  consigne?: string;
-  code?: string;
-}
-
-interface Mouvement {
-  id: string;
-  label: string;
-  resultat: 'AUTORISE' | 'REFUSE';
-  voie: Voie;
-  heure: string;
-}
-
-function evaluer(scan: DemoScanSortie, consommees: Set<string>): Decision {
-  if (scan.kind === 'AUTO') {
-    const a = AUTOS_POSTE.find((x) => x.code === scan.ref);
-    if (!a) return refusR1();
-    if (consommees.has(a.code))
-      return { resultat: 'REFUSE', voie: 'AUTORISATION', titre: a.numero, motif: 'Autorisation déjà consommée', consigne: 'Usage unique — sortie refusée.' };
-    if (a.expiree)
-      return { resultat: 'REFUSE', voie: 'AUTORISATION', titre: a.numero, motif: 'Autorisation expirée', consigne: `Hors validité (${a.validiteFin}) — refuser.` };
-    return {
-      resultat: 'AUTORISE', voie: 'AUTORISATION', titre: a.numero,
-      sousTitre: `${a.entreprise} · ${a.type} → ${a.destination}`,
-      lignes: a.lignes, code: a.code,
-    };
-  }
-  if (scan.kind === 'MARQ') {
-    const m = MARQUAGES_POSTE.find((x) => x.numero === scan.ref);
-    if (!m) return refusR1();
-    if (!m.opposable)
-      return { resultat: 'REFUSE', voie: 'MARQUAGE', titre: m.numero, motif: 'Marquage non opposable', consigne: 'Déclaration non visée — refuser.' };
-    return {
-      resultat: 'AUTORISE', voie: 'MARQUAGE', titre: m.numero,
-      sousTitre: `${m.designation}${m.marque && m.marque !== '—' ? ` · ${m.marque} ${m.modele}` : ''}`,
-      lignes: [`${m.entreprise} · matériel déclaré à l'entrée`],
-    };
-  }
-  return refusR1();
-}
-
-/** Texte d'un QR réel → autorisation de sortie, marquage, ou rien (R1). */
-function resoudreTexte(texte: string): DemoScanSortie {
-  const t = texte.trim();
-  if (AUTOS_POSTE.some((a) => a.code === t)) return { label: t, kind: 'AUTO', ref: t };
-  if (MARQUAGES_POSTE.some((m) => m.numero === t)) return { label: t, kind: 'MARQ', ref: t };
-  return { label: t, kind: 'INCONNU', ref: null };
-}
-
-function refusR1(): Decision {
-  return {
-    resultat: 'REFUSE', voie: 'AUCUNE', titre: 'Non couvert',
-    motif: 'Règle de sortie unique (R1)',
-    consigne: 'Retenir le matériel · photo · alerte chef de poste · main courante.',
-  };
-}
-
-/** Repli quand la caméra est refusée/indisponible : jeux d'essai du poste sortie. */
-function SimulationSortie({ onScan }: { onScan: (d: DemoScanSortie) => void }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-sand-300 bg-sand-50 p-3">
-      <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
-        <Camera className="h-3.5 w-3.5" /> Jeux d'essai — sans caméra
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {DEMO_SCANS_SORTIE.map((d) => (
-          <button
-            key={d.label}
-            onClick={() => onScan(d)}
-            className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-ink ring-1 ring-inset ring-sand-300 transition-colors hover:bg-forest-50 hover:ring-forest-200"
-          >
-            {d.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
+/**
+ * M10 — contrôle des sorties matière au poste.
+ * La règle R1 (« rien ne sort sans autorisation approuvée ou marquage opposable »)
+ * et la consommation à usage unique sont appliquées par le serveur.
+ */
 export function ControleSortie() {
+  const { connecte, chargement: authEnCours, a } = useAuthz();
+  const peutControler = a('CONTROLER_AU_POSTE');
+
+  const [poste, setPoste] = useState<Poste | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [mode, setMode] = useState<'EN_LIGNE' | 'HORS_LIGNE'>(navigator.onLine ? 'EN_LIGNE' : 'HORS_LIGNE');
   const [camera, setCamera] = useState(false);
-  const [courant, setCourant] = useState<Decision | null>(null);
-  const [consommees, setConsommees] = useState<Set<string>>(new Set());
-  const [mouvements, setMouvements] = useState<Mouvement[]>([]);
-  const [mode, setMode] = useState<'EN_LIGNE' | 'HORS_LIGNE'>('EN_LIGNE');
+  const [courant, setCourant] = useState<{ verdict: VerdictSortie; ref: string } | null>(null);
+  const [controles, setControles] = useState<ControleSortieLigne[]>([]);
+  const [envoi, setEnvoi] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const seq = useRef(0);
-  const horloge = useRef(8 * 60 + 20);
   const tRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function heure() {
-    horloge.current += 1;
-    return `${String(Math.floor(horloge.current / 60)).padStart(2, '0')}:${String(horloge.current % 60).padStart(2, '0')}`;
-  }
+  useEffect(() => {
+    const maj = () => setMode(navigator.onLine ? 'EN_LIGNE' : 'HORS_LIGNE');
+    window.addEventListener('online', maj);
+    window.addEventListener('offline', maj);
+    return () => {
+      window.removeEventListener('online', maj);
+      window.removeEventListener('offline', maj);
+    };
+  }, []);
 
-  function scanner(scan: DemoScanSortie) {
-    setCourant(evaluer(scan, consommees));
-  }
+  const rafraichir = useCallback(async () => {
+    setControles(await derniersControlesSortie());
+  }, []);
 
-  function enregistrer(resultat: 'AUTORISE' | 'REFUSE') {
-    if (!courant) return;
-    seq.current += 1;
-    if (resultat === 'AUTORISE' && courant.voie === 'AUTORISATION' && courant.code) {
-      setConsommees((s) => new Set(s).add(courant.code!));
+  useEffect(() => {
+    if (!connecte || !peutControler) return;
+    let annule = false;
+    (async () => {
+      try {
+        const p = await chargerPoste();
+        if (annule) return;
+        setPoste(p);
+        await rafraichir();
+      } catch (e) {
+        if (!annule) setErreur((e as Error).message);
+      }
+    })();
+    return () => {
+      annule = true;
+    };
+  }, [connecte, peutControler, rafraichir]);
+
+  async function controler(ref: string) {
+    if (!poste) return;
+    setErreur(null);
+    setEnvoi(true);
+    setCamera(false);
+    try {
+      const verdict = await evaluerSortie(poste.id, ref);
+      setCourant({ verdict, ref });
+    } catch (e) {
+      setErreur((e as Error).message);
+    } finally {
+      setEnvoi(false);
     }
-    setMouvements((prev) =>
-      [{ id: `s-${seq.current}`, label: courant.titre, resultat, voie: courant.voie, heure: heure() }, ...prev].slice(0, 8),
+  }
+
+  async function agir(action: 'VALIDER' | 'REFUSER') {
+    if (!poste || !courant) return;
+    setEnvoi(true);
+    try {
+      const enregistre = await enregistrerSortie({ posteId: poste.id, ref: courant.ref, action, mode });
+      setCourant(null);
+      setToast(
+        enregistre.resultat_enregistre === 'AUTORISE'
+          ? enregistre.autorisation_consommee
+            ? 'Sortie autorisée · autorisation consommée'
+            : 'Sortie autorisée · mouvement enregistré'
+          : 'Refus consigné · main courante',
+      );
+      if (tRef.current) clearTimeout(tRef.current);
+      tRef.current = setTimeout(() => setToast(null), 2600);
+      await rafraichir();
+    } catch (e) {
+      setErreur((e as Error).message);
+    } finally {
+      setEnvoi(false);
+    }
+  }
+
+  if (authEnCours) return <Etat icone={<Loader2 className="h-6 w-6 animate-spin" />} titre="Chargement…" />;
+  if (!connecte) {
+    return (
+      <Etat
+        icone={<LogIn className="h-7 w-7" />}
+        titre="Connexion requise"
+        detail="Le contrôle de sortie écrit au registre : il faut un compte pour l'ouvrir."
+      />
     );
-    setToast(
-      resultat === 'AUTORISE'
-        ? courant.voie === 'AUTORISATION'
-          ? 'Sortie autorisée · autorisation consommée'
-          : 'Sortie autorisée · mouvement enregistré'
-        : 'Refus consigné · main courante',
+  }
+  if (!peutControler) {
+    return (
+      <Etat
+        icone={<ShieldAlert className="h-7 w-7" />}
+        titre="Accès au poste non autorisé"
+        detail="Le pouvoir CONTROLER_AU_POSTE est requis."
+      />
     );
-    if (tRef.current) clearTimeout(tRef.current);
-    tRef.current = setTimeout(() => setToast(null), 2400);
-    setCourant(null);
+  }
+  if (!poste) {
+    return erreur ? (
+      <Etat icone={<ShieldAlert className="h-7 w-7" />} titre="Poste indisponible" detail={erreur} />
+    ) : (
+      <Etat icone={<Loader2 className="h-6 w-6 animate-spin" />} titre="Ouverture du poste…" />
+    );
   }
 
   return (
     <div className="relative flex h-full flex-col bg-sand-100">
-      {/* En-tête */}
       <header className="flex items-center justify-between border-b border-sand-300 bg-sand-50 px-4 py-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-ink">Poste — Contrôle sortie matière</p>
-          <p className="truncate text-xs text-muted">Cosmos Angré · Agent M. Koné</p>
+          <p className="truncate text-xs text-muted">
+            {poste.siteLabel} · {poste.agentLabel}
+          </p>
         </div>
-        <button
-          onClick={() => setMode((m) => (m === 'EN_LIGNE' ? 'HORS_LIGNE' : 'EN_LIGNE'))}
+        <span
           className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset ${
-            mode === 'EN_LIGNE' ? 'bg-forest-50 text-forest-700 ring-forest-200' : 'bg-amber-50 text-amber-700 ring-amber-200'
+            mode === 'EN_LIGNE'
+              ? 'bg-forest-50 text-forest-700 ring-forest-200'
+              : 'bg-amber-50 text-amber-700 ring-amber-200'
           }`}
         >
           {mode === 'EN_LIGNE' ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
           {mode === 'EN_LIGNE' ? 'En ligne' : 'Hors ligne'}
-        </button>
+        </span>
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         {camera ? (
           <div className="mt-4">
             <Scanner
-              onDetect={(t) => { setCamera(false); scanner(resoudreTexte(t)); }}
-              fallback={() => <SimulationSortie onScan={(d) => { setCamera(false); scanner(d); }} />}
+              onDetect={(t) => controler(t)}
+              fallback={() => <SaisieReference occupe={envoi} onValider={controler} />}
             />
             <button onClick={() => setCamera(false)} className="mx-auto mt-3 block text-xs font-semibold text-muted hover:text-ink">
               Arrêter la caméra
@@ -183,25 +183,39 @@ export function ControleSortie() {
           <>
             <ViseurEteint detail="Autorisation de sortie ou marquage — rien ne sort sans l'un des deux (R1)" />
             <div className="mt-3 flex justify-center">
-              <Button variant="primary" size="lg" icon={<Camera className="h-5 w-5" />} onClick={() => setCamera(true)} className="w-full max-w-[300px]">
+              <Button
+                variant="primary"
+                size="lg"
+                icon={envoi ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                onClick={() => setCamera(true)}
+                disabled={envoi}
+                className="w-full max-w-[300px]"
+              >
                 Activer la caméra
               </Button>
             </div>
           </>
         )}
 
+        {erreur && (
+          <p className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">
+            {erreur}
+          </p>
+        )}
+
         <p className="mt-3 rounded-xl bg-sand-200 px-3 py-2 text-center text-[11px] font-medium text-muted">
           Le contrôle des sacs reste un geste physique de l'agent — l'application en enregistre la trace.
         </p>
 
-        {mouvements.length > 0 && <DerniersControles mouvements={mouvements} />}
+        {controles.length > 0 && <DerniersControles controles={controles} />}
       </div>
 
       {courant && (
         <ResultatSortie
-          d={courant}
-          onValider={() => enregistrer('AUTORISE')}
-          onRefuser={() => enregistrer('REFUSE')}
+          v={courant.verdict}
+          occupe={envoi}
+          onValider={() => agir('VALIDER')}
+          onRefuser={() => agir('REFUSER')}
           onFermer={() => setCourant(null)}
         />
       )}
@@ -218,17 +232,60 @@ export function ControleSortie() {
   );
 }
 
-function DerniersControles({ mouvements }: { mouvements: Mouvement[] }) {
-  const icon = (v: Voie) => (v === 'AUTORISATION' ? <FileOutput className="h-3.5 w-3.5" /> : v === 'MARQUAGE' ? <Tag className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />);
+function Etat({ icone, titre, detail }: { icone: React.ReactNode; titre: string; detail?: string }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 bg-sand-100 px-8 text-center text-muted">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-forest-600 shadow-card ring-1 ring-sand-200/60">
+        {icone}
+      </span>
+      <p className="text-base font-bold text-ink">{titre}</p>
+      {detail && <p className="max-w-xs text-sm">{detail}</p>}
+    </div>
+  );
+}
+
+/* ---------- Repli sans caméra : saisie du code ou du numéro de marquage ---------- */
+function SaisieReference({ occupe, onValider }: { occupe: boolean; onValider: (ref: string) => void }) {
+  const [ref, setRef] = useState('');
+  const pret = ref.trim().length >= 3 && !occupe;
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (pret) onValider(ref.trim());
+      }}
+      className="rounded-2xl border border-dashed border-sand-300 bg-sand-50 p-3"
+    >
+      <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
+        <Keyboard className="h-3.5 w-3.5" /> Saisir le code d'autorisation ou le numéro de marquage
+      </p>
+      <div className="flex gap-2">
+        <input
+          value={ref}
+          onChange={(e) => setRef(e.target.value)}
+          placeholder="Ex. : M-00101"
+          className="min-w-0 flex-1 rounded-xl border border-sand-300 bg-white px-3 py-2 font-mono text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100"
+        />
+        <Button type="submit" variant="primary" size="md" disabled={!pret} className="flex-none">
+          Contrôler
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function DerniersControles({ controles }: { controles: ControleSortieLigne[] }) {
+  const icon = (v: Voie) =>
+    v === 'AUTORISATION' ? <FileOutput className="h-3.5 w-3.5" /> : v === 'MARQUAGE' ? <Tag className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />;
   return (
     <div className="mt-4">
       <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">Derniers contrôles</p>
       <ul className="space-y-1.5">
-        {mouvements.slice(0, 4).map((m) => (
+        {controles.slice(0, 4).map((m) => (
           <li key={m.id} className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-2 text-sm shadow-card ring-1 ring-sand-300/70">
             <span className={`h-2 w-2 shrink-0 rounded-full ${m.resultat === 'AUTORISE' ? 'bg-forest-500' : 'bg-danger-500'}`} />
             <span className="text-muted">{icon(m.voie)}</span>
-            <span className="min-w-0 flex-1 truncate font-mono text-xs font-semibold text-ink">{m.label}</span>
+            <span className="min-w-0 flex-1 truncate font-mono text-xs font-semibold text-ink">{m.libelle}</span>
             <span className="shrink-0 text-xs tabular-nums text-muted">{m.heure}</span>
           </li>
         ))}
@@ -238,17 +295,21 @@ function DerniersControles({ mouvements }: { mouvements: Mouvement[] }) {
 }
 
 function ResultatSortie({
-  d,
+  v,
+  occupe,
   onValider,
   onRefuser,
   onFermer,
 }: {
-  d: Decision;
+  v: VerdictSortie;
+  occupe: boolean;
   onValider: () => void;
   onRefuser: () => void;
   onFermer: () => void;
 }) {
-  const autorise = d.resultat === 'AUTORISE';
+  const autorise = v.resultat === 'AUTORISE';
+  const motif = v.motif ? MOTIFS_SORTIE[v.motif] : undefined;
+
   return (
     <div className="absolute inset-0 z-20 flex flex-col bg-sand-50">
       <div className="flex items-center justify-between px-4 py-3">
@@ -256,27 +317,32 @@ function ResultatSortie({
           <ArrowLeft className="h-4 w-4" /> Nouveau scan
         </button>
         <Badge tone="neutral">
-          {d.voie === 'AUTORISATION' ? 'Autorisation' : d.voie === 'MARQUAGE' ? 'Marquage' : 'Non couvert'}
+          {v.voie === 'AUTORISATION' ? 'Autorisation' : v.voie === 'MARQUAGE' ? 'Marquage' : 'Non couvert'}
         </Badge>
       </div>
 
       <div className="flex flex-1 flex-col items-center overflow-y-auto px-5 pb-4">
-        <div className="mt-1 flex h-24 w-24 items-center justify-center rounded-3xl ring-4 ring-white shadow-card-lg" style={{ background: autorise ? '#EAF3EF' : '#F8E7E4' }}>
-          {d.voie === 'AUTORISATION' ? (
+        <div
+          className="mt-1 flex h-24 w-24 items-center justify-center rounded-3xl shadow-card-lg ring-4 ring-white"
+          style={{ background: autorise ? '#EAF3EF' : '#F8E7E4' }}
+        >
+          {v.voie === 'AUTORISATION' ? (
             <FileOutput className={`h-11 w-11 ${autorise ? 'text-forest-500' : 'text-danger-500'}`} />
-          ) : d.voie === 'MARQUAGE' ? (
+          ) : v.voie === 'MARQUAGE' ? (
             <Tag className={`h-11 w-11 ${autorise ? 'text-forest-500' : 'text-danger-500'}`} />
           ) : (
             <ShieldAlert className="h-11 w-11 text-danger-500" />
           )}
         </div>
 
-        <p className="mt-3 font-mono text-2xl font-extrabold tracking-tight text-ink">{d.titre}</p>
-        {d.sousTitre && <p className="mt-0.5 text-center text-sm font-medium text-muted">{d.sousTitre}</p>}
-        {d.lignes && (
+        <p className="mt-3 font-mono text-2xl font-extrabold tracking-tight text-ink">{v.libelle}</p>
+        {v.sous_titre && <p className="mt-0.5 text-center text-sm font-medium text-muted">{v.sous_titre}</p>}
+        {v.lignes && v.lignes.length > 0 && (
           <ul className="mt-2 space-y-0.5 text-center">
-            {d.lignes.map((l, i) => (
-              <li key={i} className="text-xs text-ink">{l}</li>
+            {v.lignes.map((l, i) => (
+              <li key={i} className="text-xs text-ink">
+                {l}
+              </li>
             ))}
           </ul>
         )}
@@ -284,8 +350,14 @@ function ResultatSortie({
         <StatusBanner
           className="mt-5 w-full"
           result={autorise ? 'AUTORISE' : 'REFUSE'}
-          reason={autorise ? (d.voie === 'MARQUAGE' ? 'Matériel déclaré & marqué' : 'Autorisation valide') : d.motif}
-          instruction={autorise ? (d.voie === 'AUTORISATION' ? 'Consommation à la validation · usage unique' : 'Sortie couverte — laisser passer') : d.consigne}
+          reason={autorise ? (v.voie === 'MARQUAGE' ? 'Matériel déclaré & marqué' : 'Autorisation valide') : motif?.libelle}
+          instruction={
+            autorise
+              ? v.voie === 'AUTORISATION'
+                ? 'Consommation à la validation · usage unique'
+                : 'Sortie couverte — laisser passer'
+              : motif?.consigne
+          }
           icon={autorise ? <Check className="h-8 w-8" strokeWidth={3} /> : <X className="h-8 w-8" strokeWidth={3} />}
         />
       </div>
@@ -293,14 +365,23 @@ function ResultatSortie({
       <div className="border-t border-sand-300 bg-white px-4 py-3">
         {autorise ? (
           <div className="flex gap-2">
-            <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onRefuser}>Refuser</Button>
-            <Button variant="primary" size="lg" block icon={<Check className="h-5 w-5" strokeWidth={2.5} />} onClick={onValider}>
+            <Button variant="ghost" size="lg" className="flex-none px-5" disabled={occupe} onClick={onRefuser}>
+              Refuser
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              block
+              disabled={occupe}
+              icon={occupe ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" strokeWidth={2.5} />}
+              onClick={onValider}
+            >
               Confirmer la sortie
             </Button>
           </div>
         ) : (
-          <Button variant="danger" size="lg" block icon={<ShieldAlert className="h-5 w-5" />} onClick={onRefuser}>
-            Refuser &amp; consigner
+          <Button variant="danger" size="lg" block disabled={occupe} onClick={onRefuser}>
+            Consigner le refus
           </Button>
         )}
       </div>

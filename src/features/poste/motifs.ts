@@ -55,3 +55,34 @@ export const MOTIFS: Record<MotifCode, { libelle: string; consigne: string }> = 
     consigne: 'Aucune entrée tracée — vérifier le partage de badge. Sortie autorisée et signalée.',
   },
 };
+
+/** Motifs propres au contrôle des sorties matière (M10). */
+export type MotifSortieCode =
+  | 'AUTORISATION_NON_APPROUVEE'
+  | 'AUTORISATION_EXPIREE'
+  | 'AUTORISATION_CONSOMMEE'
+  | 'MARQUAGE_NON_OPPOSABLE'
+  | 'NON_COUVERT_R1';
+
+export const MOTIFS_SORTIE: Record<MotifSortieCode, { libelle: string; consigne: string }> = {
+  AUTORISATION_NON_APPROUVEE: {
+    libelle: 'Autorisation non approuvée',
+    consigne: 'Demande incomplète dans le circuit — sortie refusée.',
+  },
+  AUTORISATION_EXPIREE: {
+    libelle: 'Autorisation expirée',
+    consigne: 'Hors validité — refuser et renvoyer vers le référent.',
+  },
+  AUTORISATION_CONSOMMEE: {
+    libelle: 'Autorisation déjà consommée',
+    consigne: 'Usage unique — une sortie a déjà été enregistrée avec ce code.',
+  },
+  MARQUAGE_NON_OPPOSABLE: {
+    libelle: 'Marquage non opposable',
+    consigne: 'Matériel déclaré mais non visé — refuser.',
+  },
+  NON_COUVERT_R1: {
+    libelle: 'Règle de sortie unique (R1)',
+    consigne: 'Retenir le matériel · photo · alerte chef de poste · main courante.',
+  },
+};

@@ -66,7 +66,7 @@ export function Personnel() {
         </Button>
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard tone="forest" label="Personnel déclaré" value={stats.total} icon={<CreditCard className="h-5 w-5" />} />
         <StatCard label="Inductions valides" value={stats.valides} icon={<ShieldCheck className="h-5 w-5" />} />
         <StatCard tone="amber" label="Inductions à viser" value={stats.aViser} icon={<AlertTriangle className="h-5 w-5" />} />

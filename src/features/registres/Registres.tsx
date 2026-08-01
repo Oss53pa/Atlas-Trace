@@ -100,7 +100,7 @@ export function Registres() {
         </div>
 
         {/* Indicateurs */}
-        <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
           <StatCard label="Passages" value={stats.total} tone="plain" icon={<Clock className="h-5 w-5" />} />
           <StatCard
             tone="forest"

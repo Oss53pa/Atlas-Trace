@@ -75,7 +75,7 @@ export function Entreprises({ donneurs }: { donneurs: DonneurOrdre[] }) {
         </Button>
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard tone="forest" label="Entreprises" value={stats.total} icon={<Building2 className="h-5 w-5" />} />
         <StatCard label="Actives" value={stats.actives} icon={<ShieldCheck className="h-5 w-5" />} />
         <StatCard tone="amber" label="En validation" value={stats.validation} icon={<ArrowRight className="h-5 w-5" />} />
