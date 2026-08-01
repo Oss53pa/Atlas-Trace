@@ -31,11 +31,12 @@ const Espaces = lazy(() => import('./features/espaces/Espaces').then((m) => ({ d
 const PreneursLive = lazy(() => import('./features/preneurs/PreneursLive').then((m) => ({ default: m.PreneursLive })));
 const EntreprisesRegistre = lazy(() => import('./features/preneurs/EntreprisesRegistre').then((m) => ({ default: m.EntreprisesRegistre })));
 const RolesLive = lazy(() => import('./features/parametrage/RolesLive').then((m) => ({ default: m.RolesLive })));
+const ComptesLive = lazy(() => import('./features/admin/ComptesLive').then((m) => ({ default: m.ComptesLive })));
 const DesignShowcase = lazy(() => import('./DesignShowcase'));
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
-  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles';
+  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes';
 
 interface Dest {
   vue: Vue;
@@ -56,6 +57,7 @@ const DESTINATIONS: Dest[] = [
   { vue: 'preneurs', label: 'Preneurs & emprises', court: 'Preneurs', icon: <Store className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION', 'GERER_CONDITIONS_BLOQUANTES'] },
   { vue: 'entites', label: 'Registre des entreprises', court: 'Registre', icon: <Building2 className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'roles', label: 'Rôles & pouvoirs', court: 'Rôles', icon: <KeyRound className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
+  { vue: 'comptes', label: 'Comptes internes', court: 'Comptes', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'listes', label: 'Listes journalières', court: 'Listes', icon: <ClipboardList className="h-5 w-5" />, pouvoir: ['DEPOSER_LISTE', 'CONSULTER_TABLEAU'] },
   { vue: 'badges', label: 'Personnes & badges', court: 'Badges', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE', 'DECLARER_PERSONNEL'] },
   { vue: 'maincourante', label: 'Main courante', court: 'Main courante', icon: <BookText className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE', 'CONSULTER_TABLEAU'] },
@@ -80,6 +82,7 @@ function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
     case 'preneurs': return <PreneursLive />;
     case 'entites': return <EntreprisesRegistre />;
     case 'roles': return <RolesLive />;
+    case 'comptes': return <ComptesLive />;
     case 'accueil': return <Accueil onOpen={go} />;
     case 'design': return <DesignShowcase />;
     case 'tableau': return <Tableau />;
