@@ -23,7 +23,7 @@ const gloss = 'shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]';
 
 const variants: Record<Variant, string> = {
   primary: `bg-forest-500 text-white hover:bg-forest-600 active:bg-forest-700 shadow-soft hover:shadow-card ${gloss}`,
-  accent: `bg-amber-500 text-white hover:bg-amber-600 active:bg-amber-700 shadow-soft hover:shadow-card ${gloss}`,
+  accent: 'bg-amber-400 text-ink hover:bg-amber-300 active:bg-amber-500 shadow-soft hover:shadow-card',
   danger: `bg-danger-500 text-white hover:bg-danger-600 shadow-soft hover:shadow-card ${gloss}`,
   outline: 'border border-sand-300 text-forest-700 bg-white hover:border-forest-300 hover:bg-forest-50 shadow-xs',
   ghost: 'text-forest-700 hover:bg-forest-50',

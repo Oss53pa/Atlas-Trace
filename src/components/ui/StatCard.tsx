@@ -15,13 +15,15 @@ interface StatCardProps {
 
 const toneStyles = {
   forest: 'bg-gradient-to-br from-forest-400 to-forest-600 text-white ring-1 ring-inset ring-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]',
-  amber: 'bg-gradient-to-br from-amber-400 to-amber-500 text-white ring-1 ring-inset ring-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]',
+  // Ambre en surface claire + texte encre : contraste conforme WCAG AA
+  // (le blanc sur ambre échouait, ~2.4:1).
+  amber: 'bg-amber-50 text-ink ring-1 ring-amber-200',
   plain: 'bg-white text-ink ring-1 ring-sand-300/50',
 };
 
 const iconTone = {
   forest: 'bg-white/15 text-white',
-  amber: 'bg-white/20 text-white',
+  amber: 'bg-amber-100 text-amber-700',
   plain: 'bg-forest-50 text-forest-600',
 };
 
@@ -34,7 +36,7 @@ export function StatCard({
   tone = 'plain',
   className,
 }: StatCardProps) {
-  const inverted = tone !== 'plain';
+  const inverted = tone === 'forest';
   return (
     <div
       className={cn(
