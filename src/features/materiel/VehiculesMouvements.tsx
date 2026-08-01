@@ -232,7 +232,7 @@ function MouvementSheet({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
-      <div className="w-full max-w-md rounded-3xl bg-white p-5 shadow-card-lg">
+      <div className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-3xl bg-white p-5 shadow-card-lg">
         <div className="mb-1 flex items-center justify-between">
           <h3 className="text-lg font-extrabold text-ink">
             {sens === 'ENTREE' ? 'Entrée' : 'Sortie'} · {v.immatriculation}

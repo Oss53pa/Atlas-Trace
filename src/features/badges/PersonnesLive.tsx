@@ -22,22 +22,27 @@ export function PersonnesLive() {
   const siteId0 = portees.find((p) => p.siteId)?.siteId ?? null;
   const [gens, setGens] = useState<Personne[]>([]);
   const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
+  const [zones, setZones] = useState<string[]>([]);
   const [pret, setPret] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
+  const [badgePour, setBadgePour] = useState<Personne | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   function flash(m: string) { setToast(m); setTimeout(() => setToast(null), 3200); }
 
   async function charger() {
     setErreur(null);
-    const [p, e] = await Promise.all([
+    const [p, e, po] = await Promise.all([
       supabase.from('at_personnes').select('id, nom, prenom, fonction, statut, induction_statut, entreprise_id, at_entreprises(raison_sociale), at_badges(numero, statut)').order('nom'),
       supabase.from('at_entreprises').select('id, raison_sociale').order('raison_sociale'),
+      supabase.from('at_postes').select('zone_controlee'),
     ]);
     if (p.error) setErreur(p.error.message);
     else setGens((p.data as unknown as Personne[]) ?? []);
     setEntreprises((e.data as unknown as Entreprise[]) ?? []);
+    const zs = Array.from(new Set(((po.data as { zone_controlee: string | null }[]) ?? []).map((r) => r.zone_controlee).filter(Boolean) as string[]));
+    setZones(zs.length ? zs : ['circulation']);
     setPret(true);
   }
 
@@ -56,17 +61,17 @@ export function PersonnesLive() {
     setSheet(false); flash(`${prenom} ${nom} déclaré(e)`); charger();
   }
 
-  async function delivrerBadge(p: Personne) {
+  async function delivrerBadge(p: Personne, zonesChoisies: string[]) {
     if (!orgId) return;
     const numero = 'BN-' + crypto.randomUUID().slice(0, 8).toUpperCase();
     const { error } = await supabase.from('at_badges').insert({
       organisation_id: orgId, site_id: siteId0, numero, type: 'NOMINATIF',
       personne_id: p.id, entreprise_id: p.entreprise_id,
-      zones_autorisees: ['CHANTIER'], validite_debut: new Date().toISOString().slice(0, 10),
+      zones_autorisees: zonesChoisies, validite_debut: new Date().toISOString().slice(0, 10),
       validite_fin: anneeFin(), statut: 'ACTIF',
     });
     if (error) { flash('Refusé : ' + error.message); return; }
-    flash(`Badge ${numero} délivré`); charger();
+    setBadgePour(null); flash(`Badge ${numero} délivré (${zonesChoisies.join(', ')})`); charger();
   }
 
   if (chargement || !pret) return <div className="flex min-h-[60vh] items-center justify-center gap-2 text-sm text-muted"><Loader2 className="h-5 w-5 animate-spin" /> Chargement…</div>;
@@ -106,7 +111,7 @@ export function PersonnesLive() {
                   <p className="truncate text-xs text-muted">{p.fonction ?? '—'} · {p.at_entreprises?.raison_sociale ?? 'sans entreprise'}</p>
                 </div>
                 {badge ? <Badge tone="forest"><CreditCard className="h-3 w-3" /> {badge.numero}</Badge>
-                  : peutBadger ? <Button size="sm" variant="outline" icon={<CreditCard className="h-4 w-4" />} onClick={() => delivrerBadge(p)}>Délivrer un badge</Button>
+                  : peutBadger ? <Button size="sm" variant="outline" icon={<CreditCard className="h-4 w-4" />} onClick={() => setBadgePour(p)}>Délivrer un badge</Button>
                     : <Badge tone="neutral">Sans badge</Badge>}
               </li>
             );
@@ -116,6 +121,7 @@ export function PersonnesLive() {
       </div>
 
       {sheet && <PersonneSheet entreprises={entreprises} onAnnuler={() => setSheet(false)} onDeclarer={declarer} />}
+      {badgePour && <BadgeSheet personne={badgePour} zones={zones} onAnnuler={() => setBadgePour(null)} onDelivrer={(zs) => delivrerBadge(badgePour, zs)} />}
 
       {toast && (
         <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
@@ -160,6 +166,37 @@ function PersonneSheet({ entreprises, onAnnuler, onDeclarer }: { entreprises: En
         <Button variant="primary" size="lg" block className="mt-4" disabled={!pret || envoi}
           onClick={async () => { setEnvoi(true); await onDeclarer(nom.trim(), prenom.trim(), fonction.trim(), entrepriseId); setEnvoi(false); }}>
           {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} Déclarer
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function BadgeSheet({ personne, zones, onAnnuler, onDelivrer }: { personne: Personne; zones: string[]; onAnnuler: () => void; onDelivrer: (zones: string[]) => Promise<void> }) {
+  const [sel, setSel] = useState<Set<string>>(new Set(zones));
+  const [envoi, setEnvoi] = useState(false);
+  const bascule = (z: string) => setSel((s) => { const n = new Set(s); n.has(z) ? n.delete(z) : n.add(z); return n; });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onAnnuler}>
+      <div className="w-full max-w-md rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-card-lg ring-1 ring-sand-300/60 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="text-lg font-extrabold text-ink">Délivrer un badge</h3>
+          <button onClick={onAnnuler} aria-label="Fermer" className="rounded-full p-1.5 text-muted hover:bg-sand-100 hover:text-ink"><X className="h-5 w-5" /></button>
+        </div>
+        <p className="mb-4 text-xs text-muted">{personne.prenom} {personne.nom} · badge nominatif, valable 1 an. Le porteur ne sera autorisé au poste que sur ses zones.</p>
+        <p className="mb-2 text-xs font-semibold text-muted">Zones autorisées</p>
+        <div className="flex flex-wrap gap-2">
+          {zones.map((z) => (
+            <button key={z} onClick={() => bascule(z)} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 transition-colors ${sel.has(z) ? 'bg-forest-50 text-forest-700 ring-forest-200' : 'bg-sand-50 text-muted ring-sand-300'}`}>
+              {sel.has(z) && <Check className="h-3 w-3" strokeWidth={3} />}{z}
+            </button>
+          ))}
+        </div>
+        {sel.size === 0 && <p className="mt-2 text-[11px] font-semibold text-danger-600">Sélectionnez au moins une zone.</p>}
+        <Button variant="primary" size="lg" block className="mt-4" disabled={sel.size === 0 || envoi}
+          onClick={async () => { setEnvoi(true); await onDelivrer([...sel]); setEnvoi(false); }}>
+          {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />} Délivrer le badge
         </Button>
       </div>
     </div>

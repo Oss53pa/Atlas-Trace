@@ -15,7 +15,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
 import { FakeQR } from '../badges/FakeQR';
-import { ENTREPRISES_MATERIEL } from '../../data/materiel';
+import { useEntreprises } from './referentiel';
 import { UNITES } from '../../data/entrees';
 import {
   AUTORISATIONS,
@@ -292,7 +292,8 @@ function DemandeSheet({
   onAnnuler: () => void;
   onConfirmer: (a: AutorisationSortie) => void;
 }) {
-  const [entreprise, setEntreprise] = useState(ENTREPRISES_MATERIEL[0]);
+  const entreprises = useEntreprises();
+  const [entreprise, setEntreprise] = useState('');
   const [type, setType] = useState<TypeSortie>('SITE');
   const [motif, setMotif] = useState('');
   const [destination, setDestination] = useState('');
@@ -304,7 +305,7 @@ function DemandeSheet({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
-      <div className="w-full max-w-md rounded-3xl bg-white p-5 shadow-card-lg">
+      <div className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-3xl bg-white p-5 shadow-card-lg">
         <div className="mb-1 flex items-center justify-between">
           <h3 className="text-lg font-extrabold text-ink">Nouvelle demande de sortie</h3>
           <button onClick={onAnnuler} className="text-muted"><X className="h-5 w-5" /></button>
@@ -319,7 +320,8 @@ function DemandeSheet({
               <span className="mb-1 block text-xs font-semibold text-muted">Entreprise</span>
               <select value={entreprise} onChange={(e) => setEntreprise(e.target.value)}
                 className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400">
-                {ENTREPRISES_MATERIEL.map((e) => <option key={e}>{e}</option>)}
+                {entreprises.length === 0 && <option value="">Aucune entreprise declaree</option>}
+                {entreprises.map((e) => <option key={e.id}>{e.raisonSociale}</option>)}
               </select>
             </label>
             <label className="block">
