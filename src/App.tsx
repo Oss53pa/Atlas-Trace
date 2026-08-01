@@ -1,28 +1,31 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import {
   Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Boxes, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X,
+  ScanLine, LayoutGrid, X, Loader2,
 } from 'lucide-react';
-import { PosteHub } from './features/poste/PosteHub';
-import { Registres } from './features/registres/Registres';
-import { Listes } from './features/listes/Listes';
-import { Tableau } from './features/tableau/Tableau';
-import { Badges } from './features/badges/Badges';
-import { Habilitations } from './features/entreprises/Habilitations';
-import { Materiel } from './features/materiel/Materiel';
-import { MainCourante } from './features/maincourante/MainCourante';
-import { ClesRegistre } from './features/cles/ClesRegistre';
-import { Administration } from './features/admin/Administration';
-import { Parametrage } from './features/parametrage/Parametrage';
-import { Editeur } from './features/editeur/Editeur';
-import { Accueil } from './features/accueil/Accueil';
-import { Live } from './features/live/Live';
-import { PortailReferent } from './features/referent/PortailReferent';
-import { Espaces } from './features/espaces/Espaces';
 import { Logo } from './components/ui/Logo';
-import DesignShowcase from './DesignShowcase';
+
+// Chargement à la demande : chaque écran forme son propre chunk, seul l'écran
+// affiché est téléchargé (démarrage mobile allégé).
+const PosteHub = lazy(() => import('./features/poste/PosteHub').then((m) => ({ default: m.PosteHub })));
+const Registres = lazy(() => import('./features/registres/Registres').then((m) => ({ default: m.Registres })));
+const Listes = lazy(() => import('./features/listes/Listes').then((m) => ({ default: m.Listes })));
+const Tableau = lazy(() => import('./features/tableau/Tableau').then((m) => ({ default: m.Tableau })));
+const Badges = lazy(() => import('./features/badges/Badges').then((m) => ({ default: m.Badges })));
+const Habilitations = lazy(() => import('./features/entreprises/Habilitations').then((m) => ({ default: m.Habilitations })));
+const Materiel = lazy(() => import('./features/materiel/Materiel').then((m) => ({ default: m.Materiel })));
+const MainCourante = lazy(() => import('./features/maincourante/MainCourante').then((m) => ({ default: m.MainCourante })));
+const ClesRegistre = lazy(() => import('./features/cles/ClesRegistre').then((m) => ({ default: m.ClesRegistre })));
+const Administration = lazy(() => import('./features/admin/Administration').then((m) => ({ default: m.Administration })));
+const Parametrage = lazy(() => import('./features/parametrage/Parametrage').then((m) => ({ default: m.Parametrage })));
+const Editeur = lazy(() => import('./features/editeur/Editeur').then((m) => ({ default: m.Editeur })));
+const Accueil = lazy(() => import('./features/accueil/Accueil').then((m) => ({ default: m.Accueil })));
+const Live = lazy(() => import('./features/live/Live').then((m) => ({ default: m.Live })));
+const PortailReferent = lazy(() => import('./features/referent/PortailReferent').then((m) => ({ default: m.PortailReferent })));
+const Espaces = lazy(() => import('./features/espaces/Espaces').then((m) => ({ default: m.Espaces })));
+const DesignShowcase = lazy(() => import('./DesignShowcase'));
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
@@ -90,9 +93,19 @@ export default function App() {
   return (
     <div className="min-h-screen bg-sand-100">
       <TopBar vue={vue} />
-      <main className="pb-[calc(5.5rem+env(safe-area-inset-bottom))]">{renderVue(vue, go)}</main>
+      <main className="pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
+        <Suspense fallback={<ChargementVue />}>{renderVue(vue, go)}</Suspense>
+      </main>
       <BottomNav vue={vue} onGo={go} onMore={() => setMore(true)} moreActif={more} />
       {more && <MoreSheet vue={vue} onGo={go} onClose={() => setMore(false)} />}
+    </div>
+  );
+}
+
+function ChargementVue() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center text-muted">
+      <Loader2 className="h-6 w-6 animate-spin" />
     </div>
   );
 }
