@@ -49,24 +49,24 @@ export const ALERTES: Alerte[] = [
   { cle: 'preavis', libelle: 'Préavis de livraison du jour', valeur: 7, ton: 'forest' },
 ];
 
-export interface ReferenceSensible {
-  reference: string;
+export interface SerieFlux {
+  serie: string;
   unite: string;
-  entrees: number;
-  sorties: number;
-  comptage: number;
-  /** Écart = comptage − stock théorique. Négatif = manquant. */
-  ecart: number;
+  /** Valeur observée aujourd'hui. */
+  jour: number;
+  /** Tendance de référence propre au site (moyenne mobile). */
+  moyenne: number;
 }
 
-/** Rapprochement matière sur les références sensibles (chap. 24.1). */
-export const MATIERE_SENSIBLE: ReferenceSensible[] = [
-  { reference: 'Câble cuivre', unite: 'm', entrees: 1200, sorties: 180, comptage: 990, ecart: -30 },
-  { reference: 'Carburant', unite: 'L', entrees: 400, sorties: 320, comptage: 70, ecart: -10 },
-  { reference: 'Outillage électroportatif', unite: 'u', entrees: 45, sorties: 12, comptage: 33, ecart: 0 },
-  { reference: 'Carrelage', unite: 'm²', entrees: 800, sorties: 60, comptage: 738, ecart: -2 },
-  { reference: 'Ferraille', unite: 'kg', entrees: 5000, sorties: 210, comptage: 4785, ecart: -5 },
-  { reference: 'Quincaillerie de porte', unite: 'u', entrees: 300, sorties: 20, comptage: 280, ecart: 0 },
+/** M15 — anomalies de flux. On ne compte pas les objets, on compte les mouvements.
+ *  Le système signale un écart à la tendance propre du site, jamais un seuil absolu (R18). */
+export const ANOMALIES_FLUX: SerieFlux[] = [
+  { serie: 'Bennes sorties', unite: '/ j', jour: 9, moyenne: 5 },
+  { serie: 'Camions entrés / sortis', unite: '/ j', jour: 14, moyenne: 12 },
+  { serie: 'Fûts de carburant sortis', unite: '/ j', jour: 4, moyenne: 2 },
+  { serie: 'Sorties famille sensible', unite: '/ j', jour: 7, moyenne: 6 },
+  { serie: 'Sorties refusées faute de couverture', unite: '/ j', jour: 3, moyenne: 1 },
+  { serie: 'Contrôles approfondis (tirage)', unite: '/ j', jour: 11, moyenne: 10 },
 ];
 
 /** Rôles du pilote pour la vue « temps réel par rôle ». */

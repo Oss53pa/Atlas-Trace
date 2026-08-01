@@ -52,7 +52,7 @@ interface Dest {
 const DESTINATIONS: Dest[] = [
   { vue: 'accueil', label: 'Accueil', court: 'Accueil', icon: <Home className="h-5 w-5" /> },
   { vue: 'poste', label: 'Poste de contrôle', court: 'Poste', icon: <ScanLine className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE'] },
-  { vue: 'materiel', label: 'Matière', court: 'Matière', icon: <Package className="h-5 w-5" />, pouvoir: ['DECLARER_MATERIEL', 'VISER_MATERIEL', 'DEMANDER_SORTIE', 'VISER_SORTIE', 'APPROUVER_SORTIE', 'RECEPTIONNER', 'VALIDER_CRENEAU', 'AUTORISER_EVACUATION', 'DEMANDER_LIVRAISON'] },
+  { vue: 'materiel', label: 'Matière', court: 'Matière', icon: <Package className="h-5 w-5" />, pouvoir: ['DECLARER_MATERIEL', 'VISER_MATERIEL', 'DEMANDER_SORTIE', 'VISER_SORTIE', 'APPROUVER_SORTIE', 'PRENDRE_EN_CHARGE', 'VALIDER_CRENEAU', 'AUTORISER_EVACUATION', 'DEMANDER_LIVRAISON'] },
   { vue: 'tableau', label: 'Tableau de bord', court: 'Tableau', icon: <LayoutDashboard className="h-5 w-5" />, pouvoir: ['CONSULTER_TABLEAU'] },
   { vue: 'espaces', label: 'Espaces & profils', court: 'Espaces', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'entreprises', label: 'Entreprises', court: 'Entreprises', icon: <Building2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'VISER_HABILITATION', 'APPROUVER_HABILITATION', 'GERER_CONDITIONS_BLOQUANTES'] },

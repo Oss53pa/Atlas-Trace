@@ -37,9 +37,9 @@ export const CARTES: Carte[] = [
   { id: 'anomalies_veh', titre: 'Anomalies véhicules', pouvoir: 'CONSULTER_TABLEAU', portee: 'SITE', vue: 'materiel' },
   { id: 'preavis', titre: 'Préavis de livraison', pouvoir: 'DEMANDER_LIVRAISON', portee: 'ENTITE', vue: 'materiel' },
   { id: 'creneaux', titre: 'Créneaux à valider', pouvoir: 'VALIDER_CRENEAU', portee: 'SITE', vue: 'materiel' },
-  { id: 'receptions', titre: 'Réceptions à effectuer', pouvoir: 'RECEPTIONNER', portee: ['SITE', 'EMPRISE'], vue: 'materiel' },
+  { id: 'prises_en_charge', titre: 'Prises en charge à effectuer', pouvoir: 'PRENDRE_EN_CHARGE', portee: ['SITE', 'EMPRISE'], vue: 'materiel' },
   { id: 'evacuations', titre: 'Autorisations d’évacuation', pouvoir: 'AUTORISER_EVACUATION', portee: 'SITE', vue: 'materiel' },
-  { id: 'comptage', titre: 'Comptage & rapprochement matière', pouvoir: 'SAISIR_COMPTAGE', portee: 'SITE', vue: 'tableau' },
+  { id: 'anomalies_flux', titre: 'Anomalies de flux', pouvoir: 'CONSULTER_TABLEAU', portee: 'SITE', vue: 'tableau' },
   { id: 'refus', titre: 'Refus & forçages', pouvoir: 'CONSULTER_TABLEAU', portee: 'SITE', vue: 'tableau' },
   { id: 'main_courante', titre: 'Main courante & incidents', pouvoir: 'CONSULTER_TABLEAU', portee: 'SITE', vue: 'maincourante' },
   { id: 'cles', titre: 'Clés & zones sensibles', pouvoir: 'DELIVRER_BADGE', portee: 'SITE', vue: 'cles' },
@@ -67,7 +67,7 @@ export interface Profil {
 /** §8.3 — compositions par défaut (ajustables par le client). */
 export const PROFILS: Profil[] = [
   { id: 'moa', nom: 'Maîtrise d’ouvrage', typeEntite: 'Maître d’ouvrage', portee: 'Organisation & site', acces: 'INTERNE', invitePar: null,
-    cartes: ['presence', 'suivi_activations', 'entites', 'conditions', 'comptage', 'refus', 'qualite', 'exports', 'audit', 'parametrage'],
+    cartes: ['presence', 'suivi_activations', 'entites', 'conditions', 'anomalies_flux', 'refus', 'qualite', 'exports', 'audit', 'parametrage'],
     note: 'Administratrice de son organisation et de ses sites — pas administratrice racine de l’application (§5.3).' },
   { id: 'moe', nom: 'Maîtrise d’œuvre', typeEntite: 'Maître d’œuvre', portee: 'Site', acces: 'INTERNE', invitePar: 'Maîtrise d’ouvrage',
     cartes: ['presence', 'hab_appro', 'sortie_appro', 'ecarts', 'materiel_retard', 'anomalies_veh', 'exports'] },

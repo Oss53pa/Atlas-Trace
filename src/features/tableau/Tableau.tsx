@@ -5,7 +5,8 @@ import {
   XCircle,
   ShieldAlert,
   PackageCheck,
-  TrendingDown,
+  TrendingUp,
+  Activity,
   CreditCard,
   Radio,
   FileText,
@@ -18,7 +19,7 @@ import { Donut, ColumnChart, BarEffectif } from './charts';
 import { MOUVEMENTS_JOUR } from '../../data/registre';
 import {
   ALERTES,
-  MATIERE_SENSIBLE,
+  ANOMALIES_FLUX,
   PASSAGES_HEURE,
   PRESENCE_ENTREPRISE,
   ROLES,
@@ -37,7 +38,7 @@ export function Tableau() {
     const autorises = MOUVEMENTS_JOUR.filter((m) => m.resultat === 'AUTORISE').length;
     const refus = MOUVEMENTS_JOUR.filter((m) => m.resultat === 'REFUSE').length;
     const forcages = MOUVEMENTS_JOUR.filter((m) => m.resultat === 'FORCE').length;
-    const refsEcart = MATIERE_SENSIBLE.filter((r) => r.ecart < 0).length;
+    const fluxAnormaux = ANOMALIES_FLUX.filter((r) => r.jour > r.moyenne).length;
     return {
       presents,
       declares,
@@ -45,7 +46,7 @@ export function Tableau() {
       autorises,
       refus,
       forcages,
-      refsEcart,
+      fluxAnormaux,
       badges: ALERTES.find((a) => a.cle === 'badges')?.valeur ?? 0,
       sorties: ALERTES.find((a) => a.cle === 'sorties')?.valeur ?? 0,
     };
@@ -57,7 +58,7 @@ export function Tableau() {
     { id: 'refus', label: 'Refus (24 h)', value: c.refus, tone: 'danger', icon: <XCircle className="h-5 w-5" />, roles: ['poste', 'hse'] },
     { id: 'forcages', label: 'Forçages (24 h)', value: c.forcages, tone: 'amber', icon: <ShieldAlert className="h-5 w-5" />, roles: ['poste', 'hse'] },
     { id: 'sorties', label: 'Sorties en attente', value: c.sorties, tone: 'amber', icon: <PackageCheck className="h-5 w-5" />, roles: ['direction'] },
-    { id: 'matiere', label: 'Références en écart', value: c.refsEcart, tone: 'danger', icon: <TrendingDown className="h-5 w-5" />, roles: ['direction', 'hse'] },
+    { id: 'matiere', label: 'Anomalies de flux', value: c.fluxAnormaux, tone: 'amber', icon: <TrendingUp className="h-5 w-5" />, roles: ['direction', 'hse'] },
     { id: 'badges', label: 'Badges non restitués', value: c.badges, tone: 'amber', icon: <CreditCard className="h-5 w-5" />, roles: ['poste'] },
   ];
   const kpisRole = kpis.filter((k) => k.roles.includes(role)).slice(0, 4);
@@ -176,43 +177,42 @@ export function Tableau() {
           </Panneau>
         </div>
 
-        {/* Rapprochement matière */}
+        {/* Anomalies de flux — mouvements suivis (M15) */}
         <Panneau
-          titre="Rapprochement matière — références sensibles"
+          titre="Anomalies de flux — mouvements suivis"
           className="mt-4"
-          icon={<TrendingDown className="h-4 w-4 text-forest-500" />}
+          icon={<Activity className="h-4 w-4 text-forest-500" />}
         >
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
+            <table className="w-full min-w-[560px] text-left text-sm">
               <thead>
                 <tr className="border-b border-sand-300/70 text-xs uppercase tracking-wide text-muted">
-                  <th className="py-2.5 pr-4 font-semibold">Référence</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Entrées</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Sorties</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Comptage</th>
+                  <th className="py-2.5 pr-4 font-semibold">Série de mouvements</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Aujourd'hui</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Tendance du site</th>
                   <th className="py-2.5 pl-4 text-right font-semibold">Écart</th>
                 </tr>
               </thead>
               <tbody>
-                {MATIERE_SENSIBLE.map((r) => {
-                  const perte = r.ecart < 0;
+                {ANOMALIES_FLUX.map((r) => {
+                  const delta = r.jour - r.moyenne;
+                  const rupture = delta > 0;
                   return (
-                    <tr key={r.reference} className="border-b border-sand-200 last:border-0">
+                    <tr key={r.serie} className="border-b border-sand-200 last:border-0">
                       <td className="py-3 pr-4 font-semibold text-ink">
-                        {r.reference}
+                        {r.serie}
                         <span className="ml-1 text-xs font-normal text-muted">({r.unite})</span>
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-muted">{r.entrees.toLocaleString('fr-FR')}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-muted">{r.sorties.toLocaleString('fr-FR')}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-ink">{r.comptage.toLocaleString('fr-FR')}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-ink">{r.jour}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-muted">{r.moyenne}</td>
                       <td className="py-3 pl-4 text-right">
                         <span
                           className={`inline-block rounded-lg px-2 py-0.5 text-sm font-bold tabular-nums ${
-                            perte ? 'bg-danger-50 text-danger-600' : 'bg-forest-50 text-forest-700'
+                            rupture ? 'bg-amber-50 text-amber-700' : 'bg-forest-50 text-forest-700'
                           }`}
                         >
-                          {r.ecart > 0 ? '+' : ''}
-                          {r.ecart} {r.unite}
+                          {delta > 0 ? '+' : ''}
+                          {delta}
                         </span>
                       </td>
                     </tr>
@@ -221,6 +221,7 @@ export function Tableau() {
               </tbody>
             </table>
           </div>
+          <p className="mt-3 text-[11px] text-muted">On ne compte pas les objets, on compte les mouvements. Une anomalie est un écart à la tendance propre du site, jamais un seuil absolu livré par le produit.</p>
         </Panneau>
 
         {/* Rapport périodique */}

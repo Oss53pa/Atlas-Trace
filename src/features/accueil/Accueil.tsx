@@ -1,8 +1,8 @@
 import {
   Users, ArrowRightLeft, FileOutput, CreditCard, ScanLine, ClipboardList, Package,
-  LayoutDashboard, AlertTriangle, ChevronRight, Wifi, Scale,
+  LayoutDashboard, AlertTriangle, ChevronRight, Wifi, Activity,
 } from 'lucide-react';
-import { PRESENCE_ENTREPRISE, ALERTES, MATIERE_SENSIBLE } from '../../data/tableau';
+import { PRESENCE_ENTREPRISE, ALERTES, ANOMALIES_FLUX } from '../../data/tableau';
 
 const alerteVue: Record<string, string> = {
   listes: 'listes', badges: 'badges', materiel: 'materiel', sorties: 'materiel', preavis: 'materiel',
@@ -13,7 +13,10 @@ export function Accueil({ onOpen }: { onOpen: (vue: string) => void }) {
   const declares = PRESENCE_ENTREPRISE.reduce((s, e) => s + e.declare, 0);
   const ecart = declares - presents;
   const val = (cle: string) => ALERTES.find((a) => a.cle === cle)?.valeur ?? 0;
-  const ecartsMatiere = MATIERE_SENSIBLE.filter((m) => m.ecart < 0).sort((a, b) => a.ecart - b.ecart);
+  const fluxAnormaux = ANOMALIES_FLUX
+    .map((f) => ({ ...f, delta: f.jour - f.moyenne }))
+    .filter((f) => f.delta > 0)
+    .sort((a, b) => b.delta - a.delta);
 
   const kpis = [
     { label: 'Présents sur site', value: presents, unit: `/ ${declares}`, icon: <Users className="h-5 w-5" />, gold: true },
@@ -132,26 +135,26 @@ export function Accueil({ onOpen }: { onOpen: (vue: string) => void }) {
             </ul>
           </section>
 
-          {/* Rapprochement matière — écarts */}
+          {/* Anomalies de flux — mouvements suivis (M15) */}
           <section className="pt-7">
             <div className="mb-3 flex items-center gap-2">
-              <Scale className="h-4 w-4 text-amber-600" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-muted">Rapprochement matière — écarts</h2>
+              <Activity className="h-4 w-4 text-amber-600" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-muted">Anomalies de flux — au-dessus de la tendance</h2>
             </div>
             <div className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-sand-300/50">
-              {ecartsMatiere.map((m, i) => (
-                <div key={m.reference} className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? 'border-t border-sand-200' : ''}`}>
+              {fluxAnormaux.map((f, i) => (
+                <div key={f.serie} className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? 'border-t border-sand-200' : ''}`}>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-ink">{m.reference}</span>
-                    <span className="block text-[11px] text-muted">compté {m.comptage} {m.unite}</span>
+                    <span className="block truncate text-sm font-semibold text-ink">{f.serie}</span>
+                    <span className="block text-[11px] text-muted">tendance du site {f.moyenne} {f.unite}</span>
                   </span>
-                  <span className="tnum inline-flex items-center rounded-full bg-danger-50 px-2.5 py-1 text-xs font-bold text-danger-600 ring-1 ring-danger-100">
-                    {m.ecart} {m.unite}
+                  <span className="tnum inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
+                    {f.jour} {f.unite} · +{f.delta}
                   </span>
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-[11px] text-muted">Écarts = comptage − stock théorique (entrées − sorties). Négatif = manquant à investiguer.</p>
+            <p className="mt-2 text-[11px] text-muted">On ne compte pas les objets, on compte les mouvements. Un écart à la tendance propre du site est signalé, jamais un seuil absolu.</p>
           </section>
         </div>
       </div>
