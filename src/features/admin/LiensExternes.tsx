@@ -36,7 +36,7 @@ export function LiensExternes() {
         return { ...l, jeton: regenerer(l.jeton) };
       }),
     );
-    flash('Lien révoqué et régénéré · ancien lien désormais inopérant · tracé au journal');
+    flash('Lien régénéré (maquette) · en production : révocation immédiate côté serveur + journal');
   }
 
   return (
@@ -131,6 +131,10 @@ function QRActivationSheet({ lien, onFermer, onRegenerer }: { lien: LienExterne;
           </div>
         </div>
 
+        <div className="mb-1.5 flex items-center justify-center gap-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Modèle de sécurité cible</span>
+          <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">Maquette</span>
+        </div>
         <div className="flex flex-wrap justify-center gap-1.5">
           {chips.map((c) => (
             <span key={c.txt} className="inline-flex items-center gap-1 rounded-full bg-forest-50 px-2.5 py-1 text-[11px] font-semibold text-forest-700 ring-1 ring-forest-100">
@@ -140,9 +144,9 @@ function QRActivationSheet({ lien, onFermer, onRegenerer }: { lien: LienExterne;
         </div>
 
         <p className="mt-4 rounded-xl bg-sand-50 px-3 py-2.5 text-[11px] leading-relaxed text-muted ring-1 ring-sand-200">
-          Le QR porte un jeton <b className="text-ink">signé</b> lié à cette entité. À l'activation, le serveur vérifie la
-          signature, le <b className="text-ink">consomme une seule fois</b> et lie l'accès à l'appareil. Un QR photographié
-          et rejoué est refusé ; après expiration ou révocation, il est inopérant.
+          <b className="text-ink">En production :</b> le serveur signera le jeton (HMAC/Ed25519, secret jamais exposé),
+          le <b className="text-ink">consommera une seule fois</b> et le liera à l'appareil ; un QR rejoué ou expiré sera refusé.
+          <b className="text-ink"> En maquette,</b> ces contrôles serveur ne sont pas encore actifs — le jeton ci-dessous est illustratif.
         </p>
 
         <p className="mt-2 break-all font-mono text-[10px] text-muted">{token}</p>

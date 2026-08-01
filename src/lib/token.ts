@@ -3,8 +3,10 @@
  *  Structure inviolable en production : `AT1.<charge>.<signature>` où la
  *  SIGNATURE est apposée CÔTÉ SERVEUR (Edge Function, secret jamais exposé au
  *  navigateur) en HMAC-SHA256 — voie d'évolution : Ed25519 asymétrique. Ici, on
- *  illustre la structure avec une empreinte FNV-1a (non secrète) : le format,
- *  l'usage unique et l'expiration sont réels ; seul le secret est simulé. */
+ *  illustre la STRUCTURE avec une empreinte FNV-1a : ⚠️ ce N'EST PAS une signature
+ *  (hash public, sans clé → forgeable trivialement), et l'usage unique / l'expiration
+ *  ne sont PAS encore vérifiés. À NE PAS utiliser comme preuve d'authenticité :
+ *  toute vérification doit se faire côté serveur avant mise en production. */
 
 export interface ChargeAcces {
   v: 1;
