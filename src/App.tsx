@@ -1,11 +1,14 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import {
   Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Boxes, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X, Loader2,
+  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
+import { supabase } from './lib/supabase';
+import { useAuthz } from './lib/authz';
 
 // Chargement à la demande : chaque écran forme son propre chunk, seul l'écran
 // affiché est téléchargé (démarrage mobile allégé).
@@ -31,26 +34,33 @@ type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
   | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design';
 
-interface Dest { vue: Vue; label: string; court: string; icon: ReactNode }
+interface Dest {
+  vue: Vue;
+  label: string;
+  court: string;
+  icon: ReactNode;
+  /** Pouvoir(s) donnant accès (l'un suffit). Absent = accessible à tous les connectés. */
+  pouvoir?: string[];
+}
 
 const DESTINATIONS: Dest[] = [
   { vue: 'accueil', label: 'Accueil', court: 'Accueil', icon: <Home className="h-5 w-5" /> },
-  { vue: 'poste', label: 'Poste de contrôle', court: 'Poste', icon: <ScanLine className="h-5 w-5" /> },
-  { vue: 'materiel', label: 'Matière', court: 'Matière', icon: <Package className="h-5 w-5" /> },
-  { vue: 'tableau', label: 'Tableau de bord', court: 'Tableau', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { vue: 'espaces', label: 'Espaces & profils', court: 'Espaces', icon: <Users className="h-5 w-5" /> },
-  { vue: 'entreprises', label: 'Entreprises', court: 'Entreprises', icon: <Building2 className="h-5 w-5" /> },
-  { vue: 'listes', label: 'Listes journalières', court: 'Listes', icon: <ClipboardList className="h-5 w-5" /> },
-  { vue: 'badges', label: 'Personnes & badges', court: 'Badges', icon: <CreditCard className="h-5 w-5" /> },
-  { vue: 'maincourante', label: 'Main courante', court: 'Main courante', icon: <BookText className="h-5 w-5" /> },
-  { vue: 'cles', label: 'Clés & zones', court: 'Clés', icon: <Key className="h-5 w-5" /> },
-  { vue: 'admin', label: 'Administration', court: 'Admin', icon: <Settings className="h-5 w-5" /> },
-  { vue: 'parametrage', label: 'Paramétrage', court: 'Paramétrage', icon: <SlidersHorizontal className="h-5 w-5" /> },
-  { vue: 'editeur', label: 'Back office éditeur', court: 'Éditeur', icon: <Boxes className="h-5 w-5" /> },
-  { vue: 'live', label: 'Console Live', court: 'Live', icon: <Cloud className="h-5 w-5" /> },
+  { vue: 'poste', label: 'Poste de contrôle', court: 'Poste', icon: <ScanLine className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE'] },
+  { vue: 'materiel', label: 'Matière', court: 'Matière', icon: <Package className="h-5 w-5" />, pouvoir: ['DECLARER_MATERIEL', 'VISER_MATERIEL', 'DEMANDER_SORTIE', 'VISER_SORTIE', 'APPROUVER_SORTIE', 'RECEPTIONNER', 'VALIDER_CRENEAU', 'AUTORISER_EVACUATION', 'DEMANDER_LIVRAISON'] },
+  { vue: 'tableau', label: 'Tableau de bord', court: 'Tableau', icon: <LayoutDashboard className="h-5 w-5" />, pouvoir: ['CONSULTER_TABLEAU'] },
+  { vue: 'espaces', label: 'Espaces & profils', court: 'Espaces', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
+  { vue: 'entreprises', label: 'Entreprises', court: 'Entreprises', icon: <Building2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'VISER_HABILITATION', 'APPROUVER_HABILITATION', 'GERER_CONDITIONS_BLOQUANTES'] },
+  { vue: 'listes', label: 'Listes journalières', court: 'Listes', icon: <ClipboardList className="h-5 w-5" />, pouvoir: ['DEPOSER_LISTE', 'CONSULTER_TABLEAU'] },
+  { vue: 'badges', label: 'Personnes & badges', court: 'Badges', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE', 'DECLARER_PERSONNEL'] },
+  { vue: 'maincourante', label: 'Main courante', court: 'Main courante', icon: <BookText className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE', 'CONSULTER_TABLEAU'] },
+  { vue: 'cles', label: 'Clés & zones', court: 'Clés', icon: <Key className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE'] },
+  { vue: 'admin', label: 'Administration', court: 'Admin', icon: <Settings className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION', 'CONSULTER_AUDIT'] },
+  { vue: 'parametrage', label: 'Paramétrage', court: 'Paramétrage', icon: <SlidersHorizontal className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
+  { vue: 'editeur', label: 'Back office éditeur', court: 'Éditeur', icon: <Boxes className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
+  { vue: 'live', label: 'Console Live', court: 'Live', icon: <Cloud className="h-5 w-5" />, pouvoir: ['CONSULTER_TABLEAU'] },
   { vue: 'referent', label: 'Portail référent', court: 'Référent', icon: <Link2 className="h-5 w-5" /> },
-  { vue: 'registres', label: 'Registres & exports', court: 'Registres', icon: <Table2 className="h-5 w-5" /> },
-  { vue: 'design', label: 'Design system', court: 'Design', icon: <Palette className="h-5 w-5" /> },
+  { vue: 'registres', label: 'Registres & exports', court: 'Registres', icon: <Table2 className="h-5 w-5" />, pouvoir: ['EXPORTER', 'CONSULTER_AUDIT'] },
+  { vue: 'design', label: 'Design system', court: 'Design', icon: <Palette className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
 ];
 
 /** Destinations de la barre du bas (au pouce) ; le reste va dans « Plus ». */
@@ -83,6 +93,11 @@ function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
 export default function App() {
   const [vue, setVue] = useState<Vue>('accueil');
   const [more, setMore] = useState(false);
+  const { connecte, pouvoirs } = useAuthz();
+
+  // Interface par rôle : hors session on montre tout (démo) ; connecté, on ne
+  // laisse voir que ce que les pouvoirs autorisent.
+  const autorise = (d: Dest) => !connecte || !d.pouvoir || d.pouvoir.some((p) => pouvoirs.has(p));
 
   const go = (v: string) => {
     setVue(v as Vue);
@@ -90,14 +105,20 @@ export default function App() {
     window.scrollTo({ top: 0 });
   };
 
+  // Si l'écran courant n'est plus autorisé (après connexion), on ramène à l'accueil.
+  useEffect(() => {
+    if (connecte && !autorise(destOf(vue))) setVue('accueil');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connecte, vue, pouvoirs]);
+
   return (
     <div className="min-h-screen bg-sand-100">
       <TopBar vue={vue} />
       <main className="pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
         <Suspense fallback={<ChargementVue />}>{renderVue(vue, go)}</Suspense>
       </main>
-      <BottomNav vue={vue} onGo={go} onMore={() => setMore(true)} moreActif={more} />
-      {more && <MoreSheet vue={vue} onGo={go} onClose={() => setMore(false)} />}
+      <BottomNav vue={vue} onGo={go} onMore={() => setMore(true)} moreActif={more} autorise={autorise} />
+      {more && <MoreSheet vue={vue} onGo={go} onClose={() => setMore(false)} autorise={autorise} />}
     </div>
   );
 }
@@ -117,25 +138,119 @@ function TopBar({ vue }: { vue: Vue }) {
     <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-r from-[#0A2E28] via-[#0C4238] to-[#0F5044] pt-[env(safe-area-inset-top)] shadow-soft backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Logo size="sm" className="text-white" />
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/85 ring-1 ring-inset ring-white/15 backdrop-blur">
-          {d.court}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/85 ring-1 ring-inset ring-white/15 backdrop-blur sm:inline-flex">
+            {d.court}
+          </span>
+          <CompteBouton />
+        </div>
       </div>
     </header>
   );
 }
 
+/* ---------- Compte / connexion ---------- */
+function CompteBouton() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [ouvre, setOuvre] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session)).catch(() => {});
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  if (session) {
+    const initiale = (session.user.email ?? '?').slice(0, 1).toUpperCase();
+    return (
+      <button
+        onClick={() => supabase.auth.signOut()}
+        className="inline-flex items-center gap-1.5 rounded-full bg-white/10 py-1 pl-1 pr-2.5 text-xs font-semibold text-white/90 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/15"
+        title="Se déconnecter"
+      >
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-300/25 text-[11px] font-bold text-amber-100">{initiale}</span>
+        <LogOut className="h-3.5 w-3.5" />
+      </button>
+    );
+  }
+  return (
+    <>
+      <button
+        onClick={() => setOuvre(true)}
+        className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/15"
+      >
+        <LogIn className="h-3.5 w-3.5" /> Se connecter
+      </button>
+      {ouvre && <ConnexionSheet onClose={() => setOuvre(false)} />}
+    </>
+  );
+}
+
+function ConnexionSheet({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState('demo@newheaven.ci');
+  const [mdp, setMdp] = useState('AtlasTrace2026');
+  const [err, setErr] = useState<string | null>(null);
+  const [envoi, setEnvoi] = useState(false);
+
+  async function connexion() {
+    setEnvoi(true);
+    setErr(null);
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: mdp });
+    setEnvoi(false);
+    if (error) setErr(error.message);
+    else onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-sm rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-card-lg ring-1 ring-sand-300/60 sm:rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="text-lg font-extrabold text-ink">Connexion</h3>
+          <button onClick={onClose} aria-label="Fermer" className="rounded-full p-1.5 text-muted transition-colors hover:bg-sand-100 hover:text-ink">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <p className="mb-4 text-xs text-muted">Une fois connecté, l'appli n'affiche que ce que votre rôle autorise.</p>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-muted">E-mail</span>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username"
+            className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
+        </label>
+        <label className="mt-3 block">
+          <span className="mb-1 block text-xs font-semibold text-muted">Mot de passe</span>
+          <input type="password" value={mdp} onChange={(e) => setMdp(e.target.value)} autoComplete="current-password"
+            className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
+        </label>
+
+        {err && <p className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">{err}</p>}
+
+        <button
+          onClick={connexion}
+          disabled={envoi}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-forest-500 py-3 text-sm font-bold text-white shadow-soft transition-colors hover:bg-forest-600 disabled:opacity-60"
+        >
+          {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />} Se connecter
+        </button>
+        <p className="mt-3 text-center text-[11px] text-muted">Démo : <b className="text-ink">demo@newheaven.ci</b> · Direction du site</p>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- Barre d'onglets (bas, au pouce) ---------- */
-function BottomNav({ vue, onGo, onMore, moreActif }: { vue: Vue; onGo: (v: string) => void; onMore: () => void; moreActif: boolean }) {
-  const surPrimaire = PRIMAIRES.includes(vue);
+function BottomNav({ vue, onGo, onMore, moreActif, autorise }: { vue: Vue; onGo: (v: string) => void; onMore: () => void; moreActif: boolean; autorise: (d: Dest) => boolean }) {
+  const primaires = PRIMAIRES.map(destOf).filter(autorise);
+  const surPrimaire = primaires.some((d) => d.vue === vue);
   return (
     <nav className="glass fixed inset-x-0 bottom-0 z-40 border-t border-sand-300/50 pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2">
-        {PRIMAIRES.map((v) => {
-          const d = destOf(v);
-          const actif = vue === v && !moreActif;
-          return <Onglet key={v} actif={actif} label={d.court} icon={d.icon} onClick={() => onGo(v)} />;
-        })}
+        {primaires.map((d) => (
+          <Onglet key={d.vue} actif={vue === d.vue && !moreActif} label={d.court} icon={d.icon} onClick={() => onGo(d.vue)} />
+        ))}
         <Onglet actif={moreActif || !surPrimaire} label="Plus" icon={<LayoutGrid className="h-5 w-5" />} onClick={onMore} />
       </div>
     </nav>
@@ -157,9 +272,9 @@ function Onglet({ actif, label, icon, onClick }: { actif: boolean; label: string
   );
 }
 
-/* ---------- Feuille « Plus » (toutes les destinations) ---------- */
-function MoreSheet({ vue, onGo, onClose }: { vue: Vue; onGo: (v: string) => void; onClose: () => void }) {
-  const autres = DESTINATIONS.filter((d) => !PRIMAIRES.includes(d.vue));
+/* ---------- Feuille « Plus » (destinations autorisées) ---------- */
+function MoreSheet({ vue, onGo, onClose, autorise }: { vue: Vue; onGo: (v: string) => void; onClose: () => void; autorise: (d: Dest) => boolean }) {
+  const autres = DESTINATIONS.filter((d) => !PRIMAIRES.includes(d.vue) && autorise(d));
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 backdrop-blur-sm" onClick={onClose}>
       <div
@@ -169,7 +284,7 @@ function MoreSheet({ vue, onGo, onClose }: { vue: Vue; onGo: (v: string) => void
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-sand-300" />
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-extrabold text-ink">Toutes les destinations</h2>
-          <button onClick={onClose} className="rounded-full p-1.5 text-muted transition-colors hover:bg-sand-100 hover:text-ink">
+          <button onClick={onClose} aria-label="Fermer" className="rounded-full p-1.5 text-muted transition-colors hover:bg-sand-100 hover:text-ink">
             <X className="h-5 w-5" />
           </button>
         </div>
