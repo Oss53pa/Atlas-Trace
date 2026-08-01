@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from 'react';
 import {
   Check,
   X,
-  ScanLine,
   Wifi,
   WifiOff,
   ShieldAlert,
@@ -21,6 +20,7 @@ import { StatusBanner } from '../../components/ui/StatusBanner';
 import { evaluerAcces } from './evaluate';
 import { MOTIFS } from './motifs';
 import { Scanner } from '../../components/device/Scanner';
+import { ViseurEteint } from '../../components/device/ViseurEteint';
 import { PhotoCapture } from '../../components/device/PhotoCapture';
 import { litJeton } from '../../lib/token';
 import {
@@ -229,41 +229,13 @@ function ScanZone({ sens, onScan, onDetect }: { sens: Sens; onScan: (id: string 
 
   return (
     <>
-      <Viseur sens={sens} />
+      <ViseurEteint detail={sens === 'ENTREE' ? 'Contrôle d’entrée' : 'Contrôle de sortie'} />
       <div className="mt-3 flex justify-center">
         <Button variant="primary" size="lg" icon={<Camera className="h-5 w-5" />} onClick={() => setCamera(true)} className="w-full max-w-[300px]">
           Activer la caméra
         </Button>
       </div>
-      <SimulationStrip onScan={onScan} />
     </>
-  );
-}
-
-/* ---------- Viseur caméra ---------- */
-function Viseur({ sens }: { sens: Sens }) {
-  return (
-    <div className="mt-4 flex flex-col items-center">
-      <div className="relative aspect-square w-full max-w-[280px] overflow-hidden rounded-3xl bg-forest-900">
-        {/* trames décoratives */}
-        <div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_50%_40%,#0F5044_0%,transparent_60%)]" />
-        {/* coins */}
-        {['left-5 top-5 border-l-4 border-t-4', 'right-5 top-5 border-r-4 border-t-4', 'left-5 bottom-5 border-l-4 border-b-4', 'right-5 bottom-5 border-r-4 border-b-4'].map(
-          (c) => (
-            <span key={c} className={`absolute h-10 w-10 rounded-md border-white/80 ${c}`} />
-          ),
-        )}
-        {/* ligne de scan animée */}
-        <span className="absolute inset-x-10 top-1/2 h-0.5 animate-pulse bg-forest-200/90 shadow-[0_0_12px_2px_rgba(175,209,184,0.8)]" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/90">
-          <ScanLine className="h-9 w-9" />
-          <p className="text-sm font-semibold">Cadrez le code du badge</p>
-          <p className="text-xs text-white/60">
-            {sens === 'ENTREE' ? 'Contrôle d’entrée' : 'Contrôle de sortie'}
-          </p>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -318,13 +290,13 @@ function DerniersPassages({ mouvements }: { mouvements: MouvementAcces[] }) {
   );
 }
 
-/* ---------- Bandeau de simulation (remplace la caméra) ---------- */
+/* ---------- Repli sans caméra (jamais affiché quand la caméra fonctionne) ---------- */
 function SimulationStrip({ onScan }: { onScan: (badgeId: string | null) => void }) {
   return (
-    <div className="mt-5 rounded-2xl border border-dashed border-sand-300 bg-sand-50 p-3">
+    <div className="rounded-2xl border border-dashed border-sand-300 bg-sand-50 p-3">
       <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
         <Camera className="h-3.5 w-3.5" />
-        Simulation — remplace le scan caméra
+        Jeux d'essai — sans caméra
       </p>
       <div className="flex flex-wrap gap-1.5">
         {DEMO_SCANS.map((d) => (

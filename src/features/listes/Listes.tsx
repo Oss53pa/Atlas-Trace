@@ -9,7 +9,7 @@ export function Listes() {
   const [sousVue, setSousVue] = useState<SousVue>('referent');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sand-200 via-sand-100 to-forest-50">
+    <div className="min-h-screen bg-sand-100">
       {/* Sous-navigation M4 */}
       <div className="sticky top-14 z-20 overflow-x-auto bg-sand-100/85 px-4 py-3 backdrop-blur [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="mx-auto flex w-max gap-1.5 rounded-full bg-white/90 p-1 shadow-card ring-1 ring-sand-300">
@@ -19,15 +19,8 @@ export function Listes() {
       </div>
 
       {sousVue === 'referent' ? (
-        <div className="flex flex-col items-center px-4 pb-10 pt-4">
-          <p className="mb-4 text-sm font-medium text-muted">M4 · Dépôt de la liste journalière</p>
-          <div className="h-[min(780px,calc(100dvh-9rem))] w-full max-w-[400px] overflow-hidden rounded-[2.5rem] border-8 border-forest-900 bg-sand-100 shadow-card-lg">
-            <ListeReferent />
-          </div>
-          <p className="mt-5 max-w-md text-center text-xs text-muted">
-            Écran du référent, ouvert depuis son lien unique. Basculez « Après 07:30 » (en haut) pour
-            voir le verrouillage et l'ajout exceptionnel.
-          </p>
+        <div className="mx-auto h-[calc(100dvh_-_9rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-hidden bg-sand-100">
+          <ListeReferent />
         </div>
       ) : (
         <SuiviDepots />

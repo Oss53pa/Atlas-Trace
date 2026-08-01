@@ -4,7 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import {
   Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Boxes, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store,
+  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
 import { supabase } from './lib/supabase';
@@ -30,11 +30,12 @@ const PortailReferent = lazy(() => import('./features/referent/PortailReferent')
 const Espaces = lazy(() => import('./features/espaces/Espaces').then((m) => ({ default: m.Espaces })));
 const PreneursLive = lazy(() => import('./features/preneurs/PreneursLive').then((m) => ({ default: m.PreneursLive })));
 const EntreprisesRegistre = lazy(() => import('./features/preneurs/EntreprisesRegistre').then((m) => ({ default: m.EntreprisesRegistre })));
+const RolesLive = lazy(() => import('./features/parametrage/RolesLive').then((m) => ({ default: m.RolesLive })));
 const DesignShowcase = lazy(() => import('./DesignShowcase'));
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
-  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites';
+  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles';
 
 interface Dest {
   vue: Vue;
@@ -54,6 +55,7 @@ const DESTINATIONS: Dest[] = [
   { vue: 'entreprises', label: 'Entreprises', court: 'Entreprises', icon: <Building2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'VISER_HABILITATION', 'APPROUVER_HABILITATION', 'GERER_CONDITIONS_BLOQUANTES'] },
   { vue: 'preneurs', label: 'Preneurs & emprises', court: 'Preneurs', icon: <Store className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION', 'GERER_CONDITIONS_BLOQUANTES'] },
   { vue: 'entites', label: 'Registre des entreprises', court: 'Registre', icon: <Building2 className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
+  { vue: 'roles', label: 'Rôles & pouvoirs', court: 'Rôles', icon: <KeyRound className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'listes', label: 'Listes journalières', court: 'Listes', icon: <ClipboardList className="h-5 w-5" />, pouvoir: ['DEPOSER_LISTE', 'CONSULTER_TABLEAU'] },
   { vue: 'badges', label: 'Personnes & badges', court: 'Badges', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE', 'DECLARER_PERSONNEL'] },
   { vue: 'maincourante', label: 'Main courante', court: 'Main courante', icon: <BookText className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE', 'CONSULTER_TABLEAU'] },
@@ -77,6 +79,7 @@ function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
     case 'espaces': return <Espaces onOpen={go} />;
     case 'preneurs': return <PreneursLive />;
     case 'entites': return <EntreprisesRegistre />;
+    case 'roles': return <RolesLive />;
     case 'accueil': return <Accueil onOpen={go} />;
     case 'design': return <DesignShowcase />;
     case 'tableau': return <Tableau />;
