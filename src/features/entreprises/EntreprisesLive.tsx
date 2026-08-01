@@ -27,7 +27,7 @@ export function EntreprisesLive() {
   const [pret, setPret] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setPret(true); });
+    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setPret(true); }).catch(() => setPret(true));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);

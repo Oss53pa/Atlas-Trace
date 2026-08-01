@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { UserPlus, Camera, Check, X, ShieldCheck, CreditCard, AlertTriangle } from 'lucide-react';
+import { UserPlus, Check, X, ShieldCheck, CreditCard, AlertTriangle } from 'lucide-react';
 import { PhotoCapture } from '../../components/device/PhotoCapture';
 import { Avatar } from '../../components/ui/Avatar';
 import { Badge } from '../../components/ui/Badge';

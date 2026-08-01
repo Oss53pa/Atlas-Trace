@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus, Camera, Check, X, Package, LogOut, Clock, AlertTriangle } from 'lucide-react';
+import { Plus, Check, X, Package, LogOut, Clock, AlertTriangle } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';

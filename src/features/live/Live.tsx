@@ -22,7 +22,7 @@ export function Live() {
   const [chargeSession, setChargeSession] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setChargeSession(false); });
+    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setChargeSession(false); }).catch(() => setChargeSession(false));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
