@@ -3,7 +3,7 @@ import {
   Check,
   X,
   FileOutput,
-  Tag,
+  Boxes,
   ShieldAlert,
   Camera,
   ArrowLeft,
@@ -25,16 +25,27 @@ import {
   derniersControlesSortie,
   enregistrerSortie,
   evaluerSortie,
+  sortirDotation,
   type ControleSortieLigne,
   type Poste,
+  type VerdictDotation,
   type VerdictSortie,
   type Voie,
 } from './api';
+import {
+  chargerDotations,
+  chargerEntreprises,
+  chargerFamilles,
+  type Dotation,
+  type EntrepriseOption,
+  type Famille,
+} from '../materiel/api';
 
 /**
- * M10 — contrôle des sorties matière au poste.
- * La règle R1 (« rien ne sort sans autorisation approuvée ou marquage opposable »)
- * et la consommation à usage unique sont appliquées par le serveur.
+ * M10 — contrôle des sorties matière au poste. Deux voies, un seul écran (R1) :
+ *   1. Dotation — l'agent choisit l'entité et la famille, le serveur décrémente.
+ *   2. Autorisation — scan du code, consommation à usage unique.
+ * Aucune apposition physique sur le matériel. Les règles et l'écriture vivent sur le serveur.
  */
 export function ControleSortie() {
   const { connecte, chargement: authEnCours, a } = useAuthz();
@@ -43,9 +54,13 @@ export function ControleSortie() {
   const [poste, setPoste] = useState<Poste | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [mode, setMode] = useState<'EN_LIGNE' | 'HORS_LIGNE'>(navigator.onLine ? 'EN_LIGNE' : 'HORS_LIGNE');
+  const [ongletDotation, setOngletDotation] = useState(false);
   const [camera, setCamera] = useState(false);
   const [courant, setCourant] = useState<{ verdict: VerdictSortie; ref: string } | null>(null);
   const [controles, setControles] = useState<ControleSortieLigne[]>([]);
+  const [entreprises, setEntreprises] = useState<EntrepriseOption[]>([]);
+  const [familles, setFamilles] = useState<Famille[]>([]);
+  const [dotations, setDotations] = useState<Dotation[]>([]);
   const [envoi, setEnvoi] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const tRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,7 +76,9 @@ export function ControleSortie() {
   }, []);
 
   const rafraichir = useCallback(async () => {
-    setControles(await derniersControlesSortie());
+    const [c, d] = await Promise.all([derniersControlesSortie(), chargerDotations()]);
+    setControles(c);
+    setDotations(d);
   }, []);
 
   useEffect(() => {
@@ -69,9 +86,11 @@ export function ControleSortie() {
     let annule = false;
     (async () => {
       try {
-        const p = await chargerPoste();
+        const [p, e, f] = await Promise.all([chargerPoste(), chargerEntreprises(), chargerFamilles()]);
         if (annule) return;
         setPoste(p);
+        setEntreprises(e);
+        setFamilles(f);
         await rafraichir();
       } catch (e) {
         if (!annule) setErreur((e as Error).message);
@@ -81,6 +100,12 @@ export function ControleSortie() {
       annule = true;
     };
   }, [connecte, peutControler, rafraichir]);
+
+  function annonce(m: string) {
+    setToast(m);
+    if (tRef.current) clearTimeout(tRef.current);
+    tRef.current = setTimeout(() => setToast(null), 2800);
+  }
 
   async function controler(ref: string) {
     if (!poste) return;
@@ -103,18 +128,37 @@ export function ControleSortie() {
     try {
       const enregistre = await enregistrerSortie({ posteId: poste.id, ref: courant.ref, action, mode });
       setCourant(null);
-      setToast(
+      annonce(
         enregistre.resultat_enregistre === 'AUTORISE'
           ? enregistre.autorisation_consommee
             ? 'Sortie autorisée · autorisation consommée'
             : 'Sortie autorisée · mouvement enregistré'
           : 'Refus consigné · main courante',
       );
-      if (tRef.current) clearTimeout(tRef.current);
-      tRef.current = setTimeout(() => setToast(null), 2600);
       await rafraichir();
     } catch (e) {
       setErreur((e as Error).message);
+    } finally {
+      setEnvoi(false);
+    }
+  }
+
+  async function sortie(entrepriseId: string, familleId: string, quantite: number, action: 'VALIDER' | 'REFUSER'): Promise<VerdictDotation | null> {
+    if (!poste) return null;
+    setErreur(null);
+    setEnvoi(true);
+    try {
+      const r = await sortirDotation({ posteId: poste.id, entrepriseId, familleId, quantite, action, mode });
+      annonce(
+        r.resultat_enregistre === 'AUTORISE'
+          ? `Sortie autorisée · dotation restante ${r.reste ?? '—'}`
+          : `Refus consigné${r.motif === 'DOTATION_INSUFFISANTE' ? ' · dotation insuffisante' : ''}`,
+      );
+      await rafraichir();
+      return r;
+    } catch (e) {
+      setErreur((e as Error).message);
+      return null;
     } finally {
       setEnvoi(false);
     }
@@ -168,8 +212,22 @@ export function ControleSortie() {
         </span>
       </header>
 
+      {/* Sélecteur de voie */}
+      <div className="flex gap-1 border-b border-sand-300 bg-sand-50 px-4 pb-3">
+        <VoieTab actif={!ongletDotation} label="Dotation" icon={<Boxes className="h-4 w-4" />} onClick={() => { setOngletDotation(false); }} />
+        <VoieTab actif={ongletDotation} label="Autorisation (scan)" icon={<FileOutput className="h-4 w-4" />} onClick={() => { setOngletDotation(true); setCamera(false); }} />
+      </div>
+
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {camera ? (
+        {!ongletDotation ? (
+          <DotationSortie
+            entreprises={entreprises}
+            familles={familles}
+            dotations={dotations}
+            occupe={envoi}
+            onSortie={sortie}
+          />
+        ) : camera ? (
           <div className="mt-4">
             <Scanner
               onDetect={(t) => controler(t)}
@@ -181,7 +239,7 @@ export function ControleSortie() {
           </div>
         ) : (
           <>
-            <ViseurEteint detail="Autorisation de sortie ou marquage — rien ne sort sans l'un des deux (R1)" />
+            <ViseurEteint detail="Scanner le code d'une autorisation de sortie approuvée (R1)" />
             <div className="mt-3 flex justify-center">
               <Button
                 variant="primary"
@@ -232,6 +290,19 @@ export function ControleSortie() {
   );
 }
 
+function VoieTab({ actif, label, icon, onClick }: { actif: boolean; label: string; icon: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+        actif ? 'bg-forest-500 text-white shadow-card' : 'bg-white text-muted ring-1 ring-sand-300'
+      }`}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
 function Etat({ icone, titre, detail }: { icone: React.ReactNode; titre: string; detail?: string }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 bg-sand-100 px-8 text-center text-muted">
@@ -244,7 +315,99 @@ function Etat({ icone, titre, detail }: { icone: React.ReactNode; titre: string;
   );
 }
 
-/* ---------- Repli sans caméra : saisie du code ou du numéro de marquage ---------- */
+/* ---------- Voie 1 : sortie par dotation (sélection entité + famille) ---------- */
+function DotationSortie({
+  entreprises,
+  familles,
+  dotations,
+  occupe,
+  onSortie,
+}: {
+  entreprises: EntrepriseOption[];
+  familles: Famille[];
+  dotations: Dotation[];
+  occupe: boolean;
+  onSortie: (entrepriseId: string, familleId: string, quantite: number, action: 'VALIDER' | 'REFUSER') => Promise<VerdictDotation | null>;
+}) {
+  const [entrepriseId, setEntrepriseId] = useState('');
+  const [familleId, setFamilleId] = useState('');
+  const [quantite, setQuantite] = useState('1');
+
+  useEffect(() => {
+    if (!entrepriseId && entreprises.length > 0) setEntrepriseId(entreprises[0].id);
+  }, [entreprises, entrepriseId]);
+  useEffect(() => {
+    if (!familleId && familles.length > 0) setFamilleId(familles[0].id);
+  }, [familles, familleId]);
+
+  const present = dotations.find((d) => d.entrepriseId === entrepriseId && d.familleId === familleId)?.quantitePresente ?? 0;
+  const q = Number(quantite);
+  const couvert = q > 0 && q <= present;
+  const pret = !!entrepriseId && !!familleId && q > 0 && !occupe;
+
+  async function valider(action: 'VALIDER' | 'REFUSER') {
+    const r = await onSortie(entrepriseId, familleId, q, action);
+    if (r && r.resultat_enregistre === 'AUTORISE') setQuantite('1');
+  }
+
+  return (
+    <div className="mt-4 rounded-2xl bg-white p-4 shadow-card ring-1 ring-sand-300/70">
+      <label className="block">
+        <span className="mb-1 block text-xs font-semibold text-muted">Entité</span>
+        <select value={entrepriseId} onChange={(e) => setEntrepriseId(e.target.value)}
+          className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400">
+          {entreprises.length === 0 && <option value="">Aucune entreprise</option>}
+          {entreprises.map((e) => <option key={e.id} value={e.id}>{e.raisonSociale}</option>)}
+        </select>
+      </label>
+
+      <label className="mt-3 block">
+        <span className="mb-1 block text-xs font-semibold text-muted">Famille</span>
+        <select value={familleId} onChange={(e) => setFamilleId(e.target.value)}
+          className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400">
+          {familles.length === 0 && <option value="">Aucune famille</option>}
+          {familles.map((f) => <option key={f.id} value={f.id}>{f.libelle}</option>)}
+        </select>
+      </label>
+
+      <div className="mt-3 flex items-end gap-3">
+        <div className={`flex-1 rounded-xl px-3 py-2.5 text-center ring-1 ${present > 0 ? 'bg-forest-50 ring-forest-100' : 'bg-sand-100 ring-sand-200'}`}>
+          <p className="text-[11px] text-muted">Présent en dotation</p>
+          <p className={`tnum text-2xl font-extrabold ${present > 0 ? 'text-forest-700' : 'text-muted'}`}>{present}</p>
+        </div>
+        <label className="w-28">
+          <span className="mb-1 block text-xs font-semibold text-muted">Quantité</span>
+          <input type="number" min="1" value={quantite} onChange={(e) => setQuantite(e.target.value)}
+            className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-lg font-bold text-ink outline-none focus:border-forest-400" />
+        </label>
+      </div>
+
+      {!couvert && q > 0 && (
+        <p className="mt-3 flex items-center gap-1.5 rounded-xl bg-danger-50 px-3 py-2 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">
+          <ShieldAlert className="h-3.5 w-3.5" /> Dotation insuffisante — le serveur refusera (ou passer par une autorisation de sortie).
+        </p>
+      )}
+
+      <div className="mt-4 flex gap-2">
+        <Button variant="ghost" size="lg" className="flex-none px-5" disabled={occupe} onClick={() => valider('REFUSER')}>
+          Refuser
+        </Button>
+        <Button
+          variant="primary"
+          size="lg"
+          block
+          disabled={!pret}
+          icon={occupe ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" strokeWidth={2.5} />}
+          onClick={() => valider('VALIDER')}
+        >
+          Confirmer la sortie
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Repli sans caméra : saisie du code d'autorisation ---------- */
 function SaisieReference({ occupe, onValider }: { occupe: boolean; onValider: (ref: string) => void }) {
   const [ref, setRef] = useState('');
   const pret = ref.trim().length >= 3 && !occupe;
@@ -257,13 +420,13 @@ function SaisieReference({ occupe, onValider }: { occupe: boolean; onValider: (r
       className="rounded-2xl border border-dashed border-sand-300 bg-sand-50 p-3"
     >
       <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
-        <Keyboard className="h-3.5 w-3.5" /> Saisir le code d'autorisation ou le numéro de marquage
+        <Keyboard className="h-3.5 w-3.5" /> Saisir le code d'autorisation
       </p>
       <div className="flex gap-2">
         <input
           value={ref}
           onChange={(e) => setRef(e.target.value)}
-          placeholder="Ex. : M-00101"
+          placeholder="Ex. : AS-2026-00042"
           className="min-w-0 flex-1 rounded-xl border border-sand-300 bg-white px-3 py-2 font-mono text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100"
         />
         <Button type="submit" variant="primary" size="md" disabled={!pret} className="flex-none">
@@ -276,7 +439,7 @@ function SaisieReference({ occupe, onValider }: { occupe: boolean; onValider: (r
 
 function DerniersControles({ controles }: { controles: ControleSortieLigne[] }) {
   const icon = (v: Voie) =>
-    v === 'AUTORISATION' ? <FileOutput className="h-3.5 w-3.5" /> : v === 'MARQUAGE' ? <Tag className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />;
+    v === 'AUTORISATION' ? <FileOutput className="h-3.5 w-3.5" /> : v === 'DOTATION' ? <Boxes className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />;
   return (
     <div className="mt-4">
       <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">Derniers contrôles</p>
@@ -285,7 +448,7 @@ function DerniersControles({ controles }: { controles: ControleSortieLigne[] }) 
           <li key={m.id} className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-2 text-sm shadow-card ring-1 ring-sand-300/70">
             <span className={`h-2 w-2 shrink-0 rounded-full ${m.resultat === 'AUTORISE' ? 'bg-forest-500' : 'bg-danger-500'}`} />
             <span className="text-muted">{icon(m.voie)}</span>
-            <span className="min-w-0 flex-1 truncate font-mono text-xs font-semibold text-ink">{m.libelle}</span>
+            <span className="min-w-0 flex-1 truncate text-xs font-semibold text-ink">{m.libelle}</span>
             <span className="shrink-0 text-xs tabular-nums text-muted">{m.heure}</span>
           </li>
         ))}
@@ -316,9 +479,7 @@ function ResultatSortie({
         <button onClick={onFermer} className="inline-flex items-center gap-1 text-sm font-semibold text-forest-500">
           <ArrowLeft className="h-4 w-4" /> Nouveau scan
         </button>
-        <Badge tone="neutral">
-          {v.voie === 'AUTORISATION' ? 'Autorisation' : v.voie === 'MARQUAGE' ? 'Marquage' : 'Non couvert'}
-        </Badge>
+        <Badge tone="neutral">{v.voie === 'AUTORISATION' ? 'Autorisation' : 'Non couvert'}</Badge>
       </div>
 
       <div className="flex flex-1 flex-col items-center overflow-y-auto px-5 pb-4">
@@ -328,8 +489,6 @@ function ResultatSortie({
         >
           {v.voie === 'AUTORISATION' ? (
             <FileOutput className={`h-11 w-11 ${autorise ? 'text-forest-500' : 'text-danger-500'}`} />
-          ) : v.voie === 'MARQUAGE' ? (
-            <Tag className={`h-11 w-11 ${autorise ? 'text-forest-500' : 'text-danger-500'}`} />
           ) : (
             <ShieldAlert className="h-11 w-11 text-danger-500" />
           )}
@@ -350,14 +509,8 @@ function ResultatSortie({
         <StatusBanner
           className="mt-5 w-full"
           result={autorise ? 'AUTORISE' : 'REFUSE'}
-          reason={autorise ? (v.voie === 'MARQUAGE' ? 'Matériel déclaré & marqué' : 'Autorisation valide') : motif?.libelle}
-          instruction={
-            autorise
-              ? v.voie === 'AUTORISATION'
-                ? 'Consommation à la validation · usage unique'
-                : 'Sortie couverte — laisser passer'
-              : motif?.consigne
-          }
+          reason={autorise ? 'Autorisation valide' : motif?.libelle}
+          instruction={autorise ? 'Consommation à la validation · usage unique' : motif?.consigne}
           icon={autorise ? <Check className="h-8 w-8" strokeWidth={3} /> : <X className="h-8 w-8" strokeWidth={3} />}
         />
       </div>

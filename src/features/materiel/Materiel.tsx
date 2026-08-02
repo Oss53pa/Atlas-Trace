@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Tag, PackagePlus, FileOutput, Truck, Trash2, CalendarClock } from 'lucide-react';
+import { Boxes, PackagePlus, FileOutput, Truck, Trash2, CalendarClock } from 'lucide-react';
 import { ParcsMateriel } from './ParcsMateriel';
 import { EntreesPonctuel } from './EntreesPonctuel';
 import { AutorisationsSortie } from './AutorisationsSortie';
@@ -16,7 +16,7 @@ export function Materiel() {
     <div className="min-h-screen bg-sand-100">
       <div className="sticky top-14 z-20 overflow-x-auto bg-sand-100/85 px-4 py-3 backdrop-blur [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="mx-auto flex w-max gap-1.5 rounded-full bg-white/90 p-1 shadow-card ring-1 ring-sand-300">
-          {onglet('parcs', 'Parcs & marquage', <Tag className="h-4 w-4" />)}
+          {onglet('parcs', 'Entrée & dotation', <Boxes className="h-4 w-4" />)}
           {onglet('entrees', 'Entrées ponctuelles', <PackagePlus className="h-4 w-4" />)}
           {onglet('sorties', 'Sorties', <FileOutput className="h-4 w-4" />)}
           {onglet('vehicules', 'Véhicules', <Truck className="h-4 w-4" />)}

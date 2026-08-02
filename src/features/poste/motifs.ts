@@ -61,7 +61,8 @@ export type MotifSortieCode =
   | 'AUTORISATION_NON_APPROUVEE'
   | 'AUTORISATION_EXPIREE'
   | 'AUTORISATION_CONSOMMEE'
-  | 'MARQUAGE_NON_OPPOSABLE'
+  | 'DOTATION_INSUFFISANTE'
+  | 'REFUS_AGENT'
   | 'NON_COUVERT_R1';
 
 export const MOTIFS_SORTIE: Record<MotifSortieCode, { libelle: string; consigne: string }> = {
@@ -77,9 +78,13 @@ export const MOTIFS_SORTIE: Record<MotifSortieCode, { libelle: string; consigne:
     libelle: 'Autorisation déjà consommée',
     consigne: 'Usage unique — une sortie a déjà été enregistrée avec ce code.',
   },
-  MARQUAGE_NON_OPPOSABLE: {
-    libelle: 'Marquage non opposable',
-    consigne: 'Matériel déclaré mais non visé — refuser.',
+  DOTATION_INSUFFISANTE: {
+    libelle: 'Dotation insuffisante',
+    consigne: 'L’entité ne dispose pas de cette quantité présente — refuser ou passer par une autorisation.',
+  },
+  REFUS_AGENT: {
+    libelle: 'Refusé par l’agent',
+    consigne: 'Sortie refusée au poste.',
   },
   NON_COUVERT_R1: {
     libelle: 'Règle de sortie unique (R1)',

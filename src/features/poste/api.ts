@@ -156,7 +156,7 @@ export async function compteursDuJour(): Promise<{ entrees: number; sorties: num
 
 /* ===================== Sorties matière (M10) ===================== */
 
-export type Voie = 'AUTORISATION' | 'MARQUAGE' | 'AUCUNE';
+export type Voie = 'AUTORISATION' | 'DOTATION' | 'AUCUNE';
 
 export interface VerdictSortie {
   resultat: 'AUTORISE' | 'REFUSE';
@@ -188,6 +188,46 @@ export async function evaluerSortie(posteId: string, ref: string): Promise<Verdi
   const { data, error } = await supabase.rpc('at_evaluer_sortie', { p_poste_id: posteId, p_ref: ref });
   if (error) throw new Error(error.message);
   return data as VerdictSortie;
+}
+
+export interface VerdictDotation {
+  resultat: 'AUTORISE' | 'REFUSE';
+  voie: 'DOTATION';
+  motif?: MotifSortieCode;
+  reference: string;
+  libelle: string;
+  entreprise_label: string;
+  reste?: number;
+  mouvement_id: string;
+  resultat_enregistre: 'AUTORISE' | 'REFUSE';
+}
+
+/**
+ * Sortie par dotation (M10 chemin 1). L'agent choisit l'entité et la famille ;
+ * le serveur décrémente la dotation de façon atomique (refus si insuffisante).
+ */
+export async function sortirDotation(p: {
+  posteId: string;
+  entrepriseId: string;
+  familleId: string;
+  quantite: number;
+  action: 'VALIDER' | 'REFUSER';
+  commentaire?: string;
+  mode: 'EN_LIGNE' | 'HORS_LIGNE';
+  photo?: boolean;
+}): Promise<VerdictDotation> {
+  const { data, error } = await supabase.rpc('at_sortir_dotation', {
+    p_poste_id: p.posteId,
+    p_entreprise_id: p.entrepriseId,
+    p_famille_id: p.familleId,
+    p_quantite: p.quantite,
+    p_action: p.action,
+    p_commentaire: p.commentaire ?? null,
+    p_mode: p.mode,
+    p_photo: p.photo ?? false,
+  });
+  if (error) throw new Error(error.message);
+  return data as VerdictDotation;
 }
 
 /** Sur VALIDER, le serveur consomme l'autorisation dans la même transaction (usage unique). */
