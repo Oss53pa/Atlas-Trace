@@ -4,7 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import {
   Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus,
+  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
 import { supabase } from './lib/supabase';
@@ -35,11 +35,12 @@ const InvitationsLive = lazy(() => import('./features/admin/InvitationsLive').th
 const PersonnesLive = lazy(() => import('./features/badges/PersonnesLive').then((m) => ({ default: m.PersonnesLive })));
 const Cloture = lazy(() => import('./features/cloture/Cloture').then((m) => ({ default: m.Cloture })));
 const InscriptionPortail = lazy(() => import('./features/inscription/InscriptionPortail').then((m) => ({ default: m.InscriptionPortail })));
+const Plafonds = lazy(() => import('./features/plafonds/Plafonds').then((m) => ({ default: m.Plafonds })));
 const DesignShowcase = lazy(() => import('./DesignShowcase'));
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
-  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription';
+  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription' | 'plafonds';
 
 interface Dest {
   vue: Vue;
@@ -65,6 +66,7 @@ const DESTINATIONS: Dest[] = [
   { vue: 'comptes', label: 'Comptes internes', court: 'Comptes', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'invitations', label: 'Invitations référents', court: 'Invitations', icon: <Link2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'ADMINISTRER_ORGANISATION'] },
   { vue: 'personnes', label: 'Personnes & badges', court: 'Personnes', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DECLARER_PERSONNEL', 'DELIVRER_BADGE'] },
+  { vue: 'plafonds', label: 'Plafonds d’effectif', court: 'Plafonds', icon: <Gauge className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'listes', label: 'Registre de présence', court: 'Registre', icon: <ClipboardList className="h-5 w-5" />, pouvoir: ['DEPOSER_LISTE', 'CONSULTER_TABLEAU'] },
   { vue: 'badges', label: 'Personnes & badges', court: 'Badges', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE', 'DECLARER_PERSONNEL'] },
   { vue: 'maincourante', label: 'Main courante', court: 'Main courante', icon: <BookText className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE', 'CONSULTER_TABLEAU'] },
@@ -93,6 +95,7 @@ function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
     case 'personnes': return <PersonnesLive />;
     case 'cloture': return <Cloture />;
     case 'inscription': return <InscriptionPortail />;
+    case 'plafonds': return <Plafonds />;
     case 'accueil': return <Accueil onOpen={go} />;
     case 'design': return <DesignShowcase />;
     case 'tableau': return <Tableau />;

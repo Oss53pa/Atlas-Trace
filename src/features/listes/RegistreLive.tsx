@@ -84,6 +84,21 @@ export function RegistreLive() {
     }
   }
 
+  async function faireAjout(v: { nom: string; prenom: string; fonction: string }) {
+    if (!entete) return;
+    setErreur(null);
+    try {
+      const r = await ajouterLigne({ listeId: entete.listeId, nom: v.nom, prenom: v.prenom, fonction: v.fonction });
+      flash(r.resultat === 'REFUSE'
+        ? `Plafond atteint (${r.plafond}) — dérogation requise pour ajouter.`
+        : 'Personne ajoutée');
+      await rafraichirLignes(entete.listeId);
+      setSheet(false);
+    } catch (err) {
+      setErreur((err as Error).message);
+    }
+  }
+
   async function faireRemplacement(v: { nom: string; prenom: string; fonction: string }) {
     if (!remplace || !entete) return;
     setErreur(null);
@@ -124,15 +139,25 @@ export function RegistreLive() {
             <Users className="h-5 w-5" />
           </span>
           <div>
-            <p className="text-2xl font-extrabold leading-none text-ink">{effectif}</p>
-            <p className="text-xs text-muted">présents déclarés</p>
+            <p className="text-2xl font-extrabold leading-none text-ink">
+              {effectif}
+              {entete?.plafond != null && <span className="text-base font-bold text-muted"> / {entete.plafond}</span>}
+            </p>
+            <p className="text-xs text-muted">présents{entete?.plafond != null ? ' · plafond' : ' · pas de plafond'}</p>
           </div>
         </div>
-        {enAttente > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
-            <AlertTriangle className="h-3.5 w-3.5" /> {enAttente} à confirmer
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-1">
+          {entete?.plafond != null && effectif >= entete.plafond && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-danger-50 px-2.5 py-1 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">
+              <AlertTriangle className="h-3.5 w-3.5" /> Plafond atteint
+            </span>
+          )}
+          {enAttente > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+              <AlertTriangle className="h-3.5 w-3.5" /> {enAttente} à confirmer
+            </span>
+          )}
+        </div>
       </div>
 
       {erreur && (
@@ -194,13 +219,7 @@ export function RegistreLive() {
       </div>
 
       {sheet && entete && (
-        <AjoutSheet
-          onAnnuler={() => setSheet(false)}
-          onConfirmer={async ({ prenom, nom, fonction }) => {
-            await action(() => ajouterLigne({ listeId: entete.listeId, nom, prenom, fonction }), 'Personne ajoutée');
-            setSheet(false);
-          }}
-        />
+        <AjoutSheet onAnnuler={() => setSheet(false)} onConfirmer={(v) => faireAjout({ nom: v.nom, prenom: v.prenom, fonction: v.fonction })} />
       )}
 
       {contest && (

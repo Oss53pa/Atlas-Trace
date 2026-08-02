@@ -84,14 +84,15 @@ export interface RegistreEntete {
   effectif: number;
   entreprise: string;
   date: string;
+  plafond: number | null;
 }
 
 /** Crée si besoin le registre du jour de l'entité et renvoie son entête. */
 export async function assurerRegistre(entrepriseId: string): Promise<RegistreEntete> {
   const { data, error } = await supabase.rpc('at_registre_assurer', { p_entreprise_id: entrepriseId });
   if (error) throw new Error(error.message);
-  const d = data as { liste_id: string; statut: string; effectif: number; entreprise: string; date: string };
-  return { listeId: d.liste_id, statut: d.statut, effectif: d.effectif, entreprise: d.entreprise, date: d.date };
+  const d = data as { liste_id: string; statut: string; effectif: number; entreprise: string; date: string; plafond: number | null };
+  return { listeId: d.liste_id, statut: d.statut, effectif: d.effectif, entreprise: d.entreprise, date: d.date, plafond: d.plafond ?? null };
 }
 
 export async function chargerLignes(listeId: string): Promise<RegistreLigne[]> {
@@ -115,20 +116,62 @@ export async function chargerLignes(listeId: string): Promise<RegistreLigne[]> {
   }));
 }
 
+export interface AjoutResultat {
+  resultat: 'OK' | 'REFUSE';
+  motif?: 'PLAFOND_DEPASSE';
+  plafond?: number;
+  effectif?: number;
+}
+
 export async function ajouterLigne(p: {
   listeId: string;
   nom: string;
   prenom: string;
   fonction?: string;
   tournant?: boolean;
-}): Promise<void> {
-  const { error } = await supabase.rpc('at_registre_ajouter_ligne', {
+}): Promise<AjoutResultat> {
+  const { data, error } = await supabase.rpc('at_registre_ajouter_ligne', {
     p_liste_id: p.listeId,
     p_nom: p.nom,
     p_prenom: p.prenom,
     p_fonction: p.fonction ?? null,
     p_tournant: p.tournant ?? true,
     p_source: 'REFERENT',
+  });
+  if (error) throw new Error(error.message);
+  return data as AjoutResultat;
+}
+
+/* ===================== Plafonds d'effectif (M24) ===================== */
+
+export interface PlafondEntreprise {
+  entrepriseId: string;
+  entreprise: string;
+  valeur: number | null;
+}
+
+export async function chargerPlafonds(): Promise<PlafondEntreprise[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  const [{ data: ents, error: e1 }, { data: plafs, error: e2 }] = await Promise.all([
+    supabase.from('at_entreprises').select('id, raison_sociale').order('raison_sociale'),
+    supabase.from('at_plafonds').select('entreprise_id, valeur, date_debut, date_fin').order('date_debut', { ascending: false }),
+  ]);
+  if (e1) throw new Error(e1.message);
+  if (e2) throw new Error(e2.message);
+  const courant = new Map<string, number>();
+  for (const p of plafs ?? []) {
+    if (courant.has(p.entreprise_id)) continue;
+    if (p.date_debut <= today && (!p.date_fin || p.date_fin >= today)) courant.set(p.entreprise_id, p.valeur);
+  }
+  return (ents ?? []).map((e) => ({ entrepriseId: e.id, entreprise: e.raison_sociale, valeur: courant.get(e.id) ?? null }));
+}
+
+export async function definirPlafond(entrepriseId: string, valeur: number, dateDebut?: string, dateFin?: string): Promise<void> {
+  const { error } = await supabase.rpc('at_definir_plafond', {
+    p_entreprise_id: entrepriseId,
+    p_valeur: valeur,
+    p_date_debut: dateDebut ?? null,
+    p_date_fin: dateFin ?? null,
   });
   if (error) throw new Error(error.message);
 }

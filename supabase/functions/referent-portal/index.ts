@@ -68,6 +68,21 @@ Deno.serve(async (req) => {
       return data?.id ?? null
     }
 
+    // Plafond courant de l'entité du référent (null = pas de plafond).
+    async function plafondActuel(entrepriseId: string) {
+      const { data } = await admin.from('at_plafonds')
+        .select('valeur').eq('entreprise_id', entrepriseId)
+        .lte('date_debut', date).or(`date_fin.is.null,date_fin.gte.${date}`)
+        .order('date_debut', { ascending: false }).limit(1).maybeSingle()
+      return (data?.valeur ?? null) as number | null
+    }
+
+    async function entrepriseId() {
+      const { data } = await admin.from('at_entreprises').select('id')
+        .eq('site_id', lien.site_id).eq('raison_sociale', lien.entreprise).maybeSingle()
+      return data?.id ?? null
+    }
+
     async function recompterEffectif(listeId: string) {
       const { count } = await admin.from('at_lignes_liste')
         .select('id', { count: 'exact', head: true })
@@ -81,6 +96,15 @@ Deno.serve(async (req) => {
       const { nom, prenom, fonction, tournant } = body
       if (!nom || !prenom) return json({ error: 'Nom et prénom requis' }, 400)
       const liste = await assurerListe()
+      // Plafond : bloquant pour un ajout référent (dérogation à proposer côté client).
+      const eid = await entrepriseId()
+      if (eid) {
+        const plaf = await plafondActuel(eid)
+        if (plaf != null) {
+          const eff = await recompterEffectif(liste.id)
+          if (eff >= plaf) return json({ resultat: 'REFUSE', motif: 'PLAFOND_DEPASSE', plafond: plaf, effectif: eff })
+        }
+      }
       const { data, error: e } = await admin.from('at_lignes_liste').insert({
         liste_id: liste.id, organisation_id: lien.organisation_id,
         nom: String(nom).trim(), prenom: String(prenom).trim(), fonction: fonction ?? null,
@@ -186,12 +210,13 @@ Deno.serve(async (req) => {
     const { data: lignes } = await admin.from('at_lignes_liste')
       .select('id, nom, prenom, fonction, present, tournant, source, statut_confirmation, motif_contestation')
       .eq('liste_id', liste.id).order('ajout_at')
+    const plafond = entRes.data?.id ? await plafondActuel(entRes.data.id) : null
 
     return json({
       statut: 'ACTIF', referent: lien.referent_nom, entreprise: lien.entreprise,
       site: siteRes.data?.libelle ?? null, organisation: orgRes.data?.raison_sociale ?? null,
       dateJour: date, personnes,
-      registre: { listeId: liste.id, statut: liste.statut, effectif: liste.effectif, deposeeAt: liste.deposee_at },
+      registre: { listeId: liste.id, statut: liste.statut, effectif: liste.effectif, deposeeAt: liste.deposee_at, plafond },
       lignes: lignes ?? [],
     })
   } catch (e) {

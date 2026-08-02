@@ -14,7 +14,7 @@ interface RLigne {
   present: boolean; tournant: boolean; source: 'REFERENT' | 'PORTAIL';
   statut_confirmation: StatutConf; motif_contestation: string | null;
 }
-interface Registre { listeId: string; statut: string; effectif: number; deposeeAt: string | null }
+interface Registre { listeId: string; statut: string; effectif: number; deposeeAt: string | null; plafond: number | null }
 interface Resultat {
   statut: 'ACTIF' | 'REVOQUE' | 'INCONNU';
   referent?: string; entreprise?: string; site?: string; organisation?: string;
@@ -135,6 +135,19 @@ function PortailActif({ res, jeton }: { res: Resultat; jeton: string }) {
     return true;
   }
 
+  async function ajouterPersonne(v: { nom: string; prenom: string; fonction: string }, tournant: boolean): Promise<boolean> {
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke('referent-portal', { body: { jeton, date: res.dateJour, action: 'ajouter', ...v, tournant } });
+    const e = error?.message || (data as { error?: string })?.error;
+    if (e) { flash('Erreur : ' + e); setBusy(false); return false; }
+    const d = data as { resultat?: string; plafond?: number };
+    if (d?.resultat === 'REFUSE') { flash(`Plafond atteint (${d.plafond}) — dérogation requise.`); await recharger(); setBusy(false); return false; }
+    await recharger();
+    setBusy(false);
+    flash(tournant ? 'Tournant ajouté' : 'Personne ajoutée');
+    return true;
+  }
+
   async function remplacer(v: { nom: string; prenom: string; fonction: string }) {
     if (!remplace) return;
     setBusy(true);
@@ -164,8 +177,9 @@ function PortailActif({ res, jeton }: { res: Resultat; jeton: string }) {
         <div className="mb-3 flex items-center justify-between">
           <p className="flex items-center gap-2 text-sm font-bold text-ink"><Users className="h-4 w-4 text-forest-500" /> Présents aujourd’hui</p>
           <div className="flex items-center gap-1.5">
+            {registre?.plafond != null && effectif >= registre.plafond && <Badge tone="danger" dot>Plafond atteint</Badge>}
             {enAttente > 0 && <Badge tone="amber" dot>{enAttente} à confirmer</Badge>}
-            <Badge tone="forest">{effectif} présents</Badge>
+            <Badge tone="forest">{effectif}{registre?.plafond != null ? ` / ${registre.plafond}` : ''} présents</Badge>
           </div>
         </div>
 
@@ -236,8 +250,8 @@ function PortailActif({ res, jeton }: { res: Resultat; jeton: string }) {
           vivier={vivier}
           busy={busy}
           onAnnuler={() => setAdd(false)}
-          onVivier={async (p) => { const ok = await agir('ajouter', { nom: p.nom, prenom: p.prenom, fonction: p.fonction, tournant: false }, 'Personne ajoutée'); if (ok) setAdd(false); }}
-          onManuel={async (v) => { const ok = await agir('ajouter', { nom: v.nom, prenom: v.prenom, fonction: v.fonction, tournant: true }, 'Tournant ajouté'); if (ok) setAdd(false); }}
+          onVivier={async (p) => { const ok = await ajouterPersonne({ nom: p.nom, prenom: p.prenom, fonction: p.fonction }, false); if (ok) setAdd(false); }}
+          onManuel={async (v) => { const ok = await ajouterPersonne({ nom: v.nom, prenom: v.prenom, fonction: v.fonction }, true); if (ok) setAdd(false); }}
         />
       )}
       {contest && (
