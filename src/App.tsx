@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import {
   Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
-  Package, BookText, Key, Settings, SlidersHorizontal, Boxes, Home, Cloud, Link2, Users,
+  Package, BookText, Key, Settings, SlidersHorizontal, Home, Cloud, Link2, Users,
   ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
@@ -23,7 +23,6 @@ const MainCourante = lazy(() => import('./features/maincourante/MainCourante').t
 const ClesRegistre = lazy(() => import('./features/cles/ClesRegistre').then((m) => ({ default: m.ClesRegistre })));
 const Administration = lazy(() => import('./features/admin/Administration').then((m) => ({ default: m.Administration })));
 const Parametrage = lazy(() => import('./features/parametrage/Parametrage').then((m) => ({ default: m.Parametrage })));
-const Editeur = lazy(() => import('./features/editeur/Editeur').then((m) => ({ default: m.Editeur })));
 const Accueil = lazy(() => import('./features/accueil/Accueil').then((m) => ({ default: m.Accueil })));
 const Live = lazy(() => import('./features/live/Live').then((m) => ({ default: m.Live })));
 const PortailReferent = lazy(() => import('./features/referent/PortailReferent').then((m) => ({ default: m.PortailReferent })));
@@ -38,7 +37,7 @@ const DesignShowcase = lazy(() => import('./DesignShowcase'));
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
-  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'editeur' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes';
+  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes';
 
 interface Dest {
   vue: Vue;
@@ -68,7 +67,6 @@ const DESTINATIONS: Dest[] = [
   { vue: 'cles', label: 'Clés & zones', court: 'Clés', icon: <Key className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE'] },
   { vue: 'admin', label: 'Administration', court: 'Admin', icon: <Settings className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION', 'CONSULTER_AUDIT'] },
   { vue: 'parametrage', label: 'Paramétrage', court: 'Paramétrage', icon: <SlidersHorizontal className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
-  { vue: 'editeur', label: 'Back office éditeur', court: 'Éditeur', icon: <Boxes className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'live', label: 'Console Live', court: 'Live', icon: <Cloud className="h-5 w-5" />, pouvoir: ['CONSULTER_TABLEAU'] },
   { vue: 'referent', label: 'Portail référent', court: 'Référent', icon: <Link2 className="h-5 w-5" /> },
   { vue: 'registres', label: 'Registres & exports', court: 'Registres', icon: <Table2 className="h-5 w-5" />, pouvoir: ['EXPORTER', 'CONSULTER_AUDIT'] },
@@ -100,7 +98,6 @@ function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
     case 'cles': return <ClesRegistre />;
     case 'admin': return <Administration />;
     case 'parametrage': return <Parametrage />;
-    case 'editeur': return <Editeur />;
     case 'live': return <Live />;
     case 'referent': return <PortailReferent />;
     case 'registres': return <Registres />;
@@ -109,7 +106,10 @@ function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
 }
 
 export default function App() {
-  const [vue, setVue] = useState<Vue>('accueil');
+  // Lien d'invitation référent (/?r=jeton) : on ouvre directement le portail.
+  const [vue, setVue] = useState<Vue>(() =>
+    new URLSearchParams(window.location.search).has('r') ? 'referent' : 'accueil',
+  );
   const [more, setMore] = useState(false);
   const { connecte, pouvoirs } = useAuthz();
 
