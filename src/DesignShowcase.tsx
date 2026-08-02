@@ -145,8 +145,8 @@ export default function DesignShowcase() {
             />
             <StatusBanner
               result="REFUSE"
-              reason="Hors liste du jour"
-              instruction="Orienter vers le référent de l'entreprise"
+              reason="Induction expirée"
+              instruction="Induction HSE à repasser avant tout accès"
               icon={<X className="h-8 w-8" strokeWidth={3} />}
             />
           </div>

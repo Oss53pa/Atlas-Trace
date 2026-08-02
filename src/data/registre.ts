@@ -41,7 +41,7 @@ export const MOUVEMENTS_JOUR: MouvementAcces[] = [
   m('06:52', 'Awa Bamba', 'Bâti-Sud', 'ENTREE', 'REFUSE', 'INDUCTION_EXPIREE'),
   m('06:59', 'Paul Mensah', 'Électro-CI', 'ENTREE', 'REFUSE', 'ENTREPRISE_SUSPENDUE'),
   m('07:03', 'Salimata Ouattara', 'Bâti-Sud', 'ENTREE', 'REFUSE', 'BADGE_SUSPENDU'),
-  m('07:08', 'Issouf Traoré', 'Bâti-Sud', 'ENTREE', 'FORCE', 'HORS_LISTE', true),
+  m('07:08', 'Issouf Traoré', 'Bâti-Sud', 'ENTREE', 'FORCE', 'HORS_PLAGE', true),
   m('07:15', 'Karim Zerbo', 'Aménag-Preneur K', 'ENTREE', 'REFUSE', 'HORS_ZONE'),
   m('07:22', 'Aya N’Dri', 'Bâti-Sud', 'ENTREE', 'AUTORISE'),
   m('07:29', 'Bakary Cissé', 'Bâti-Sud', 'ENTREE', 'AUTORISE', undefined, false, 'HORS_LIGNE'),
@@ -56,7 +56,7 @@ export const MOUVEMENTS_JOUR: MouvementAcces[] = [
   m('08:53', 'Moussa Fofana', 'Bâti-Sud', 'ENTREE', 'AUTORISE'),
   m('09:06', 'Marie Kablan', 'Aménag-Preneur K', 'ENTREE', 'AUTORISE'),
   m('09:18', 'Bakary Cissé', 'Bâti-Sud', 'SORTIE', 'AUTORISE'),
-  m('09:32', 'Seydou Koné', 'Bâti-Sud', 'ENTREE', 'FORCE', 'HORS_LISTE', true),
+  m('09:32', 'Seydou Koné', 'Bâti-Sud', 'ENTREE', 'FORCE', 'HORS_PLAGE', true),
   m('09:47', 'Aya N’Dri', 'Bâti-Sud', 'SORTIE', 'AUTORISE'),
 ];
 

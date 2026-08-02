@@ -63,7 +63,7 @@ export const AUDIT: EvenementAudit[] = [
   { id: 'a2', horodatage: '31/07 09:20', utilisateur: 'Mme Aka', action: 'LEVÉE CONDITION', entite: 'Preneur · Boutique X', avant: 'Bloqué', apres: 'Autorisé', appareil: 'Poste direction · 10.0.2.4' },
   { id: 'a3', horodatage: '31/07 08:50', utilisateur: 'M. Bamba', action: 'MODIFICATION', entite: 'Fiche entreprise · Bâti-Sud', avant: 'Assurance éch. 31/12/2026', apres: 'Assurance éch. 15/01/2027', appareil: 'Poste direction · 10.0.2.4' },
   { id: 'a4', horodatage: '31/07 08:14', utilisateur: 'M. Bamba', action: 'APPROBATION SORTIE', entite: 'AS-2026-00185', avant: 'VISA', apres: 'APPROUVÉE · code généré', appareil: 'Mobile · 10.0.2.31' },
-  { id: 'a5', horodatage: '31/07 07:08', utilisateur: 'M. Koné', action: 'FORÇAGE ACCÈS', entite: 'Personne · Kouadio I.', avant: 'REFUSÉ (hors liste)', apres: 'FORCÉ', appareil: 'Tablette poste · 10.0.2.15' },
+  { id: 'a5', horodatage: '31/07 07:08', utilisateur: 'M. Koné', action: 'FORÇAGE ACCÈS', entite: 'Personne · Kouadio I.', avant: 'REFUSÉ (hors plage)', apres: 'FORCÉ', appareil: 'Tablette poste · 10.0.2.15' },
   { id: 'a6', horodatage: '31/07 07:03', utilisateur: 'M. Diby', action: 'SUSPENSION BADGE', entite: 'Badge · NOM-00110', avant: 'ACTIF', apres: 'SUSPENDU', appareil: 'Poste HSE · 10.0.2.9' },
 ];
 

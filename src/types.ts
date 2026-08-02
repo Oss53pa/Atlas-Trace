@@ -23,7 +23,6 @@ export type MotifCode =
   | 'BADGE_SUSPENDU'
   | 'ENTREPRISE_SUSPENDUE'
   | 'DONNEUR_ORDRE_BLOQUE'
-  | 'HORS_LISTE'
   | 'HORS_ZONE'
   | 'HORS_EMPRISE'
   | 'HORS_PLAGE'

@@ -22,10 +22,6 @@ export const MOTIFS: Record<MotifCode, { libelle: string; consigne: string }> = 
     libelle: 'Preneur bloqué',
     consigne: 'Condition préalable non levée — se rapprocher du référent.',
   },
-  HORS_LISTE: {
-    libelle: 'Hors liste du jour',
-    consigne: 'Non déclaré ce matin — orienter vers le référent de l’entreprise.',
-  },
   HORS_ZONE: {
     libelle: 'Hors zone autorisée',
     consigne: 'Zone non couverte par ce badge — refuser l’accès.',
