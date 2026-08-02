@@ -2,7 +2,15 @@ import { useMemo, useState } from 'react';
 import { Link2, Clock, UserPlus, Check, Users, Send, X } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { useAuthz } from '../../lib/authz';
 import { LISTE_CONFIG, PERSONNEL_VEILLE } from '../../data/listes';
+import { RegistreLive } from './RegistreLive';
+
+/** Registre réel (connecté + DEPOSER_LISTE) ; sinon démonstration réaménagée. */
+export function ListeReferent() {
+  const { connecte, a } = useAuthz();
+  return connecte && a('DEPOSER_LISTE') ? <RegistreLive /> : <RegistreDemo />;
+}
 
 /**
  * M4 — registre de présence vivant. Remplace la liste journalière figée :
@@ -37,7 +45,7 @@ const initiales = (): Ligne[] =>
     source: 'REFERENT',
   }));
 
-export function ListeReferent() {
+function RegistreDemo() {
   const [lignes, setLignes] = useState<Ligne[]>(initiales);
   const [statut, setStatut] = useState<StatutIndicatif>('NON_DEPOSE');
   const [apresHeure, setApresHeure] = useState(false);
