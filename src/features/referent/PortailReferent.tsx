@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Link2, LogIn, Loader2, MapPin, Users, ShieldOff, HelpCircle, Check, Send, Clock,
-  UserPlus, Trash2, ShieldCheck, AlertTriangle, X,
+  UserPlus, Trash2, ShieldCheck, AlertTriangle, X, Repeat,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -108,6 +108,7 @@ function PortailActif({ res, jeton }: { res: Resultat; jeton: string }) {
   const [toast, setToast] = useState<string | null>(null);
   const [add, setAdd] = useState(false);
   const [contest, setContest] = useState<RLigne | null>(null);
+  const [remplace, setRemplace] = useState<RLigne | null>(null);
 
   const effectif = lignes.filter((l) => l.present && l.statut_confirmation !== 'CONTESTEE').length;
   const enAttente = lignes.filter((l) => l.statut_confirmation === 'EN_ATTENTE').length;
@@ -132,6 +133,20 @@ function PortailActif({ res, jeton }: { res: Resultat; jeton: string }) {
     setBusy(false);
     if (ok) flash(ok);
     return true;
+  }
+
+  async function remplacer(v: { nom: string; prenom: string; fonction: string }) {
+    if (!remplace) return;
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke('referent-portal', { body: { jeton, date: res.dateJour, action: 'remplacer', ligneId: remplace.id, ...v } });
+    const e = error?.message || (data as { error?: string })?.error;
+    if (e) { flash('Erreur : ' + e); setBusy(false); return; }
+    flash((data as { resultat?: string })?.resultat === 'REFUSE'
+      ? 'Déjà entré — enregistrez d’abord sa sortie, puis remplacez.'
+      : 'Personne remplacée · effectif inchangé');
+    await recharger();
+    setBusy(false);
+    setRemplace(null);
   }
 
   return (
@@ -172,8 +187,11 @@ function PortailActif({ res, jeton }: { res: Resultat; jeton: string }) {
                     {l.source === 'PORTAIL' && <Badge tone="neutral">Portail</Badge>}
                     {conf && <Badge tone={conf.tone}>{conf.label}</Badge>}
                   </div>
-                  {!attente && (
-                    <button disabled={busy} onClick={() => agir('retirer', { ligneId: l.id }, 'Ligne retirée')} className="shrink-0 rounded-lg p-1.5 text-muted hover:bg-danger-50 hover:text-danger-600" aria-label="Retirer"><Trash2 className="h-4 w-4" /></button>
+                  {!attente && l.statut_confirmation !== 'REMPLACEE' && (
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <button disabled={busy} onClick={() => setRemplace(l)} className="rounded-lg p-1.5 text-muted hover:bg-forest-50 hover:text-forest-600" aria-label="Remplacer"><Repeat className="h-4 w-4" /></button>
+                      <button disabled={busy} onClick={() => agir('retirer', { ligneId: l.id }, 'Ligne retirée')} className="rounded-lg p-1.5 text-muted hover:bg-danger-50 hover:text-danger-600" aria-label="Retirer"><Trash2 className="h-4 w-4" /></button>
+                    </div>
                   )}
                 </div>
                 {attente && (
@@ -228,6 +246,9 @@ function PortailActif({ res, jeton }: { res: Resultat; jeton: string }) {
           onAnnuler={() => setContest(null)}
           onConfirmer={async (motif) => { const ok = await agir('contester', { ligneId: contest.id, motif }, 'Ligne contestée'); if (ok) setContest(null); }}
         />
+      )}
+      {remplace && (
+        <RemplaceSheet ligne={remplace} busy={busy} onAnnuler={() => setRemplace(null)} onConfirmer={remplacer} />
       )}
 
       {toast && (
@@ -313,6 +334,42 @@ function ContestSheet({
         <div className="mt-4 flex gap-2">
           <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onAnnuler}>Annuler</Button>
           <Button variant="danger" size="lg" block disabled={!pret} onClick={() => onConfirmer(motif.trim())}>Contester</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RemplaceSheet({
+  ligne, busy, onAnnuler, onConfirmer,
+}: {
+  ligne: RLigne; busy: boolean;
+  onAnnuler: () => void;
+  onConfirmer: (v: { nom: string; prenom: string; fonction: string }) => void;
+}) {
+  const [prenom, setPrenom] = useState('');
+  const [nom, setNom] = useState('');
+  const [fonction, setFonction] = useState('');
+  const pret = prenom.trim() && nom.trim() && !busy;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4">
+      <div className="w-full max-w-md rounded-t-3xl bg-white p-5 shadow-card-lg sm:rounded-3xl">
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="text-lg font-extrabold text-ink">Remplacer une personne</h3>
+          <button onClick={onAnnuler} className="text-muted"><X className="h-5 w-5" /></button>
+        </div>
+        <p className="mb-4 text-sm text-muted">
+          <b className="text-ink">{ligne.prenom} {ligne.nom}</b> est remplacé(e) — l’effectif ne change pas, la ligne d’origine est conservée. Aucun motif. Refusé si déjà entré au poste.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <input value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Prénom" className="rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400" />
+          <input value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Nom" className="rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400" />
+        </div>
+        <input value={fonction} onChange={(e) => setFonction(e.target.value)} placeholder="Fonction (ex. : manœuvre)" className="mt-3 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400" />
+        <div className="mt-4 flex gap-2">
+          <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onAnnuler}>Annuler</Button>
+          <Button variant="primary" size="lg" block disabled={!pret}
+            onClick={() => onConfirmer({ prenom: prenom.trim(), nom: nom.trim(), fonction: fonction.trim() })}>Remplacer</Button>
         </div>
       </div>
     </div>

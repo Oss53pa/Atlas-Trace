@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Users, UserPlus, Check, X, Send, Loader2, Trash2, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Users, UserPlus, Check, X, Send, Loader2, Trash2, ShieldCheck, AlertTriangle, Repeat } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { useEntreprises } from '../materiel/referentiel';
@@ -11,6 +11,7 @@ import {
   retirerLigne,
   confirmerLigne,
   contesterLigne,
+  remplacerLigne,
   enregistrerRegistre,
   type RegistreEntete,
   type RegistreLigne,
@@ -31,6 +32,7 @@ export function RegistreLive() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
   const [contest, setContest] = useState<RegistreLigne | null>(null);
+  const [remplace, setRemplace] = useState<RegistreLigne | null>(null);
   const [horsDelai, setHorsDelai] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -77,6 +79,21 @@ export function RegistreLive() {
       await fn();
       await rafraichirLignes(entete.listeId);
       if (ok) flash(ok);
+    } catch (err) {
+      setErreur((err as Error).message);
+    }
+  }
+
+  async function faireRemplacement(v: { nom: string; prenom: string; fonction: string }) {
+    if (!remplace || !entete) return;
+    setErreur(null);
+    try {
+      const r = await remplacerLigne(remplace.id, v);
+      flash(r.resultat === 'REFUSE'
+        ? 'Déjà entré au poste — enregistrez d’abord sa sortie, puis remplacez.'
+        : 'Personne remplacée · effectif inchangé');
+      await rafraichirLignes(entete.listeId);
+      setRemplace(null);
     } catch (err) {
       setErreur((err as Error).message);
     }
@@ -136,6 +153,7 @@ export function RegistreLive() {
                   onRetirer={() => action(() => retirerLigne(l.id), 'Ligne retirée')}
                   onConfirmer={() => action(() => confirmerLigne(l.id), 'Ligne confirmée')}
                   onContester={() => setContest(l)}
+                  onRemplacer={() => setRemplace(l)}
                 />
               ))}
             </ul>
@@ -196,6 +214,10 @@ export function RegistreLive() {
         />
       )}
 
+      {remplace && (
+        <RemplaceSheet ligne={remplace} onAnnuler={() => setRemplace(null)} onConfirmer={faireRemplacement} />
+      )}
+
       {toast && (
         <div className="pointer-events-none absolute inset-x-0 bottom-4 z-40 flex justify-center px-4">
           <div className="flex items-center gap-2 rounded-full bg-forest-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card-lg">
@@ -222,15 +244,19 @@ function LigneItem({
   onRetirer,
   onConfirmer,
   onContester,
+  onRemplacer,
 }: {
   ligne: RegistreLigne;
   onTogglePresent: () => void;
   onRetirer: () => void;
   onConfirmer: () => void;
   onContester: () => void;
+  onRemplacer: () => void;
 }) {
   const conf = CONF[ligne.statutConfirmation];
   const enAttente = ligne.statutConfirmation === 'EN_ATTENTE';
+  const remplacee = ligne.statutConfirmation === 'REMPLACEE';
+  const actionnable = !enAttente && !remplacee;
   return (
     <li className={`rounded-xl bg-white px-3 py-2.5 shadow-card ring-1 ring-sand-300/70 ${ligne.present ? '' : 'opacity-55'}`}>
       <div className="flex items-center gap-3">
@@ -250,10 +276,15 @@ function LigneItem({
           {ligne.source === 'PORTAIL' && <Badge tone="neutral">Portail</Badge>}
           {conf && <Badge tone={conf.tone}>{conf.label}</Badge>}
         </div>
-        {!enAttente && (
-          <button onClick={onRetirer} className="ml-1 shrink-0 rounded-lg p-1.5 text-muted hover:bg-danger-50 hover:text-danger-600" aria-label="Retirer">
-            <Trash2 className="h-4 w-4" />
-          </button>
+        {actionnable && (
+          <div className="ml-1 flex shrink-0 items-center gap-0.5">
+            <button onClick={onRemplacer} className="rounded-lg p-1.5 text-muted hover:bg-forest-50 hover:text-forest-600" aria-label="Remplacer">
+              <Repeat className="h-4 w-4" />
+            </button>
+            <button onClick={onRetirer} className="rounded-lg p-1.5 text-muted hover:bg-danger-50 hover:text-danger-600" aria-label="Retirer">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         )}
       </div>
       {enAttente && (
@@ -344,6 +375,55 @@ function ContestSheet({
             icon={envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
             onClick={() => { setEnvoi(true); onConfirmer(motif.trim()); }}>
             Contester
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RemplaceSheet({
+  ligne,
+  onAnnuler,
+  onConfirmer,
+}: {
+  ligne: RegistreLigne;
+  onAnnuler: () => void;
+  onConfirmer: (v: { nom: string; prenom: string; fonction: string }) => void;
+}) {
+  const [prenom, setPrenom] = useState('');
+  const [nom, setNom] = useState('');
+  const [fonction, setFonction] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const pret = prenom.trim() && nom.trim() && !envoi;
+  const champ = (label: string, value: string, set: (v: string) => void, ph: string) => (
+    <label className="block">
+      <span className="mb-1 block text-xs font-semibold text-muted">{label}</span>
+      <input value={value} onChange={(e) => set(e.target.value)} placeholder={ph}
+        className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
+    </label>
+  );
+  return (
+    <div className="absolute inset-0 z-30 flex flex-col justify-end bg-ink/40">
+      <div className="rounded-t-3xl bg-white p-5 shadow-card-lg">
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="text-lg font-extrabold text-ink">Remplacer une personne</h3>
+          <button onClick={onAnnuler} className="text-muted"><X className="h-5 w-5" /></button>
+        </div>
+        <p className="mb-4 text-sm text-muted">
+          <b className="text-ink">{ligne.prenom} {ligne.nom}</b> est remplacé(e) — l'effectif ne change pas, la ligne d'origine est conservée. Aucun motif requis. Refusé si déjà entré au poste.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          {champ('Prénom', prenom, setPrenom, 'Prénom')}
+          {champ('Nom', nom, setNom, 'Nom')}
+        </div>
+        <div className="mt-3">{champ('Fonction', fonction, setFonction, 'Ex. : manœuvre')}</div>
+        <div className="mt-4 flex gap-2">
+          <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onAnnuler}>Annuler</Button>
+          <Button variant="primary" size="lg" block disabled={!pret}
+            icon={envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+            onClick={() => { setEnvoi(true); onConfirmer({ prenom: prenom.trim(), nom: nom.trim(), fonction: fonction.trim() }); }}>
+            Remplacer
           </Button>
         </div>
       </div>

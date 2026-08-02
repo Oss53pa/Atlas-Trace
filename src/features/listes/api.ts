@@ -158,3 +158,20 @@ export async function enregistrerRegistre(listeId: string, horsDelai: boolean): 
   if (error) throw new Error(error.message);
   return data as { statut: string; effectif: number };
 }
+
+/** M22 — remplace une ligne (conservée en REMPLACEE) par un remplaçant. Refus si déjà entré. */
+export async function remplacerLigne(
+  ligneId: string,
+  remplacant: { nom: string; prenom: string; fonction?: string; tournant?: boolean },
+): Promise<{ resultat: 'OK' | 'REFUSE'; motif?: 'DEJA_ENTRE' }> {
+  const { data, error } = await supabase.rpc('at_registre_remplacer_ligne', {
+    p_ligne_id: ligneId,
+    p_nom: remplacant.nom,
+    p_prenom: remplacant.prenom,
+    p_fonction: remplacant.fonction ?? null,
+    p_tournant: remplacant.tournant ?? true,
+  });
+  if (error) throw new Error(error.message);
+  const d = data as { resultat: 'OK' | 'REFUSE'; motif?: 'DEJA_ENTRE' };
+  return d;
+}

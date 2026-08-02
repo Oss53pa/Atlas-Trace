@@ -71,7 +71,8 @@ Deno.serve(async (req) => {
     async function recompterEffectif(listeId: string) {
       const { count } = await admin.from('at_lignes_liste')
         .select('id', { count: 'exact', head: true })
-        .eq('liste_id', listeId).eq('present', true).neq('statut_confirmation', 'CONTESTEE')
+        .eq('liste_id', listeId).eq('present', true)
+        .neq('statut_confirmation', 'CONTESTEE').neq('statut_confirmation', 'REMPLACEE')
       return count ?? 0
     }
 
@@ -126,6 +127,32 @@ Deno.serve(async (req) => {
         .eq('id', id).in('statut_confirmation', ['EN_ATTENTE', 'CONFIRMEE_PAR_SILENCE'])
       if (e) return json({ error: e.message }, 500)
       return json({ ok: true })
+    }
+
+    if (action === 'remplacer') {
+      const id = await ligneAutorisee(body?.ligneId)
+      if (!id) return json({ error: 'Ligne hors périmètre' }, 403)
+      const { nom, prenom, fonction, tournant } = body
+      if (!nom || !prenom) return json({ error: 'Nom et prénom du remplaçant requis' }, 400)
+      const { data: old } = await admin.from('at_lignes_liste')
+        .select('id, liste_id, organisation_id, personne_id, statut_confirmation').eq('id', id).maybeSingle()
+      if (!old || old.statut_confirmation === 'REMPLACEE') return json({ error: 'Ligne déjà remplacée' }, 400)
+      // Garde « déjà entré » : dernier passage du jour = ENTREE -> refus.
+      if (old.personne_id) {
+        const { data: mv } = await admin.from('at_mouvements_acces')
+          .select('sens').eq('personne_id', old.personne_id).eq('site_id', lien.site_id)
+          .in('resultat', ['AUTORISE', 'FORCE']).order('horodatage', { ascending: false }).limit(1).maybeSingle()
+        if (mv?.sens === 'ENTREE') return json({ resultat: 'REFUSE', motif: 'DEJA_ENTRE' })
+      }
+      await admin.from('at_lignes_liste').update({ statut_confirmation: 'REMPLACEE', present: false }).eq('id', id)
+      const { data: ins, error: e } = await admin.from('at_lignes_liste').insert({
+        liste_id: old.liste_id, organisation_id: old.organisation_id,
+        nom: String(nom).trim(), prenom: String(prenom).trim(), fonction: fonction ?? null,
+        present: true, tournant: tournant ?? true, source: 'REFERENT', statut_confirmation: 'CONFIRMEE',
+        ajout_par: lien.referent_nom, remplace_ligne_id: id,
+      }).select('id').single()
+      if (e) return json({ error: e.message }, 500)
+      return json({ resultat: 'OK', nouvelle_ligne_id: ins.id })
     }
 
     if (action === 'enregistrer') {
