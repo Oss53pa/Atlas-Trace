@@ -51,7 +51,7 @@ export interface Personne {
   prenom: string;
   fonction?: string;
   entrepriseId: string;
-  /** Régime stable (personnel propre déclaré) ou tournant (liste journalière). */
+  /** Régime stable (personnel propre déclaré) ou tournant (registre de présence). */
   regime: 'STABLE' | 'TOURNANT';
   inductionValide: boolean;
   /** Initiales de repli tant que la photo n'est pas branchée (R2). */

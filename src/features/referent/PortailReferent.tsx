@@ -178,7 +178,7 @@ function PortailActif({ res, jeton, onMaj }: { res: Resultat; jeton: string; onM
           </label>
 
           <Button variant="primary" block className="mt-3" disabled={envoi} icon={envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} onClick={deposer}>
-            {envoi ? 'Envoi…' : 'Déposer la liste du jour'}
+            {envoi ? 'Envoi…' : 'Enregistrer le registre du jour'}
           </Button>
           <p className="mt-2 text-center text-[11px] text-muted">Écriture côté serveur (edge function service_role) — le référent n’a aucun droit direct sur la base.</p>
         </div>

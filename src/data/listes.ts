@@ -1,4 +1,4 @@
-/** Données mock du module M4 — listes journalières. */
+/** Données mock du module M4 — registre de présence vivant. */
 
 export type StatutListe = 'ATTENDUE' | 'DEPOSEE' | 'HORS_DELAI' | 'MANQUANTE';
 

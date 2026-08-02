@@ -5,10 +5,10 @@ import { StatCard } from '../../components/ui/StatCard';
 import { DEPOTS, LISTE_CONFIG, type DepotEntreprise, type StatutListe } from '../../data/listes';
 
 const CFG: Record<StatutListe, { tone: 'forest' | 'amber' | 'danger' | 'neutral'; label: string }> = {
-  DEPOSEE: { tone: 'forest', label: 'Déposée' },
-  HORS_DELAI: { tone: 'amber', label: 'Hors délai' },
-  MANQUANTE: { tone: 'danger', label: 'Manquante' },
-  ATTENDUE: { tone: 'neutral', label: 'Attendue' },
+  DEPOSEE: { tone: 'forest', label: 'Enregistré' },
+  HORS_DELAI: { tone: 'amber', label: 'Après l’heure' },
+  MANQUANTE: { tone: 'danger', label: 'Non déposé' },
+  ATTENDUE: { tone: 'neutral', label: 'Attendu' },
 };
 
 export function SuiviDepots() {
@@ -28,13 +28,13 @@ export function SuiviDepots() {
     <div className="mx-auto max-w-5xl px-5 py-8">
       <div className="mb-5">
         <p className="text-xs font-bold uppercase tracking-wider text-amber-500">M4 · Encadrement</p>
-        <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Suivi des dépôts</h1>
+        <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Registre de présence — suivi</h1>
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
           <span className="inline-flex items-center gap-1.5">
             <Calendar className="h-4 w-4" /> {LISTE_CONFIG.dateLabel}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <Clock className="h-4 w-4" /> Heure limite {LISTE_CONFIG.heureLimite}
+            <Clock className="h-4 w-4" /> Heure indicative de dépôt {LISTE_CONFIG.heureLimite}
           </span>
         </p>
       </div>
@@ -85,7 +85,8 @@ export function SuiviDepots() {
       </div>
 
       <p className="mt-4 text-xs text-muted">
-        Verrouillage à l'heure limite. Tout ajout postérieur est exceptionnel, motivé et tracé (chap. 10).
+        Statuts indicatifs : aucun verrouillage horaire. Le registre reste vivant — un dépôt plus tard
+        dans la journée est normal, et le référent ajoute, retire ou remplace à tout moment (M4).
       </p>
     </div>
   );

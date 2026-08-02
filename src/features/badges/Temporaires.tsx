@@ -66,7 +66,7 @@ export function Temporaires() {
           Badges temporaires &amp; visiteurs
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Générés par lot depuis la liste journalière, remis contre pièce d'identité, restitués le soir.
+          Générés par lot depuis le registre de présence, remis contre pièce d'identité, restitués le soir.
         </p>
       </div>
 
@@ -77,7 +77,7 @@ export function Temporaires() {
             <CreditCard className="h-6 w-6" />
           </div>
           <p className="text-sm font-semibold text-ink">
-            {TOURNANTS_JOUR.length} tournants sur la liste du jour (Bâti-Sud, VRD, Toiture Plus…)
+            {TOURNANTS_JOUR.length} tournants du registre du jour (Bâti-Sud, VRD, Toiture Plus…)
           </p>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted">
             La génération crée un badge numéroté par personne, prêt à être remis au poste.

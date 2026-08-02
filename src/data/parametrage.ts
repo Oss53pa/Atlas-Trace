@@ -7,7 +7,7 @@ export const POUVOIRS: { code: string; effet: string }[] = [
   { code: 'APPROUVER_HABILITATION', effet: 'Approuver définitivement une habilitation' },
   { code: 'GERER_CONDITIONS_BLOQUANTES', effet: 'Renseigner les conditions préalables d’un preneur' },
   { code: 'DECLARER_PERSONNEL', effet: 'Déclarer des personnes et leurs photos' },
-  { code: 'DEPOSER_LISTE', effet: 'Déposer une liste journalière' },
+  { code: 'DEPOSER_LISTE', effet: 'Alimenter le registre de présence' },
   { code: 'DELIVRER_BADGE', effet: 'Imprimer un badge, attribuer un badge temporaire' },
   { code: 'SUSPENDRE_ACCES', effet: 'Suspendre une personne, une entreprise, un véhicule' },
   { code: 'CONTROLER_AU_POSTE', effet: 'Scanner, autoriser, refuser, enregistrer un contrôle physique' },

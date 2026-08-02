@@ -348,7 +348,7 @@ function modulesActifs(a: AxesProfil) {
   return [
     { label: 'Contrôle d’accès au poste', on: true },
     { label: 'Preneur & conditions', on: a.donneurOrdre },
-    { label: 'Listes journalières & badges temporaires', on: a.populationTournante },
+    { label: 'Registre de présence & badges temporaires', on: a.populationTournante },
     { label: 'Personnel propre', on: a.personnelPropre },
     { label: 'Bons de sortie matière', on: a.fluxMatiereSortant },
     { label: 'Matériel entrant déclaré', on: a.materielEntrant },

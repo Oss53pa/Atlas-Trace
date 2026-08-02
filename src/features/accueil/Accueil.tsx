@@ -27,7 +27,7 @@ export function Accueil({ onOpen }: { onOpen: (vue: string) => void }) {
 
   const actions = [
     { vue: 'poste', label: 'Poste de contrôle', sous: 'Scanner un badge', icon: <ScanLine className="h-5 w-5" />, from: '#0F5044', to: '#0A2E28' },
-    { vue: 'listes', label: 'Listes du jour', sous: 'Dépôts & suivi', icon: <ClipboardList className="h-5 w-5" />, from: '#2E7C68', to: '#0F5044' },
+    { vue: 'listes', label: 'Registre du jour', sous: 'Présence & suivi', icon: <ClipboardList className="h-5 w-5" />, from: '#2E7C68', to: '#0F5044' },
     { vue: 'materiel', label: 'Matière', sous: 'Bordereau, sorties', icon: <Package className="h-5 w-5" />, from: '#E0B23C', to: '#C08A2A' },
     { vue: 'tableau', label: 'Tableau de bord', sous: 'Vue temps réel', icon: <LayoutDashboard className="h-5 w-5" />, from: '#17795E', to: '#0A2E28' },
   ];

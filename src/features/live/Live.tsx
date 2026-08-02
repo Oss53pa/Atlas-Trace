@@ -198,7 +198,7 @@ function Donnees() {
         </div>
       </Bloc>
 
-      <Bloc titre="Listes journalières déposées" icon={<ClipboardList className="h-4 w-4" />} compte={listes.length}>
+      <Bloc titre="Registres de présence déposés" icon={<ClipboardList className="h-4 w-4" />} compte={listes.length}>
         {listes.length === 0 ? (
           <p className="text-sm text-muted">Aucune liste déposée pour l’instant.</p>
         ) : (

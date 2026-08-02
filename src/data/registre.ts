@@ -74,6 +74,6 @@ export const CATALOGUE_REGISTRES = [
   { id: 'materiel', libelle: 'Sorties de matériel', actif: false },
   { id: 'livraisons', libelle: 'Livraisons', actif: false },
   { id: 'vehicules', libelle: 'Mouvements de véhicules', actif: false },
-  { id: 'listes', libelle: 'Listes journalières archivées', actif: false },
+  { id: 'listes', libelle: 'Registres de présence archivés', actif: false },
   { id: 'audit', libelle: 'Journal d’audit', actif: false },
 ];
