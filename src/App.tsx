@@ -4,7 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import {
   Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge,
+  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
 import { supabase } from './lib/supabase';
@@ -36,11 +36,13 @@ const PersonnesLive = lazy(() => import('./features/badges/PersonnesLive').then(
 const Cloture = lazy(() => import('./features/cloture/Cloture').then((m) => ({ default: m.Cloture })));
 const InscriptionPortail = lazy(() => import('./features/inscription/InscriptionPortail').then((m) => ({ default: m.InscriptionPortail })));
 const Plafonds = lazy(() => import('./features/plafonds/Plafonds').then((m) => ({ default: m.Plafonds })));
+const Vivier = lazy(() => import('./features/vivier/Vivier').then((m) => ({ default: m.Vivier })));
 const DesignShowcase = lazy(() => import('./DesignShowcase'));
+import { ActivationCompte } from './features/admin/ActivationCompte';
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
-  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription' | 'plafonds';
+  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription' | 'plafonds' | 'vivier';
 
 interface Dest {
   vue: Vue;
@@ -67,6 +69,7 @@ const DESTINATIONS: Dest[] = [
   { vue: 'invitations', label: 'Invitations référents', court: 'Invitations', icon: <Link2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'ADMINISTRER_ORGANISATION'] },
   { vue: 'personnes', label: 'Personnes & badges', court: 'Personnes', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DECLARER_PERSONNEL', 'DELIVRER_BADGE'] },
   { vue: 'plafonds', label: 'Plafonds d’effectif', court: 'Plafonds', icon: <Gauge className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
+  { vue: 'vivier', label: 'Vivier de personnel', court: 'Vivier', icon: <UsersRound className="h-5 w-5" />, pouvoir: ['DECLARER_PERSONNEL', 'DEPOSER_LISTE', 'DELIVRER_BADGE'] },
   { vue: 'listes', label: 'Registre de présence', court: 'Registre', icon: <ClipboardList className="h-5 w-5" />, pouvoir: ['DEPOSER_LISTE', 'CONSULTER_TABLEAU'] },
   { vue: 'badges', label: 'Personnes & badges', court: 'Badges', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE', 'DECLARER_PERSONNEL'] },
   { vue: 'maincourante', label: 'Main courante', court: 'Main courante', icon: <BookText className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE', 'CONSULTER_TABLEAU'] },
@@ -96,6 +99,7 @@ function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
     case 'cloture': return <Cloture />;
     case 'inscription': return <InscriptionPortail />;
     case 'plafonds': return <Plafonds />;
+    case 'vivier': return <Vivier />;
     case 'accueil': return <Accueil onOpen={go} />;
     case 'design': return <DesignShowcase />;
     case 'tableau': return <Tableau />;
@@ -119,6 +123,8 @@ export default function App() {
   const [vue, setVue] = useState<Vue>(() =>
     new URLSearchParams(window.location.search).has('r') ? 'referent' : 'accueil',
   );
+  // QR d'invitation de compte (/?invitation=jeton) : l'activation prend tout l'écran.
+  const jetonInvitation = new URLSearchParams(window.location.search).get('invitation');
   const [more, setMore] = useState(false);
   const { connecte, pouvoirs } = useAuthz();
 
@@ -137,6 +143,8 @@ export default function App() {
     if (connecte && !autorise(destOf(vue))) setVue('accueil');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connecte, vue, pouvoirs]);
+
+  if (jetonInvitation) return <ActivationCompte jeton={jetonInvitation} />;
 
   return (
     <div className="min-h-screen bg-sand-100">

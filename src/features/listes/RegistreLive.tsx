@@ -3,6 +3,7 @@ import { Users, UserPlus, Check, X, Send, Loader2, Trash2, ShieldCheck, AlertTri
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { useEntreprises } from '../materiel/referentiel';
+import { chargerVivier, type VivierPersonne } from '../vivier/api';
 import {
   assurerRegistre,
   chargerLignes,
@@ -33,6 +34,7 @@ export function RegistreLive() {
   const [sheet, setSheet] = useState(false);
   const [contest, setContest] = useState<RegistreLigne | null>(null);
   const [remplace, setRemplace] = useState<RegistreLigne | null>(null);
+  const [vivier, setVivier] = useState<VivierPersonne[]>([]);
   const [horsDelai, setHorsDelai] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -56,6 +58,7 @@ export function RegistreLive() {
       const e = await assurerRegistre(id);
       setEntete(e);
       await rafraichirLignes(e.listeId);
+      chargerVivier(id).then(setVivier).catch(() => setVivier([]));
     } catch (err) {
       setErreur((err as Error).message);
       setEntete(null);
@@ -219,7 +222,11 @@ export function RegistreLive() {
       </div>
 
       {sheet && entete && (
-        <AjoutSheet onAnnuler={() => setSheet(false)} onConfirmer={(v) => faireAjout({ nom: v.nom, prenom: v.prenom, fonction: v.fonction })} />
+        <AjoutSheet
+          vivier={vivier.filter((p) => p.statut !== 'SUSPENDUE' && !lignes.some((l) => l.present && l.nom.toLowerCase() === p.nom.toLowerCase() && l.prenom.toLowerCase() === p.prenom.toLowerCase()))}
+          onAnnuler={() => setSheet(false)}
+          onConfirmer={(v) => faireAjout(v)}
+        />
       )}
 
       {contest && (
@@ -317,9 +324,11 @@ function LigneItem({
 }
 
 function AjoutSheet({
+  vivier,
   onAnnuler,
   onConfirmer,
 }: {
+  vivier: VivierPersonne[];
   onAnnuler: () => void;
   onConfirmer: (v: { prenom: string; nom: string; fonction: string }) => void;
 }) {
@@ -337,12 +346,27 @@ function AjoutSheet({
   );
   return (
     <div className="absolute inset-0 z-30 flex flex-col justify-end bg-ink/40">
-      <div className="rounded-t-3xl bg-white p-5 shadow-card-lg">
+      <div className="max-h-[85%] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-card-lg">
         <div className="mb-1 flex items-center justify-between">
           <h3 className="text-lg font-extrabold text-ink">Ajouter une personne</h3>
           <button onClick={onAnnuler} className="text-muted"><X className="h-5 w-5" /></button>
         </div>
-        <p className="mb-4 text-sm text-muted">Ajout au registre du jour — aucun motif requis.</p>
+        {vivier.length > 0 && (
+          <>
+            <p className="mb-2 mt-1 text-xs font-semibold text-muted">Depuis le vivier — un geste</p>
+            <div className="flex flex-wrap gap-1.5">
+              {vivier.slice(0, 24).map((p) => (
+                <button key={p.id} disabled={envoi}
+                  onClick={() => { setEnvoi(true); onConfirmer({ prenom: p.prenom, nom: p.nom, fonction: p.fonction ?? '' }); }}
+                  className="rounded-full bg-forest-50 px-3 py-1.5 text-xs font-semibold text-forest-700 ring-1 ring-inset ring-forest-200 hover:bg-forest-100 disabled:opacity-50">
+                  + {p.prenom} {p.nom}
+                </button>
+              ))}
+            </div>
+            <div className="my-4 h-px bg-sand-200" />
+          </>
+        )}
+        <p className="mb-3 text-sm text-muted">Ou saisir manuellement — aucun motif requis.</p>
         <div className="grid grid-cols-2 gap-3">
           {champ('Prénom', prenom, setPrenom, 'Prénom')}
           {champ('Nom', nom, setNom, 'Nom')}
