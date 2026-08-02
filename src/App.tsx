@@ -4,7 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import {
   Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon,
+  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
 import { supabase } from './lib/supabase';
@@ -34,11 +34,12 @@ const ComptesLive = lazy(() => import('./features/admin/ComptesLive').then((m) =
 const InvitationsLive = lazy(() => import('./features/admin/InvitationsLive').then((m) => ({ default: m.InvitationsLive })));
 const PersonnesLive = lazy(() => import('./features/badges/PersonnesLive').then((m) => ({ default: m.PersonnesLive })));
 const Cloture = lazy(() => import('./features/cloture/Cloture').then((m) => ({ default: m.Cloture })));
+const InscriptionPortail = lazy(() => import('./features/inscription/InscriptionPortail').then((m) => ({ default: m.InscriptionPortail })));
 const DesignShowcase = lazy(() => import('./DesignShowcase'));
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
-  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture';
+  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription';
 
 interface Dest {
   vue: Vue;
@@ -52,6 +53,7 @@ interface Dest {
 const DESTINATIONS: Dest[] = [
   { vue: 'accueil', label: 'Accueil', court: 'Accueil', icon: <Home className="h-5 w-5" /> },
   { vue: 'poste', label: 'Poste de contrôle', court: 'Poste', icon: <ScanLine className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE'] },
+  { vue: 'inscription', label: 'Inscription au poste', court: 'Inscription', icon: <UserPlus className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE'] },
   { vue: 'cloture', label: 'Clôture de journée', court: 'Clôture', icon: <Moon className="h-5 w-5" />, pouvoir: ['CLOTURER_JOURNEE', 'CONTROLER_AU_POSTE'] },
   { vue: 'materiel', label: 'Matière', court: 'Matière', icon: <Package className="h-5 w-5" />, pouvoir: ['DECLARER_MATERIEL', 'VISER_MATERIEL', 'DEMANDER_SORTIE', 'VISER_SORTIE', 'APPROUVER_SORTIE', 'PRENDRE_EN_CHARGE', 'VALIDER_CRENEAU', 'AUTORISER_EVACUATION', 'DEMANDER_LIVRAISON'] },
   { vue: 'tableau', label: 'Tableau de bord', court: 'Tableau', icon: <LayoutDashboard className="h-5 w-5" />, pouvoir: ['CONSULTER_TABLEAU'] },
@@ -90,6 +92,7 @@ function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
     case 'invitations': return <InvitationsLive />;
     case 'personnes': return <PersonnesLive />;
     case 'cloture': return <Cloture />;
+    case 'inscription': return <InscriptionPortail />;
     case 'accueil': return <Accueil onOpen={go} />;
     case 'design': return <DesignShowcase />;
     case 'tableau': return <Tableau />;
