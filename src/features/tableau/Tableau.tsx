@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Users,
   UserMinus,
@@ -9,81 +9,120 @@ import {
   Activity,
   CreditCard,
   Radio,
-  FileText,
   BellRing,
   Calendar,
+  Loader2,
+  LogIn,
+  Truck,
+  Trash2,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
-import { Button } from '../../components/ui/Button';
 import { Donut, ColumnChart, BarEffectif } from './charts';
-import { MOUVEMENTS_JOUR } from '../../data/registre';
-import {
-  ALERTES,
-  ANOMALIES_FLUX,
-  PASSAGES_HEURE,
-  PRESENCE_ENTREPRISE,
-  ROLES,
-  type RoleId,
-} from '../../data/tableau';
+import { useAuthz } from '../../lib/authz';
+import { chargerTableauBord, type TableauBord } from './api';
 
 type Tone = 'forest' | 'amber' | 'danger' | 'plain';
 
-export function Tableau() {
-  const [role, setRole] = useState<RoleId>('direction');
-  const [toast, setToast] = useState(false);
+const ROLES = [
+  { id: 'direction', libelle: 'Direction' },
+  { id: 'poste', libelle: 'Chef de poste' },
+  { id: 'hse', libelle: 'HSE' },
+] as const;
+type RoleId = (typeof ROLES)[number]['id'];
 
-  const c = useMemo(() => {
-    const presents = PRESENCE_ENTREPRISE.reduce((s, e) => s + e.entre, 0);
-    const declares = PRESENCE_ENTREPRISE.reduce((s, e) => s + e.declare, 0);
-    const autorises = MOUVEMENTS_JOUR.filter((m) => m.resultat === 'AUTORISE').length;
-    const refus = MOUVEMENTS_JOUR.filter((m) => m.resultat === 'REFUSE').length;
-    const forcages = MOUVEMENTS_JOUR.filter((m) => m.resultat === 'FORCE').length;
-    const fluxAnormaux = ANOMALIES_FLUX.filter((r) => r.jour > r.moyenne).length;
-    return {
-      presents,
-      declares,
-      ecart: declares - presents,
-      autorises,
-      refus,
-      forcages,
-      fluxAnormaux,
-      badges: ALERTES.find((a) => a.cle === 'badges')?.valeur ?? 0,
-      sorties: ALERTES.find((a) => a.cle === 'sorties')?.valeur ?? 0,
-    };
+const dateLongue = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+export function Tableau() {
+  const { connecte, chargement: authEnCours } = useAuthz();
+  const [tb, setTb] = useState<TableauBord | null>(null);
+  const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [role, setRole] = useState<RoleId>('direction');
+
+  const rafraichir = useCallback(async () => {
+    try {
+      setTb(await chargerTableauBord());
+      setErreur(null);
+    } catch (e) {
+      setErreur((e as Error).message);
+    } finally {
+      setChargement(false);
+    }
   }, []);
 
-  const kpis: Array<{ id: string; label: string; value: number; unit?: string; tone: Tone; icon: React.ReactNode; roles: RoleId[] }> = [
-    { id: 'presents', label: 'Présents sur site', value: c.presents, unit: `/ ${c.declares} déclarés`, tone: 'forest', icon: <Users className="h-5 w-5" />, roles: ['direction', 'poste', 'hse'] },
-    { id: 'ecart', label: 'Écart déclaré / entré', value: c.ecart, tone: 'amber', icon: <UserMinus className="h-5 w-5" />, roles: ['direction', 'poste'] },
-    { id: 'refus', label: 'Refus (24 h)', value: c.refus, tone: 'danger', icon: <XCircle className="h-5 w-5" />, roles: ['poste', 'hse'] },
-    { id: 'forcages', label: 'Forçages (24 h)', value: c.forcages, tone: 'amber', icon: <ShieldAlert className="h-5 w-5" />, roles: ['poste', 'hse'] },
-    { id: 'sorties', label: 'Sorties en attente', value: c.sorties, tone: 'amber', icon: <PackageCheck className="h-5 w-5" />, roles: ['direction'] },
-    { id: 'matiere', label: 'Anomalies de flux', value: c.fluxAnormaux, tone: 'amber', icon: <TrendingUp className="h-5 w-5" />, roles: ['direction', 'hse'] },
-    { id: 'badges', label: 'Badges non restitués', value: c.badges, tone: 'amber', icon: <CreditCard className="h-5 w-5" />, roles: ['poste'] },
-  ];
-  const kpisRole = kpis.filter((k) => k.roles.includes(role)).slice(0, 4);
-  const maxDeclare = Math.max(...PRESENCE_ENTREPRISE.map((e) => e.declare));
+  useEffect(() => {
+    if (!connecte) {
+      setChargement(false);
+      return;
+    }
+    rafraichir();
+  }, [connecte, rafraichir]);
 
-  function genererRapport() {
-    setToast(true);
-    setTimeout(() => setToast(false), 3000);
+  const kpis = useMemo(() => {
+    if (!tb) return [];
+    return [
+      { id: 'presents', label: 'Présents sur site', value: tb.present, unit: `/ ${tb.declare} déclarés`, tone: 'forest' as Tone, icon: <Users className="h-5 w-5" />, roles: ['direction', 'poste', 'hse'] },
+      { id: 'ecart', label: 'Écart déclaré / entré', value: tb.ecart, tone: 'amber' as Tone, icon: <UserMinus className="h-5 w-5" />, roles: ['direction', 'poste'] },
+      { id: 'refus', label: 'Refus (24 h)', value: tb.controles.refus, tone: 'danger' as Tone, icon: <XCircle className="h-5 w-5" />, roles: ['poste', 'hse'] },
+      { id: 'forcages', label: 'Forçages (24 h)', value: tb.controles.forcages, tone: 'amber' as Tone, icon: <ShieldAlert className="h-5 w-5" />, roles: ['poste', 'hse'] },
+      { id: 'sorties', label: 'Sorties en attente', value: tb.sorties_attente, tone: 'amber' as Tone, icon: <PackageCheck className="h-5 w-5" />, roles: ['direction'] },
+      { id: 'matiere', label: 'Anomalies (24 h)', value: tb.anomalies.total, tone: 'amber' as Tone, icon: <TrendingUp className="h-5 w-5" />, roles: ['direction', 'hse'] },
+      { id: 'badges', label: 'Badges actifs', value: tb.badges_actifs, tone: 'plain' as Tone, icon: <CreditCard className="h-5 w-5" />, roles: ['poste'] },
+    ];
+  }, [tb]);
+
+  const kpisRole = kpis.filter((k) => k.roles.includes(role)).slice(0, 4);
+
+  if (authEnCours || chargement) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center text-muted">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
   }
+
+  if (!connecte) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-3 px-6 text-center text-muted">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-forest-600 shadow-card ring-1 ring-sand-200/60">
+          <LogIn className="h-7 w-7" />
+        </span>
+        <p className="text-base font-bold text-ink">Connexion requise</p>
+        <p className="text-sm">Le tableau de bord agrège les données du site : il faut un compte disposant du pouvoir CONSULTER_TABLEAU.</p>
+      </div>
+    );
+  }
+
+  if (!tb) {
+    return (
+      <div className="mx-auto max-w-md px-6 py-16 text-center text-sm text-danger-600">
+        {erreur ?? 'Tableau de bord indisponible.'}
+      </div>
+    );
+  }
+
+  const maxDeclare = Math.max(1, ...tb.presence.map((e) => e.declare));
+  const totalControles = tb.controles.autorises + tb.controles.refus + tb.controles.forcages;
+  const alertes: { cle: string; libelle: string; valeur: number; ton: 'amber' | 'danger' | 'forest' }[] = [
+    { cle: 'listes', libelle: 'Entreprises sans registre', valeur: tb.entreprises_sans_liste, ton: tb.entreprises_sans_liste > 0 ? 'danger' : 'forest' },
+    { cle: 'sorties', libelle: 'Autorisations de sortie en attente', valeur: tb.sorties_attente, ton: tb.sorties_attente > 0 ? 'amber' : 'forest' },
+    { cle: 'anomalies', libelle: 'Anomalies de flux (24 h)', valeur: tb.anomalies.total, ton: tb.anomalies.total > 0 ? 'amber' : 'forest' },
+    { cle: 'preavis', libelle: 'Préavis de livraison du jour', valeur: tb.preavis_jour, ton: 'forest' },
+  ];
 
   return (
     <div className="min-h-screen bg-sand-100">
       <div className="mx-auto max-w-6xl px-5 py-8">
-        {/* En-tête */}
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
               M15 · <Radio className="h-3.5 w-3.5" /> Temps réel
             </p>
             <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Tableau de bord</h1>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
-              <Calendar className="h-4 w-4" /> Mardi 29 juillet 2026 · Chantier Cosmos Angré
+            <p className="mt-1 flex items-center gap-1.5 text-sm capitalize text-muted">
+              <Calendar className="h-4 w-4" /> {dateLongue}
             </p>
           </div>
-          {/* Vue par rôle */}
           <div className="flex gap-1 rounded-full bg-white p-1 shadow-card ring-1 ring-sand-300">
             {ROLES.map((r) => (
               <button
@@ -99,168 +138,120 @@ export function Tableau() {
           </div>
         </div>
 
-        {/* KPI par rôle */}
+        {erreur && (
+          <p className="mb-4 rounded-xl bg-danger-50 px-3 py-2 text-sm font-semibold text-danger-600 ring-1 ring-danger-100">
+            {erreur}
+          </p>
+        )}
+
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {kpisRole.map((k) => (
             <KpiCard key={k.id} label={k.label} value={k.value} unit={k.unit} tone={k.tone} icon={k.icon} />
           ))}
         </div>
 
-        {/* Passages + Donut */}
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Panneau titre="Passages par heure" className="lg:col-span-2">
-            <ColumnChart
-              data={PASSAGES_HEURE.map((p) => ({ label: p.heure, entrees: p.entrees, sorties: p.sorties }))}
-            />
-            <div className="mt-3 flex gap-4 text-xs font-medium text-muted">
-              <Legende hex="#0F5044" label="Entrées" />
-              <Legende hex="#A7CEC3" label="Sorties" />
-            </div>
+          <Panneau titre="Passages par heure (24 h)" className="lg:col-span-2">
+            {tb.passages.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted">Aucun passage enregistré sur les dernières 24 h.</p>
+            ) : (
+              <>
+                <ColumnChart data={tb.passages.map((p) => ({ label: p.heure, entrees: p.entrees, sorties: p.sorties }))} />
+                <div className="mt-3 flex gap-4 text-xs font-medium text-muted">
+                  <Legende hex="#0F5044" label="Entrées" />
+                  <Legende hex="#A7CEC3" label="Sorties" />
+                </div>
+              </>
+            )}
           </Panneau>
-          <Panneau titre="Résultats des contrôles (24 h)">
-            <Donut
-              centre={String(c.autorises + c.refus + c.forcages)}
-              sousTitre="contrôles"
-              segments={[
-                { label: 'Autorisés', value: c.autorises, color: '', hex: '#2E7C68' },
-                { label: 'Forçages', value: c.forcages, color: '', hex: '#F2C14E' },
-                { label: 'Refus', value: c.refus, color: '', hex: '#C0392B' },
-              ]}
-            />
+          <Panneau titre="Contrôles d'accès (24 h)">
+            {totalControles === 0 ? (
+              <p className="py-10 text-center text-sm text-muted">Aucun contrôle sur les dernières 24 h.</p>
+            ) : (
+              <Donut
+                centre={String(totalControles)}
+                sousTitre="contrôles"
+                segments={[
+                  { label: 'Autorisés', value: tb.controles.autorises, color: '', hex: '#2E7C68' },
+                  { label: 'Forçages', value: tb.controles.forcages, color: '', hex: '#F2C14E' },
+                  { label: 'Refus', value: tb.controles.refus, color: '', hex: '#C0392B' },
+                ]}
+              />
+            )}
           </Panneau>
         </div>
 
-        {/* Présence par entreprise + Alertes */}
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Panneau titre="Effectif présent par entreprise" className="lg:col-span-2">
-            <ul className="space-y-3">
-              {PRESENCE_ENTREPRISE.map((e) => {
-                const ecart = e.declare - e.entre;
-                return (
-                  <li key={e.entreprise} className="flex items-center gap-3">
-                    <div className="w-40 shrink-0">
-                      <p className="truncate text-sm font-semibold text-ink">{e.entreprise}</p>
-                      <p className="text-[11px] text-muted">{e.categorie}</p>
-                    </div>
-                    <div className="flex-1">
-                      <BarEffectif entre={e.entre} declare={e.declare} max={maxDeclare} />
-                    </div>
-                    <div className="w-24 shrink-0 text-right text-sm">
-                      <span className="font-bold text-ink">{e.entre}</span>
-                      <span className="text-muted">/{e.declare}</span>
-                      {ecart > 0 && (
-                        <Badge tone="amber" className="ml-1.5">
-                          −{ecart}
-                        </Badge>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            {tb.presence.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted">Aucun registre de présence déposé.</p>
+            ) : (
+              <ul className="space-y-3">
+                {tb.presence.map((e) => {
+                  const ecart = e.declare - e.entre;
+                  return (
+                    <li key={e.entreprise} className="flex items-center gap-3">
+                      <div className="w-40 shrink-0">
+                        <p className="truncate text-sm font-semibold text-ink">{e.entreprise}</p>
+                      </div>
+                      <div className="flex-1">
+                        <BarEffectif entre={e.entre} declare={e.declare} max={maxDeclare} />
+                      </div>
+                      <div className="w-24 shrink-0 text-right text-sm">
+                        <span className="font-bold text-ink">{e.entre}</span>
+                        <span className="text-muted">/{e.declare}</span>
+                        {ecart > 0 && <Badge tone="amber" className="ml-1.5">−{ecart}</Badge>}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </Panneau>
 
           <Panneau titre="Alertes du jour" icon={<BellRing className="h-4 w-4 text-amber-500" />}>
             <ul className="space-y-2">
-              {ALERTES.map((a) => (
-                <li
-                  key={a.cle}
-                  className="flex items-center justify-between rounded-xl bg-sand-50 px-3 py-2.5 ring-1 ring-sand-200"
-                >
+              {alertes.map((a) => (
+                <li key={a.cle} className="flex items-center justify-between rounded-xl bg-sand-50 px-3 py-2.5 ring-1 ring-sand-200">
                   <span className="text-sm font-medium text-ink">{a.libelle}</span>
-                  <Badge tone={a.ton} dot>
-                    {a.valeur}
-                  </Badge>
+                  <Badge tone={a.ton} dot>{a.valeur}</Badge>
                 </li>
               ))}
             </ul>
           </Panneau>
         </div>
 
-        {/* Anomalies de flux — mouvements suivis (M15) */}
-        <Panneau
-          titre="Anomalies de flux — mouvements suivis"
-          className="mt-4"
-          icon={<Activity className="h-4 w-4 text-forest-500" />}
-        >
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-sand-300/70 text-xs uppercase tracking-wide text-muted">
-                  <th className="py-2.5 pr-4 font-semibold">Série de mouvements</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Aujourd'hui</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Tendance du site</th>
-                  <th className="py-2.5 pl-4 text-right font-semibold">Écart</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ANOMALIES_FLUX.map((r) => {
-                  const delta = r.jour - r.moyenne;
-                  const rupture = delta > 0;
-                  return (
-                    <tr key={r.serie} className="border-b border-sand-200 last:border-0">
-                      <td className="py-3 pr-4 font-semibold text-ink">
-                        {r.serie}
-                        <span className="ml-1 text-xs font-normal text-muted">({r.unite})</span>
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-ink">{r.jour}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-muted">{r.moyenne}</td>
-                      <td className="py-3 pl-4 text-right">
-                        <span
-                          className={`inline-block rounded-lg px-2 py-0.5 text-sm font-bold tabular-nums ${
-                            rupture ? 'bg-amber-50 text-amber-700' : 'bg-forest-50 text-forest-700'
-                          }`}
-                        >
-                          {delta > 0 ? '+' : ''}
-                          {delta}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        {/* Anomalies de flux (24 h) — mouvements, pas objets */}
+        <Panneau titre="Anomalies de flux (24 h)" className="mt-4" icon={<Activity className="h-4 w-4 text-forest-500" />}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <AnomalieItem icon={<Truck className="h-4 w-4" />} label="Véhicules (entré vide → chargé)" value={tb.anomalies.vehicules} />
+            <AnomalieItem icon={<Trash2 className="h-4 w-4" />} label="Contrôles d'évacuation" value={tb.anomalies.evacuations} />
+            <AnomalieItem icon={<XCircle className="h-4 w-4" />} label="Sorties refusées faute de couverture" value={tb.anomalies.sorties_refusees} />
           </div>
-          <p className="mt-3 text-[11px] text-muted">On ne compte pas les objets, on compte les mouvements. Une anomalie est un écart à la tendance propre du site, jamais un seuil absolu livré par le produit.</p>
+          <p className="mt-3 text-[11px] text-muted">On ne compte pas les objets, on compte les mouvements. Chiffres réels des dernières 24 h, bornés à l'organisation.</p>
         </Panneau>
-
-        {/* Rapport périodique */}
-        <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-forest-50 p-4 ring-1 ring-forest-100 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted">
-            Rapport périodique généré automatiquement, à la fréquence et au format du client.
-          </p>
-          <Button variant="primary" icon={<FileText className="h-4 w-4" />} onClick={genererRapport}>
-            Générer le rapport
-          </Button>
-        </div>
       </div>
-
-      {toast && (
-        <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
-          <div className="flex items-center gap-2 rounded-full bg-forest-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card-lg">
-            <FileText className="h-4 w-4" />
-            Rapport ATS-RAP-2026-0729 généré · horodaté
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 /* ---------- Sous-composants ---------- */
-function KpiCard({
-  label,
-  value,
-  unit,
-  tone,
-  icon,
-}: {
-  label: string;
-  value: number;
-  unit?: string;
-  tone: Tone;
-  icon: React.ReactNode;
-}) {
+function AnomalieItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+  const alerte = value > 0;
+  return (
+    <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ring-1 ${alerte ? 'bg-amber-50 ring-amber-200' : 'bg-sand-50 ring-sand-200'}`}>
+      <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${alerte ? 'bg-amber-500 text-white' : 'bg-white text-muted ring-1 ring-sand-200'}`}>
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-lg font-extrabold tracking-tight text-ink">{value}</p>
+        <p className="truncate text-[11px] text-muted">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function KpiCard({ label, value, unit, tone, icon }: { label: string; value: number; unit?: string; tone: Tone; icon: React.ReactNode }) {
   const bg: Record<Tone, string> = {
     forest: 'bg-forest-500 text-white',
     amber: 'bg-amber-500 text-white',
@@ -272,11 +263,7 @@ function KpiCard({
     <div className={`rounded-2xl border border-sand-300/50 p-5 shadow-card ${bg[tone]}`}>
       <div className="flex items-start justify-between">
         <p className={`text-sm font-medium ${inverted ? 'text-white/85' : 'text-muted'}`}>{label}</p>
-        <span
-          className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${
-            inverted ? 'bg-white/20' : 'bg-forest-50 text-forest-600'
-          }`}
-        >
+        <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${inverted ? 'bg-white/20' : 'bg-forest-50 text-forest-600'}`}>
           {icon}
         </span>
       </div>
@@ -288,17 +275,7 @@ function KpiCard({
   );
 }
 
-function Panneau({
-  titre,
-  icon,
-  className,
-  children,
-}: {
-  titre: string;
-  icon?: React.ReactNode;
-  className?: string;
-  children: React.ReactNode;
-}) {
+function Panneau({ titre, icon, className, children }: { titre: string; icon?: React.ReactNode; className?: string; children: React.ReactNode }) {
   return (
     <div className={`rounded-2xl bg-white p-5 shadow-card ring-1 ring-sand-300/70 ${className ?? ''}`}>
       <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-ink">
