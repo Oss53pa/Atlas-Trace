@@ -9,6 +9,7 @@ import {
 import { Logo } from './components/ui/Logo';
 import { supabase } from './lib/supabase';
 import { useAuthz } from './lib/authz';
+import { primairesPour } from './lib/roles';
 
 // Chargement à la demande : chaque écran forme son propre chunk, seul l'écran
 // affiché est téléchargé (démarrage mobile allégé).
@@ -72,7 +73,7 @@ const DESTINATIONS: Dest[] = [
   { vue: 'vivier', label: 'Vivier de personnel', court: 'Vivier', icon: <UsersRound className="h-5 w-5" />, pouvoir: ['DECLARER_PERSONNEL', 'DEPOSER_LISTE', 'DELIVRER_BADGE'] },
   { vue: 'listes', label: 'Registre de présence', court: 'Registre', icon: <ClipboardList className="h-5 w-5" />, pouvoir: ['DEPOSER_LISTE', 'CONSULTER_TABLEAU'] },
   { vue: 'badges', label: 'Impression & visiteurs', court: 'Badges', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE', 'DECLARER_PERSONNEL'] },
-  { vue: 'maincourante', label: 'Main courante', court: 'Main courante', icon: <BookText className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE', 'CONSULTER_TABLEAU'] },
+  { vue: 'maincourante', label: 'Main courante', court: 'Main courante', icon: <BookText className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE', 'CONSULTER_TABLEAU', 'SUIVRE_INCIDENTS'] },
   { vue: 'cles', label: 'Clés & zones', court: 'Clés', icon: <Key className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE'] },
   { vue: 'admin', label: 'Administration', court: 'Admin', icon: <Settings className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION', 'CONSULTER_AUDIT'] },
   { vue: 'parametrage', label: 'Paramétrage', court: 'Paramétrage', icon: <SlidersHorizontal className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
@@ -82,12 +83,9 @@ const DESTINATIONS: Dest[] = [
   { vue: 'design', label: 'Design system', court: 'Design', icon: <Palette className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
 ];
 
-/** Destinations de la barre du bas (au pouce) ; le reste va dans « Plus ». */
-const PRIMAIRES: Vue[] = ['accueil', 'poste', 'materiel', 'tableau'];
-
 const destOf = (v: Vue) => DESTINATIONS.find((d) => d.vue === v)!;
 
-function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
+function renderVue(vue: Vue, go: (v: string) => void, primaires: Vue[]): ReactNode {
   switch (vue) {
     case 'espaces': return <Espaces onOpen={go} />;
     case 'preneurs': return <PreneursLive />;
@@ -100,7 +98,7 @@ function renderVue(vue: Vue, go: (v: string) => void): ReactNode {
     case 'inscription': return <InscriptionPortail />;
     case 'plafonds': return <Plafonds />;
     case 'vivier': return <Vivier />;
-    case 'accueil': return <Accueil onOpen={go} />;
+    case 'accueil': return <Accueil onOpen={go} primaires={primaires} />;
     case 'design': return <DesignShowcase />;
     case 'tableau': return <Tableau />;
     case 'entreprises': return <Habilitations />;
@@ -132,6 +130,9 @@ export default function App() {
   // laisse voir que ce que les pouvoirs autorisent.
   const autorise = (d: Dest) => !connecte || !d.pouvoir || d.pouvoir.some((p) => pouvoirs.has(p));
 
+  // Barre du bas composée pour la famille de rôle, puis filtrée par accès réel.
+  const primaires = (primairesPour(pouvoirs, connecte) as Vue[]).filter((v) => autorise(destOf(v)));
+
   const go = (v: string) => {
     setVue(v as Vue);
     setMore(false);
@@ -150,10 +151,10 @@ export default function App() {
     <div className="min-h-screen bg-sand-100">
       <TopBar vue={vue} />
       <main className="pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
-        <Suspense fallback={<ChargementVue />}>{renderVue(vue, go)}</Suspense>
+        <Suspense fallback={<ChargementVue />}>{renderVue(vue, go, primaires)}</Suspense>
       </main>
-      <BottomNav vue={vue} onGo={go} onMore={() => setMore(true)} moreActif={more} autorise={autorise} />
-      {more && <MoreSheet vue={vue} onGo={go} onClose={() => setMore(false)} autorise={autorise} />}
+      <BottomNav vue={vue} onGo={go} onMore={() => setMore(true)} moreActif={more} primaires={primaires} />
+      {more && <MoreSheet vue={vue} onGo={go} onClose={() => setMore(false)} autorise={autorise} primaires={primaires} />}
     </div>
   );
 }
@@ -277,13 +278,13 @@ function ConnexionSheet({ onClose }: { onClose: () => void }) {
 }
 
 /* ---------- Barre d'onglets (bas, au pouce) ---------- */
-function BottomNav({ vue, onGo, onMore, moreActif, autorise }: { vue: Vue; onGo: (v: string) => void; onMore: () => void; moreActif: boolean; autorise: (d: Dest) => boolean }) {
-  const primaires = PRIMAIRES.map(destOf).filter(autorise);
-  const surPrimaire = primaires.some((d) => d.vue === vue);
+function BottomNav({ vue, onGo, onMore, moreActif, primaires }: { vue: Vue; onGo: (v: string) => void; onMore: () => void; moreActif: boolean; primaires: Vue[] }) {
+  const dests = primaires.map(destOf);
+  const surPrimaire = dests.some((d) => d.vue === vue);
   return (
     <nav className="glass fixed inset-x-0 bottom-0 z-40 border-t border-sand-300/50 pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2">
-        {primaires.map((d) => (
+        {dests.map((d) => (
           <Onglet key={d.vue} actif={vue === d.vue && !moreActif} label={d.court} icon={d.icon} onClick={() => onGo(d.vue)} />
         ))}
         <Onglet actif={moreActif || !surPrimaire} label="Plus" icon={<LayoutGrid className="h-5 w-5" />} onClick={onMore} />
@@ -308,8 +309,8 @@ function Onglet({ actif, label, icon, onClick }: { actif: boolean; label: string
 }
 
 /* ---------- Feuille « Plus » (destinations autorisées) ---------- */
-function MoreSheet({ vue, onGo, onClose, autorise }: { vue: Vue; onGo: (v: string) => void; onClose: () => void; autorise: (d: Dest) => boolean }) {
-  const autres = DESTINATIONS.filter((d) => !PRIMAIRES.includes(d.vue) && autorise(d));
+function MoreSheet({ vue, onGo, onClose, autorise, primaires }: { vue: Vue; onGo: (v: string) => void; onClose: () => void; autorise: (d: Dest) => boolean; primaires: Vue[] }) {
+  const autres = DESTINATIONS.filter((d) => !primaires.includes(d.vue) && autorise(d));
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 backdrop-blur-sm" onClick={onClose}>
       <div

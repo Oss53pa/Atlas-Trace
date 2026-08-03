@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import {
-  Building2, Plus, Check, X, ShieldCheck, ArrowRight, AlertTriangle, Loader2, Cloud, LogIn, Link2,
+  Building2, Plus, Check, X, ShieldCheck, ArrowRight, AlertTriangle, Loader2, Cloud, LogIn, Link2, Ban,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
 import { supabase } from '../../lib/supabase';
+import { useAuthz } from '../../lib/authz';
 
 interface Ent {
   id: string;
@@ -18,6 +19,7 @@ interface Ent {
   statut: string;
   visa_hse: boolean;
   approuve: boolean;
+  motif_refus: string | null;
 }
 
 const CATEGORIES = ['Entreprise de chantier', 'Aménagement de preneur'];
@@ -65,11 +67,18 @@ function Liste() {
   const [charge, setCharge] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
+  const [refus, setRefus] = useState<Ent | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+
+  // Chaque action est offerte selon le pouvoir réel du rôle (le serveur revérifie).
+  const { a } = useAuthz();
+  const peutViser = a('VISER_HABILITATION');
+  const peutApprouver = a('APPROUVER_HABILITATION');
+  const peutRefuser = peutViser || peutApprouver || a('SUSPENDRE_ACCES');
 
   async function recharger() {
     const { data, error } = await supabase.from('at_entreprises')
-      .select('id,raison_sociale,categorie,donneur_ordre,referent_nom,assurance_echeance,statut,visa_hse,approuve')
+      .select('id,raison_sociale,categorie,donneur_ordre,referent_nom,assurance_echeance,statut,visa_hse,approuve,motif_refus')
       .order('raison_sociale');
     if (error) setErr(error.message);
     setEnts(data ?? []);
@@ -100,6 +109,12 @@ function Liste() {
     const { error } = await supabase.rpc('at_approuver_habilitation', { p_id: e.id });
     if (error) return flash('Refusé : ' + error.message);
     await recharger(); flash('Entreprise habilitée · active');
+  }
+  async function refuser(e: Ent, motif: string) {
+    const { error } = await supabase.rpc('at_refuser_habilitation', { p_id: e.id, p_motif: motif });
+    setRefus(null);
+    if (error) return flash('Refusé : ' + error.message);
+    await recharger(); flash(e.statut === 'ACTIVE' ? 'Entreprise suspendue · tracé' : 'Dossier renvoyé au référent · tracé');
   }
   async function creer(v: { raison: string; categorie: string; referent: string }) {
     if (!ctx) return;
@@ -143,10 +158,22 @@ function Liste() {
       </div>
 
       <ul className="space-y-2">
-        {ents.map((e) => <Ligne key={e.id} e={e} onViser={() => viser(e)} onApprouver={() => approuver(e)} />)}
+        {ents.map((e) => (
+          <Ligne
+            key={e.id}
+            e={e}
+            peutViser={peutViser}
+            peutApprouver={peutApprouver}
+            peutRefuser={peutRefuser}
+            onViser={() => viser(e)}
+            onApprouver={() => approuver(e)}
+            onRefuser={() => setRefus(e)}
+          />
+        ))}
       </ul>
 
       {sheet && <FicheSheet existantes={ents} onAnnuler={() => setSheet(false)} onCreer={creer} />}
+      {refus && <RefusSheet e={refus} onAnnuler={() => setRefus(null)} onConfirmer={(m) => refuser(refus, m)} />}
 
       {toast && (
         <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
@@ -163,12 +190,22 @@ const chip = (s: string) =>
   : s === 'SUSPENDUE' ? <Badge tone="danger" dot>Suspendue</Badge>
   : <Badge tone="neutral" dot>Brouillon</Badge>;
 
-function Ligne({ e, onViser, onApprouver }: { e: Ent; onViser: () => void; onApprouver: () => void }) {
+function Ligne({ e, peutViser, peutApprouver, peutRefuser, onViser, onApprouver, onRefuser }: {
+  e: Ent; peutViser: boolean; peutApprouver: boolean; peutRefuser: boolean;
+  onViser: () => void; onApprouver: () => void; onRefuser: () => void;
+}) {
   const etapes = [
     { role: 'Référent entreprise', etat: 'fait' as const },
     { role: 'HSE Officer', etat: e.visa_hse ? 'fait' : 'courant' },
     { role: 'Directeur de la Construction', etat: e.approuve ? 'fait' : e.visa_hse ? 'courant' : 'attente' },
   ];
+  const circuit = e.statut === 'EN_VALIDATION' || e.statut === 'ACTIVE';
+  // Une action n'apparaît que si le pouvoir ET le statut la rendent possible.
+  const boutonViser = (e.statut === 'BROUILLON' || e.statut === 'EN_VALIDATION') && !e.visa_hse && peutViser;
+  const boutonApprouver = e.statut === 'EN_VALIDATION' && e.visa_hse && !e.approuve && peutApprouver;
+  const boutonRefuser = peutRefuser && (e.statut === 'BROUILLON' || e.statut === 'EN_VALIDATION' || e.statut === 'ACTIVE');
+  const actions = boutonViser || boutonApprouver || boutonRefuser;
+
   return (
     <li className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-sand-300/70">
       <div className="flex items-start justify-between gap-3">
@@ -178,7 +215,14 @@ function Ligne({ e, onViser, onApprouver }: { e: Ent; onViser: () => void; onApp
         </div>
         {chip(e.statut)}
       </div>
-      {(e.statut === 'EN_VALIDATION' || e.statut === 'ACTIVE') && (
+
+      {e.motif_refus && (e.statut === 'BROUILLON' || e.statut === 'SUSPENDUE') && (
+        <p className="mt-2 rounded-lg bg-danger-50 px-2.5 py-1.5 text-[11px] font-semibold text-danger-600 ring-1 ring-danger-100">
+          <AlertTriangle className="mr-1 inline h-3 w-3" />{e.statut === 'SUSPENDUE' ? 'Suspension' : 'Refus'} : {e.motif_refus}
+        </p>
+      )}
+
+      {circuit && (
         <div className="mt-3 border-t border-sand-200 pt-3">
           <div className="flex flex-wrap items-center gap-2">
             {etapes.map((s, i) => (
@@ -190,18 +234,48 @@ function Ligne({ e, onViser, onApprouver }: { e: Ent; onViser: () => void; onApp
               </div>
             ))}
           </div>
-          {e.statut === 'EN_VALIDATION' && (
-            <div className="mt-2.5">
-              {!e.visa_hse ? (
-                <Button variant="outline" size="sm" icon={<ShieldCheck className="h-4 w-4" />} onClick={onViser}>Viser (HSE Officer)</Button>
-              ) : (
-                <Button variant="primary" size="sm" icon={<Check className="h-4 w-4" strokeWidth={3} />} onClick={onApprouver}>Approuver (Directeur)</Button>
-              )}
-            </div>
-          )}
+        </div>
+      )}
+
+      {actions && (
+        <div className={`mt-3 flex flex-wrap gap-2 ${circuit ? '' : 'border-t border-sand-200 pt-3'}`}>
+          {boutonViser && <Button variant="outline" size="sm" icon={<ShieldCheck className="h-4 w-4" />} onClick={onViser}>Viser (HSE)</Button>}
+          {boutonApprouver && <Button variant="primary" size="sm" icon={<Check className="h-4 w-4" strokeWidth={3} />} onClick={onApprouver}>Approuver (Directeur)</Button>}
+          {boutonRefuser && <Button variant="ghost" size="sm" icon={<Ban className="h-4 w-4" />} onClick={onRefuser}>{e.statut === 'ACTIVE' ? 'Suspendre' : 'Refuser'}</Button>}
         </div>
       )}
     </li>
+  );
+}
+
+function RefusSheet({ e, onAnnuler, onConfirmer }: { e: Ent; onAnnuler: () => void; onConfirmer: (motif: string) => void }) {
+  const [motif, setMotif] = useState('');
+  const suspend = e.statut === 'ACTIVE';
+  const pret = motif.trim().length >= 3;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
+      <div className="w-full max-w-md rounded-3xl bg-white p-5 shadow-card-lg">
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="text-lg font-extrabold text-ink">{suspend ? 'Suspendre' : 'Refuser'} · {e.raison_sociale}</h3>
+          <button onClick={onAnnuler} className="text-muted"><X className="h-5 w-5" /></button>
+        </div>
+        <p className="mb-3 text-xs text-muted">
+          {suspend
+            ? 'La suspension retire l’habilitation active. Le motif est tracé au journal d’audit.'
+            : 'Le dossier repart au référent (brouillon) ; visa et approbation sont remis à zéro. Motif tracé.'}
+        </p>
+        <label className="block"><span className="mb-1 block text-xs font-semibold text-muted">Motif (obligatoire)</span>
+          <textarea value={motif} onChange={(ev) => setMotif(ev.target.value)} rows={2} placeholder="Ex. : attestation d’assurance expirée"
+            className="w-full resize-none rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
+        </label>
+        <div className="mt-4 flex gap-2">
+          <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onAnnuler}>Annuler</Button>
+          <Button variant="danger" size="lg" block disabled={!pret} onClick={() => onConfirmer(motif.trim())}>
+            {suspend ? 'Suspendre l’entreprise' : 'Refuser le dossier'}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
