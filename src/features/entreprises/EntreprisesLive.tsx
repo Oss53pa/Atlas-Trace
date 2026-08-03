@@ -88,14 +88,17 @@ function Liste() {
 
   function flash(m: string) { setToast(m); setTimeout(() => setToast(null), 2600); }
 
+  // Le circuit passe par le serveur : pouvoir, ordre des étapes et séparation
+  // visa ≠ approbation y sont vérifiés. Les colonnes visa_hse / approuve /
+  // statut ne sont plus accessibles en écriture directe.
   async function viser(e: Ent) {
-    const { error } = await supabase.from('at_entreprises').update({ visa_hse: true }).eq('id', e.id);
-    if (error) return flash('Erreur : ' + error.message);
+    const { error } = await supabase.rpc('at_viser_habilitation', { p_id: e.id });
+    if (error) return flash('Refusé : ' + error.message);
     await recharger(); flash('Visa HSE apposé · enregistré');
   }
   async function approuver(e: Ent) {
-    const { error } = await supabase.from('at_entreprises').update({ approuve: true, statut: 'ACTIVE', activated_at: new Date().toISOString() }).eq('id', e.id);
-    if (error) return flash('Erreur : ' + error.message);
+    const { error } = await supabase.rpc('at_approuver_habilitation', { p_id: e.id });
+    if (error) return flash('Refusé : ' + error.message);
     await recharger(); flash('Entreprise habilitée · active');
   }
   async function creer(v: { raison: string; categorie: string; referent: string }) {
