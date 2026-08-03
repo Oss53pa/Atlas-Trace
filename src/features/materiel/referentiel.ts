@@ -24,3 +24,17 @@ export function useEntreprises(): EntrepriseOption[] {
   }, []);
   return entreprises;
 }
+
+/** Vocabulaire contrôlé des types de sortie (le code vit en base, le libellé ici). */
+export const TYPE_SORTIE_LABEL: Record<'SITE' | 'ENTREPRISE' | 'DECHETS', string> = {
+  SITE: 'Matériel du site',
+  ENTREPRISE: 'Matériel de l’entreprise',
+  DECHETS: 'Déchets & emballages',
+};
+
+/** Étapes du circuit de sortie (chap. 7.3). */
+export const CIRCUIT_SORTIE = [
+  { ordre: 1, role: 'Référent entreprise' },
+  { ordre: 2, role: 'HSE Officer' },
+  { ordre: 3, role: 'Directeur de la Construction', effetFinal: true },
+];
