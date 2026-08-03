@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Plus,
   Check,
@@ -16,19 +16,33 @@ import {
   AlertTriangle,
   Clock,
   ChevronRight,
+  Loader2,
 } from 'lucide-react';
 import { PhotoCapture } from '../../components/device/PhotoCapture';
+import { DicteeVocale } from '../../components/device/DicteeVocale';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
+import { useAuthz } from '../../lib/authz';
+import { BoutonAlertes } from '../../components/ui/BoutonAlertes';
 import {
   CATEGORIE_LABEL,
-  MAIN_COURANTE_INIT,
+  chargerJournal,
+  consignerEntree,
+  ecouterJournal,
+  majRapportIncident,
   type Categorie,
   type Entree,
   type Gravite,
   type TypeEntree,
-} from '../../data/mainCourante';
+} from './api';
+
+/** Les trois volets du rapport d'incident, exigés avant clôture. */
+interface Rapport {
+  circonstances: string;
+  mesures: string;
+  suites: string;
+}
 
 const ICON: Record<Categorie, React.ReactNode> = {
   PRISE_POSTE: <LogIn className="h-4 w-4" />,
@@ -42,11 +56,46 @@ const ICON: Record<Categorie, React.ReactNode> = {
 };
 
 export function MainCourante() {
-  const [entrees, setEntrees] = useState<Entree[]>(MAIN_COURANTE_INIT);
+  const { connecte, chargement: authEnCours, a } = useAuthz();
+  const peutConsigner = a('CONTROLER_AU_POSTE');
+  const peutClore = a('SUIVRE_INCIDENTS');
+
+  const [entrees, setEntrees] = useState<Entree[]>([]);
+  const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [enDirect, setEnDirect] = useState(false);
+  const [recus, setRecus] = useState<string[]>([]);
   const [sheet, setSheet] = useState(false);
   const [rapport, setRapport] = useState<Entree | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const seq = useRef(16);
+
+  const recharger = useCallback(async () => {
+    try {
+      setEntrees(await chargerJournal());
+      setErreur(null);
+    } catch (e) {
+      setErreur((e as Error).message);
+    } finally {
+      setChargement(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!connecte) {
+      setChargement(false);
+      return;
+    }
+    recharger();
+    // Réception temps réel : la chaîne de commandement voit arriver les entrées.
+    return ecouterJournal(
+      (e) => {
+        setEntrees((es) => (es.some((x) => x.id === e.id) ? es : [e, ...es]));
+        setRecus((r) => [e.id, ...r].slice(0, 12));
+      },
+      (e) => setEntrees((es) => es.map((x) => (x.id === e.id ? e : x))),
+      setEnDirect,
+    );
+  }, [connecte, recharger]);
 
   function flash(m: string) {
     setToast(m);
@@ -59,33 +108,71 @@ export function MainCourante() {
     majeurs: entrees.filter((e) => e.gravite === 'MAJEUR' && e.statut === 'OUVERT').length,
   }), [entrees]);
 
-  function clore(id: string, suites: string) {
-    setEntrees((es) => es.map((e) => (e.id === id ? { ...e, statut: 'CLOS', suites: suites || e.suites } : e)));
-    setRapport(null);
-    flash('Incident clos · suites consignées');
+  async function majRapport(id: string, v: Rapport, clos: boolean) {
+    try {
+      await majRapportIncident(id, v, clos);
+      await recharger();
+      if (clos) setRapport(null);
+      else setRapport((r) => (r && r.id === id ? { ...r, ...v } : r));
+      flash(clos ? 'Incident clos · rapport consigné' : 'Rapport enregistré');
+    } catch (e) {
+      setErreur((e as Error).message);
+    }
   }
 
-  function ajouter(v: { type: TypeEntree; categorie: Categorie; titre: string; description: string; gravite: Gravite; photo: boolean }) {
-    const incident = v.type === 'INCIDENT';
-    if (incident) seq.current += 1;
-    setEntrees((es) => [
-      {
-        id: `new-${es.length}`,
-        numero: incident ? `INC-2026-0${seq.current}` : undefined,
-        horodatage: '31/07 09:52',
-        agent: 'M. Koné',
+  async function ajouter(v: {
+    type: TypeEntree;
+    categorie: Categorie;
+    titre: string;
+    description: string;
+    gravite: Gravite;
+    photo: boolean;
+    photoUrl?: string;
+    circonstances?: string;
+    mesures?: string;
+  }) {
+    try {
+      const res = await consignerEntree({
         type: v.type,
         categorie: v.categorie,
         titre: v.titre,
         description: v.description,
-        photo: v.photo,
-        gravite: incident ? v.gravite : undefined,
-        statut: incident ? 'OUVERT' : undefined,
-      },
-      ...es,
-    ]);
-    setSheet(false);
-    flash(incident ? 'Incident consigné' : 'Entrée ajoutée à la main courante');
+        gravite: v.type === 'INCIDENT' ? v.gravite : undefined,
+        photoUrl: v.photoUrl,
+        circonstances: v.circonstances,
+        mesures: v.mesures,
+      });
+      setSheet(false);
+      await recharger();
+      flash(
+        v.type === 'INCIDENT'
+          ? `Incident ${res.numero ?? ''} consigné · transmis HSE et Directeur de la Construction`
+          : 'Entrée ajoutée à la main courante',
+      );
+    } catch (e) {
+      setErreur((e as Error).message);
+      setSheet(false);
+    }
+  }
+
+  if (authEnCours || chargement) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center text-muted">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!connecte) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-3 px-6 text-center text-muted">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-forest-600 shadow-card ring-1 ring-sand-200/60">
+          <LogIn className="h-7 w-7" />
+        </span>
+        <p className="text-base font-bold text-ink">Connexion requise</p>
+        <p className="text-sm">La main courante est un registre du site : il faut un compte pour l'ouvrir.</p>
+      </div>
+    );
   }
 
   return (
@@ -99,10 +186,40 @@ export function MainCourante() {
               Saisie au poste avec photo. Journal horodaté, fiche flash et rapport détaillé pour les incidents.
             </p>
           </div>
-          <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setSheet(true)}>
-            Nouvelle entrée
-          </Button>
+          {peutConsigner && (
+            <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setSheet(true)}>
+              Nouvelle entrée
+            </Button>
+          )}
         </div>
+
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${
+              enDirect
+                ? 'bg-forest-50 text-forest-700 ring-forest-200'
+                : 'bg-sand-100 text-muted ring-sand-300'
+            }`}
+          >
+            <span className={`h-2 w-2 rounded-full ${enDirect ? 'animate-pulse bg-forest-500' : 'bg-sand-300'}`} />
+            {enDirect ? 'Réception en direct' : 'Hors direct — rechargez'}
+          </span>
+          <span className="text-[11px] text-muted">
+            Les incidents partent au HSE Officer et au Directeur de la Construction à la seconde.
+          </span>
+        </div>
+
+        {peutClore && (
+          <div className="mb-4">
+            <BoutonAlertes />
+          </div>
+        )}
+
+        {erreur && (
+          <p className="mb-4 rounded-xl bg-danger-50 px-3 py-2 text-sm font-semibold text-danger-600 ring-1 ring-danger-100">
+            {erreur}
+          </p>
+        )}
 
         <div className="mb-6 grid grid-cols-3 gap-3">
           <StatCard tone="forest" label="Entrées du jour" value={stats.entrees} icon={<FileText className="h-5 w-5" />} />
@@ -111,15 +228,35 @@ export function MainCourante() {
         </div>
 
         {/* Journal */}
-        <ol className="relative space-y-3 border-l-2 border-sand-300 pl-5">
-          {entrees.map((e) => (
-            <EntreeItem key={e.id} e={e} onRapport={() => setRapport(e)} />
-          ))}
-        </ol>
+        {entrees.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-sand-300 bg-white/60 px-6 py-10 text-center">
+            <FileText className="mx-auto h-8 w-8 text-sand-300" />
+            <p className="mt-2 text-sm font-semibold text-ink">Journal vide</p>
+            <p className="mt-1 text-sm text-muted">
+              {peutConsigner
+                ? 'Consignez la prise de poste : le journal démarre là.'
+                : 'Les entrées consignées au poste apparaîtront ici en direct.'}
+            </p>
+          </div>
+        ) : (
+          <ol className="relative space-y-3 border-l-2 border-sand-300 pl-5">
+            {entrees.map((e) => (
+              <EntreeItem key={e.id} e={e} nouveau={recus.includes(e.id)} onRapport={() => setRapport(e)} />
+            ))}
+          </ol>
+        )}
       </div>
 
       {sheet && <SaisieSheet onAnnuler={() => setSheet(false)} onConfirmer={ajouter} />}
-      {rapport && <RapportModal e={rapport} onFermer={() => setRapport(null)} onClore={clore} />}
+      {rapport && (
+        <RapportModal
+          e={rapport}
+          onFermer={() => setRapport(null)}
+          peutClore={peutClore}
+          onEnregistrer={(id, v) => majRapport(id, v, false)}
+          onClore={(id, v) => majRapport(id, v, true)}
+        />
+      )}
 
       {toast && (
         <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
@@ -133,7 +270,7 @@ export function MainCourante() {
   );
 }
 
-function EntreeItem({ e, onRapport }: { e: Entree; onRapport: () => void }) {
+function EntreeItem({ e, nouveau, onRapport }: { e: Entree; nouveau?: boolean; onRapport: () => void }) {
   const incident = e.type === 'INCIDENT';
   const majeur = e.gravite === 'MAJEUR';
   return (
@@ -145,7 +282,12 @@ function EntreeItem({ e, onRapport }: { e: Entree; onRapport: () => void }) {
       >
         {ICON[e.categorie]}
       </span>
-      <div className={`rounded-2xl bg-white p-4 shadow-card ring-1 ${majeur && e.statut === 'OUVERT' ? 'ring-danger-200' : 'ring-sand-300/70'}`}>
+      <div className={`rounded-2xl bg-white p-4 shadow-card ring-1 ${nouveau ? 'ring-2 ring-forest-400' : majeur && e.statut === 'OUVERT' ? 'ring-danger-200' : 'ring-sand-300/70'}`}>
+        {nouveau && (
+          <p className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-forest-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-forest-700">
+            Reçu à l’instant
+          </p>
+        )}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -188,9 +330,29 @@ function DangerStat({ label, value }: { label: string; value: number }) {
 }
 
 /* ---------- Rapport détaillé ---------- */
-function RapportModal({ e, onFermer, onClore }: { e: Entree; onFermer: () => void; onClore: (id: string, suites: string) => void }) {
+function RapportModal({
+  e,
+  peutClore,
+  onFermer,
+  onEnregistrer,
+  onClore,
+}: {
+  e: Entree;
+  peutClore: boolean;
+  onFermer: () => void;
+  onEnregistrer: (id: string, v: Rapport) => void;
+  onClore: (id: string, v: Rapport) => void;
+}) {
+  const [circonstances, setCirconstances] = useState(e.circonstances ?? '');
+  const [mesures, setMesures] = useState(e.mesures ?? '');
   const [suites, setSuites] = useState(e.suites ?? '');
+  const clos = e.statut === 'CLOS';
   const majeur = e.gravite === 'MAJEUR';
+  const rapport = { circonstances: circonstances.trim(), mesures: mesures.trim(), suites: suites.trim() };
+  const modifie =
+    rapport.circonstances !== (e.circonstances ?? '') ||
+    rapport.mesures !== (e.mesures ?? '') ||
+    rapport.suites !== (e.suites ?? '');
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-5 shadow-card-lg">
@@ -214,15 +376,30 @@ function RapportModal({ e, onFermer, onClore }: { e: Entree; onFermer: () => voi
           <p className="mt-1 text-sm text-ink">{e.description}</p>
         </div>
 
-        <Section titre="Circonstances" contenu={e.circonstances} />
-        <Section titre="Mesures prises" contenu={e.mesures} />
-
-        <label className="mt-3 block">
-          <span className="mb-1 block text-xs font-semibold text-muted">Suites</span>
-          <textarea value={suites} onChange={(ev) => setSuites(ev.target.value)} rows={2}
-            disabled={e.statut === 'CLOS'}
-            className="w-full resize-none rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-forest-400 focus:ring-2 focus:ring-forest-100 disabled:opacity-70" />
-        </label>
+        <ChampDicte
+          label="Circonstances"
+          placeholder="Ce qui s'est passé : heure, lieu, personnes, enchaînement des faits…"
+          valeur={circonstances}
+          onChange={setCirconstances}
+          desactive={clos}
+          rows={3}
+        />
+        <ChampDicte
+          label="Mesures prises"
+          placeholder="Ce qui a été fait immédiatement : refus, retenue, alerte, photo…"
+          valeur={mesures}
+          onChange={setMesures}
+          desactive={clos}
+          rows={3}
+        />
+        <ChampDicte
+          label="Suites"
+          placeholder="Suites données : information du référent, arbitrage, sanction…"
+          valeur={suites}
+          onChange={setSuites}
+          desactive={clos}
+          rows={2}
+        />
 
         {e.photo && (
           <div className="mt-3 flex items-center gap-2 rounded-xl bg-sand-100 px-3 py-2 text-xs font-medium text-muted">
@@ -230,27 +407,79 @@ function RapportModal({ e, onFermer, onClore }: { e: Entree; onFermer: () => voi
           </div>
         )}
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onFermer}>Fermer</Button>
-          {e.statut === 'OUVERT' ? (
-            <Button variant="primary" size="lg" block disabled={suites.trim().length < 5} onClick={() => onClore(e.id, suites.trim())}>
-              Clore l'incident
-            </Button>
-          ) : (
+          {clos ? (
             <Button variant="outline" size="lg" block disabled icon={<Check className="h-4 w-4" />}>Incident clos</Button>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                className="flex-none px-5"
+                disabled={!modifie}
+                onClick={() => onEnregistrer(e.id, rapport)}
+              >
+                Enregistrer
+              </Button>
+              {peutClore && (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  block
+                  disabled={rapport.circonstances.length < 5 || rapport.mesures.length < 5 || rapport.suites.length < 5}
+                  onClick={() => onClore(e.id, rapport)}
+                >
+                  Clore l'incident
+                </Button>
+              )}
+            </>
           )}
         </div>
+        {!clos && (
+          <p className="mt-2 text-[11px] text-muted">
+            {peutClore
+              ? 'Circonstances, mesures prises et suites sont exigées avant clôture — la fiche flash doit être opposable.'
+              : 'La clôture relève de la chaîne de commandement (HSE Officer, Directeur de la Construction, direction du site).'}
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-function Section({ titre, contenu }: { titre: string; contenu?: string }) {
-  if (!contenu) return null;
+/** Champ long : saisie au clavier ou à la voix, correcteur du navigateur actif. */
+function ChampDicte({
+  label,
+  placeholder,
+  valeur,
+  onChange,
+  rows = 3,
+  desactive,
+}: {
+  label: string;
+  placeholder: string;
+  valeur: string;
+  onChange: (v: string) => void;
+  rows?: number;
+  desactive?: boolean;
+}) {
   return (
-    <div className="mb-2">
-      <p className="text-xs font-bold uppercase tracking-wide text-muted">{titre}</p>
-      <p className="text-sm text-ink">{contenu}</p>
+    <div className="mt-3">
+      <label className="block">
+        <span className="mb-1 block text-xs font-semibold text-muted">{label}</span>
+        <textarea
+          value={valeur}
+          onChange={(e) => onChange(e.target.value)}
+          rows={rows}
+          disabled={desactive}
+          placeholder={placeholder}
+          lang="fr"
+          spellCheck
+          className="w-full resize-none rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-forest-400 focus:ring-2 focus:ring-forest-100 disabled:opacity-70"
+        />
+      </label>
+      {!desactive && <DicteeVocale valeur={valeur} onChange={onChange} label={`Dicter ${label.toLowerCase()}`} />}
     </div>
   );
 }
@@ -261,7 +490,17 @@ function SaisieSheet({
   onConfirmer,
 }: {
   onAnnuler: () => void;
-  onConfirmer: (v: { type: TypeEntree; categorie: Categorie; titre: string; description: string; gravite: Gravite; photo: boolean }) => void;
+  onConfirmer: (v: {
+    type: TypeEntree;
+    categorie: Categorie;
+    titre: string;
+    description: string;
+    gravite: Gravite;
+    photo: boolean;
+    photoUrl?: string;
+    circonstances?: string;
+    mesures?: string;
+  }) => void;
 }) {
   const [type, setType] = useState<TypeEntree>('EVENEMENT');
   const [categorie, setCategorie] = useState<Categorie>('RONDE');
@@ -269,7 +508,16 @@ function SaisieSheet({
   const [description, setDescription] = useState('');
   const [gravite, setGravite] = useState<Gravite>('MINEUR');
   const [photo, setPhoto] = useState(false);
-  const pret = titre.trim() && description.trim();
+  const [photoUrl, setPhotoUrl] = useState<string | undefined>();
+  const [circonstances, setCirconstances] = useState('');
+  const [mesures, setMesures] = useState('');
+  const incident = type === 'INCIDENT';
+  // Un incident majeur n'est pas consignable sans photo (I1) ni circonstances.
+  const majeur = incident && gravite === 'MAJEUR';
+  const pret =
+    titre.trim() &&
+    description.trim() &&
+    (!majeur || (photo && circonstances.trim().length >= 5 && mesures.trim().length >= 5));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
@@ -310,19 +558,60 @@ function SaisieSheet({
           <input value={titre} onChange={(e) => setTitre(e.target.value)} placeholder="Ex. : ronde secteur travaux"
             className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
         </label>
-        <label className="mt-3 block"><span className="mb-1 block text-xs font-semibold text-muted">Description</span>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Constat, faits, personnes concernées…"
-            className="w-full resize-none rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
-        </label>
+        <ChampDicte
+          label="Description"
+          placeholder="Constat, faits, personnes concernées…"
+          valeur={description}
+          onChange={setDescription}
+          rows={3}
+        />
+
+        {incident && (
+          <>
+            <ChampDicte
+              label="Circonstances"
+              placeholder="Heure, lieu, personnes, enchaînement des faits…"
+              valeur={circonstances}
+              onChange={setCirconstances}
+              rows={3}
+            />
+            <ChampDicte
+              label="Mesures prises"
+              placeholder="Refus, retenue, alerte du chef de poste, raccompagnement…"
+              valeur={mesures}
+              onChange={setMesures}
+              rows={3}
+            />
+          </>
+        )}
 
         <div className="mt-3">
-          <PhotoCapture label="Photographier l'incident" onCapture={() => setPhoto(true)} />
+          <PhotoCapture
+            label={incident ? "Photographier l'incident" : 'Photographier (optionnel)'}
+            onCapture={(url) => { setPhoto(true); setPhotoUrl(url); }}
+          />
         </div>
+
+        {majeur && !pret && (
+          <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-200">
+            Incident majeur : photo, circonstances et mesures prises sont obligatoires dès la consignation.
+          </p>
+        )}
 
         <div className="mt-4 flex gap-2">
           <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onAnnuler}>Annuler</Button>
           <Button variant="primary" size="lg" block disabled={!pret}
-            onClick={() => onConfirmer({ type, categorie, titre: titre.trim(), description: description.trim(), gravite, photo })}>
+            onClick={() => onConfirmer({
+              type,
+              categorie,
+              titre: titre.trim(),
+              description: description.trim(),
+              gravite,
+              photo,
+              photoUrl,
+              circonstances: circonstances.trim() || undefined,
+              mesures: mesures.trim() || undefined,
+            })}>
             Consigner
           </Button>
         </div>
