@@ -371,3 +371,109 @@ export async function enregistrerMouvementVehicule(p: {
   if (error) throw new Error(error.message);
   return data as { anomalie: boolean; force: boolean; statut: StatutVehicule };
 }
+
+/* ===================== Évacuations & contrôle inopiné (M14) ===================== */
+
+export type StatutEvac = 'ACTIVE' | 'CLOTUREE';
+export type ResultatControle = 'CONFORME' | 'ANOMALIE';
+
+export interface Evacuation {
+  id: string;
+  numero: string;
+  entreprise: string;
+  nature: string;
+  volume: number;
+  periode: string;
+  destination: string;
+  immatriculations: string[];
+  statut: StatutEvac;
+  visee: boolean;
+}
+
+export interface ControleInopine {
+  id: string;
+  numeroEvac: string;
+  immatriculation: string;
+  agent: string;
+  resultat: ResultatControle;
+  photo: boolean;
+  horodatage: string;
+}
+
+export async function chargerEvacuations(): Promise<Evacuation[]> {
+  const { data, error } = await supabase
+    .from('at_evacuations')
+    .select('id, numero, nature, volume, periode, destination, immatriculations, statut, visee, entreprise:at_entreprises(raison_sociale)')
+    .order('numero', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((e) => {
+    const ent = e.entreprise as unknown as { raison_sociale: string } | null;
+    return {
+      id: e.id,
+      numero: e.numero,
+      entreprise: ent?.raison_sociale ?? '—',
+      nature: e.nature,
+      volume: Number(e.volume),
+      periode: e.periode,
+      destination: e.destination,
+      immatriculations: (e.immatriculations ?? []) as string[],
+      statut: e.statut as StatutEvac,
+      visee: e.visee,
+    };
+  });
+}
+
+export async function chargerControlesEvac(limite = 12): Promise<ControleInopine[]> {
+  const { data, error } = await supabase
+    .from('at_controles_evacuation')
+    .select('id, numero_evac, immatriculation, agent, resultat, photo, horodatage')
+    .order('horodatage', { ascending: false })
+    .limit(limite);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((c) => ({
+    id: c.id,
+    numeroEvac: c.numero_evac,
+    immatriculation: c.immatriculation,
+    agent: c.agent,
+    resultat: c.resultat as ResultatControle,
+    photo: c.photo,
+    horodatage: c.horodatage,
+  }));
+}
+
+export async function creerEvacuation(p: {
+  entrepriseId: string;
+  nature: string;
+  volume: number;
+  periode: string;
+  destination: string;
+  immatriculations: string[];
+}): Promise<{ id: string; numero: string }> {
+  const { data, error } = await supabase.rpc('at_creer_evacuation', {
+    p_entreprise_id: p.entrepriseId,
+    p_nature: p.nature,
+    p_volume: p.volume,
+    p_periode: p.periode,
+    p_destination: p.destination,
+    p_immatriculations: p.immatriculations,
+  });
+  if (error) throw new Error(error.message);
+  return data as { id: string; numero: string };
+}
+
+/** Le serveur exige la photo du fond de benne pour clore le contrôle. */
+export async function enregistrerControleEvac(p: {
+  evacuationId: string;
+  immatriculation: string;
+  resultat: ResultatControle;
+  photo: boolean;
+}): Promise<{ id: string; resultat: ResultatControle }> {
+  const { data, error } = await supabase.rpc('at_enregistrer_controle_evac', {
+    p_evacuation_id: p.evacuationId,
+    p_immatriculation: p.immatriculation,
+    p_resultat: p.resultat,
+    p_photo: p.photo,
+  });
+  if (error) throw new Error(error.message);
+  return data as { id: string; resultat: ResultatControle };
+}
