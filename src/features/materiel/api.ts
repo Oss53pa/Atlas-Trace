@@ -244,3 +244,130 @@ export async function refuserSortie(id: string, motif: string): Promise<void> {
   const { error } = await supabase.rpc('at_refuser_sortie', { p_id: id, p_motif: motif });
   if (error) throw new Error(error.message);
 }
+
+/* ===================== Véhicules & mouvements (M11) ===================== */
+
+export type StatutVehicule = 'DEHORS' | 'SUR_SITE';
+export type EtatCharge = 'VIDE' | 'CHARGE';
+export type ControleEffectue = 'COFFRE' | 'BENNE' | 'LES_DEUX' | 'SANS_OBJET';
+export type SensVehicule = 'ENTREE' | 'SORTIE';
+
+export interface Vehicule {
+  id: string;
+  entrepriseId: string;
+  entreprise: string;
+  immatriculation: string;
+  type: string;
+  chauffeur: string;
+  laissezPasser: string;
+  statut: StatutVehicule;
+  etatEntree?: EtatCharge | null;
+  natureEntree?: string | null;
+  entreeAt?: string | null;
+}
+
+export interface MouvementVehicule {
+  id: string;
+  immatriculation: string;
+  entreprise: string;
+  sens: SensVehicule;
+  etat: EtatCharge;
+  nature?: string | null;
+  controle: ControleEffectue;
+  couverture?: string | null;
+  anomalie: boolean;
+  force: boolean;
+  agent: string;
+  photo: boolean;
+  horodatage: string;
+}
+
+export async function chargerVehicules(): Promise<Vehicule[]> {
+  const { data, error } = await supabase
+    .from('at_vehicules')
+    .select('id, entreprise_id, immatriculation, type, chauffeur, laissez_passer, statut, etat_entree, nature_entree, entree_at, entreprise:at_entreprises(raison_sociale)')
+    .order('immatriculation');
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((v) => {
+    const ent = v.entreprise as unknown as { raison_sociale: string } | null;
+    return {
+      id: v.id,
+      entrepriseId: v.entreprise_id,
+      entreprise: ent?.raison_sociale ?? '—',
+      immatriculation: v.immatriculation,
+      type: v.type,
+      chauffeur: v.chauffeur,
+      laissezPasser: v.laissez_passer,
+      statut: v.statut as StatutVehicule,
+      etatEntree: v.etat_entree as EtatCharge | null,
+      natureEntree: v.nature_entree,
+      entreeAt: v.entree_at,
+    };
+  });
+}
+
+export async function chargerMouvementsVehicule(limite = 12): Promise<MouvementVehicule[]> {
+  const { data, error } = await supabase
+    .from('at_mouvements_vehicule')
+    .select('id, immatriculation, entreprise, sens, etat, nature, controle, couverture, anomalie, force, agent, photo, horodatage')
+    .order('horodatage', { ascending: false })
+    .limit(limite);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((m) => ({
+    id: m.id,
+    immatriculation: m.immatriculation,
+    entreprise: m.entreprise,
+    sens: m.sens as SensVehicule,
+    etat: m.etat as EtatCharge,
+    nature: m.nature,
+    controle: m.controle as ControleEffectue,
+    couverture: m.couverture,
+    anomalie: m.anomalie,
+    force: m.force,
+    agent: m.agent,
+    photo: m.photo,
+    horodatage: m.horodatage,
+  }));
+}
+
+export async function enregistrerVehicule(p: {
+  entrepriseId: string;
+  immatriculation: string;
+  type?: string;
+  chauffeur?: string;
+}): Promise<{ id: string; laissezPasser: string }> {
+  const { data, error } = await supabase.rpc('at_enregistrer_vehicule', {
+    p_entreprise_id: p.entrepriseId,
+    p_immatriculation: p.immatriculation,
+    p_type: p.type ?? 'Véhicule',
+    p_chauffeur: p.chauffeur ?? '',
+  });
+  if (error) throw new Error(error.message);
+  const d = data as { id: string; laissez_passer: string };
+  return { id: d.id, laissezPasser: d.laissez_passer };
+}
+
+/** L'anomalie (entré vide → ressort chargé sans couverture) est décidée côté serveur. */
+export async function enregistrerMouvementVehicule(p: {
+  vehiculeId: string;
+  sens: SensVehicule;
+  etat: EtatCharge;
+  controle: ControleEffectue;
+  nature?: string;
+  couverture?: string;
+  force?: boolean;
+  photo?: boolean;
+}): Promise<{ anomalie: boolean; force: boolean; statut: StatutVehicule }> {
+  const { data, error } = await supabase.rpc('at_enregistrer_mouvement_vehicule', {
+    p_vehicule_id: p.vehiculeId,
+    p_sens: p.sens,
+    p_etat: p.etat,
+    p_controle: p.controle,
+    p_nature: p.nature ?? null,
+    p_couverture: p.couverture ?? null,
+    p_force: p.force ?? false,
+    p_photo: p.photo ?? false,
+  });
+  if (error) throw new Error(error.message);
+  return data as { anomalie: boolean; force: boolean; statut: StatutVehicule };
+}
