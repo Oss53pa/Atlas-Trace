@@ -1,13 +1,13 @@
-import type { ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
-  Users, ArrowRightLeft, FileOutput, CreditCard, ScanLine, ClipboardList, Package,
+  Users, ArrowRightLeft, FileOutput, TrendingUp, ScanLine, ClipboardList, Package,
   LayoutDashboard, AlertTriangle, ChevronRight, Wifi, Activity, Building2, BookText, Table2, Settings,
 } from 'lucide-react';
 import { useAuthz } from '../../lib/authz';
-import { PRESENCE_ENTREPRISE, ALERTES, ANOMALIES_FLUX } from '../../data/tableau';
+import { chargerTableauBord, type TableauBord } from '../tableau/api';
 
 const alerteVue: Record<string, string> = {
-  listes: 'listes', badges: 'badges', materiel: 'materiel', sorties: 'materiel', preavis: 'materiel',
+  listes: 'listes', sorties: 'materiel', anomalies: 'tableau', preavis: 'materiel',
 };
 
 /** Carte d'action rapide par destination — l'accueil surface les onglets du rôle. */
@@ -23,32 +23,60 @@ const ACTION_META: Record<string, { label: string; sous: string; icon: ReactNode
 };
 
 const ACTIONS_DEMO = ['poste', 'listes', 'materiel', 'tableau'];
+const dateJour = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
 export function Accueil({ onOpen, primaires }: { onOpen: (vue: string) => void; primaires?: string[] }) {
   const { connecte, a } = useAuthz();
-  // Les KPI, alertes et anomalies sont une donnée de supervision : réservés aux
-  // rôles qui consultent le tableau. Hors session (démo), on montre tout.
-  const montrerTableau = !connecte || a('CONSULTER_TABLEAU');
+  // La supervision (KPI, alertes, anomalies) est une donnée réelle du site :
+  // réservée aux comptes connectés qui consultent le tableau. Hors session,
+  // aucun chiffre n'est affiché (pas de vitrine).
+  const peutSuperviser = connecte && a('CONSULTER_TABLEAU');
+  const [tb, setTb] = useState<TableauBord | null>(null);
+
+  const charger = useCallback(async () => {
+    try {
+      setTb(await chargerTableauBord());
+    } catch {
+      setTb(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (peutSuperviser) charger();
+    else setTb(null);
+  }, [peutSuperviser, charger]);
 
   // Actions rapides = les onglets principaux du rôle (déjà filtrés par accès).
   const actionsVues = (connecte ? (primaires ?? []) : ACTIONS_DEMO)
     .filter((v) => v !== 'accueil' && ACTION_META[v]);
 
-  const presents = PRESENCE_ENTREPRISE.reduce((s, e) => s + e.entre, 0);
-  const declares = PRESENCE_ENTREPRISE.reduce((s, e) => s + e.declare, 0);
-  const ecart = declares - presents;
-  const val = (cle: string) => ALERTES.find((a) => a.cle === cle)?.valeur ?? 0;
-  const fluxAnormaux = ANOMALIES_FLUX
-    .map((f) => ({ ...f, delta: f.jour - f.moyenne }))
-    .filter((f) => f.delta > 0)
-    .sort((a, b) => b.delta - a.delta);
+  const kpis = tb
+    ? [
+        { label: 'Présents sur site', value: tb.present, unit: `/ ${tb.declare}`, icon: <Users className="h-5 w-5" />, gold: true },
+        { label: 'Écart déclaré / entré', value: tb.ecart, unit: '', icon: <ArrowRightLeft className="h-5 w-5" />, gold: false },
+        { label: 'Sorties en attente', value: tb.sorties_attente, unit: '', icon: <FileOutput className="h-5 w-5" />, gold: false },
+        { label: 'Anomalies (24 h)', value: tb.anomalies.total, unit: '', icon: <TrendingUp className="h-5 w-5" />, gold: false },
+      ]
+    : [];
 
-  const kpis = [
-    { label: 'Présents sur site', value: presents, unit: `/ ${declares}`, icon: <Users className="h-5 w-5" />, gold: true },
-    { label: 'Écart déclaré / entré', value: ecart, unit: '', icon: <ArrowRightLeft className="h-5 w-5" />, gold: false },
-    { label: 'Sorties en attente', value: val('sorties'), unit: '', icon: <FileOutput className="h-5 w-5" />, gold: false },
-    { label: 'Badges non restitués', value: val('badges'), unit: '', icon: <CreditCard className="h-5 w-5" />, gold: false },
-  ];
+  const alertes = tb
+    ? [
+        { cle: 'listes', libelle: 'Entreprises sans registre', valeur: tb.entreprises_sans_liste, ton: tb.entreprises_sans_liste > 0 ? 'danger' : 'forest' },
+        { cle: 'sorties', libelle: 'Autorisations de sortie en attente', valeur: tb.sorties_attente, ton: tb.sorties_attente > 0 ? 'amber' : 'forest' },
+        { cle: 'anomalies', libelle: 'Anomalies de flux (24 h)', valeur: tb.anomalies.total, ton: tb.anomalies.total > 0 ? 'amber' : 'forest' },
+        { cle: 'preavis', libelle: 'Préavis de livraison du jour', valeur: tb.preavis_jour, ton: 'forest' as const },
+      ]
+    : [];
+
+  const anomalies = tb
+    ? [
+        { serie: 'Véhicules (entré vide → chargé)', valeur: tb.anomalies.vehicules },
+        { serie: 'Contrôles d’évacuation', valeur: tb.anomalies.evacuations },
+        { serie: 'Sorties refusées faute de couverture', valeur: tb.anomalies.sorties_refusees },
+      ].filter((f) => f.valeur > 0)
+    : [];
+
+  const montrerTableau = peutSuperviser && tb !== null;
 
   return (
     <div className="min-h-screen bg-sand-50">
@@ -60,7 +88,7 @@ export function Accueil({ onOpen, primaires }: { onOpen: (vue: string) => void; 
         <div className="relative mx-auto max-w-5xl">
           <header className="flex animate-fade-up items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-medium text-white/60">Aujourd'hui · 31/07/2026</p>
+              <p className="text-xs font-medium capitalize text-white/60">{dateJour}</p>
               <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-white">Bonjour</h1>
               <p className="truncate text-sm text-white/70">Chantier Cosmos Angré · New Heaven SA</p>
             </div>
@@ -69,7 +97,7 @@ export function Accueil({ onOpen, primaires }: { onOpen: (vue: string) => void; 
             </span>
           </header>
 
-          {/* KPI en verre — supervision (tableau) uniquement */}
+          {/* KPI en verre — supervision réelle */}
           {montrerTableau && (
             <div className="mt-5 grid animate-fade-up grid-cols-2 gap-3 md:grid-cols-4">
               {kpis.map((k) => (
@@ -105,19 +133,19 @@ export function Accueil({ onOpen, primaires }: { onOpen: (vue: string) => void; 
               <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Actions rapides</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {actionsVues.map((vue) => {
-                  const a = ACTION_META[vue];
+                  const act = ACTION_META[vue];
                   return (
                     <button
                       key={vue}
                       onClick={() => onOpen(vue)}
                       className="group flex flex-col items-start gap-2 rounded-2xl bg-white p-4 text-left shadow-card ring-1 ring-sand-300/50 transition-all duration-200 ease-premium hover:-translate-y-1 hover:shadow-card-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-400"
                     >
-                      <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-soft ring-1 ring-inset ring-white/15" style={{ backgroundImage: `linear-gradient(135deg, ${a.from}, ${a.to})` }}>
-                        {a.icon}
+                      <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-soft ring-1 ring-inset ring-white/15" style={{ backgroundImage: `linear-gradient(135deg, ${act.from}, ${act.to})` }}>
+                        {act.icon}
                       </span>
                       <span className="mt-1">
-                        <span className="block text-sm font-bold leading-tight text-ink">{a.label}</span>
-                        <span className="block text-[11px] text-muted">{a.sous}</span>
+                        <span className="block text-sm font-bold leading-tight text-ink">{act.label}</span>
+                        <span className="block text-[11px] text-muted">{act.sous}</span>
                       </span>
                     </button>
                   );
@@ -126,7 +154,7 @@ export function Accueil({ onOpen, primaires }: { onOpen: (vue: string) => void; 
             </section>
           )}
 
-          {/* Alertes du jour — supervision (tableau) uniquement */}
+          {/* Alertes du jour — supervision réelle */}
           {montrerTableau && (
             <section className="pt-7">
               <div className="mb-3 flex items-center justify-between">
@@ -136,7 +164,7 @@ export function Accueil({ onOpen, primaires }: { onOpen: (vue: string) => void; 
                 </button>
               </div>
               <ul className="space-y-2">
-                {ALERTES.map((al) => {
+                {alertes.map((al) => {
                   const ton = al.ton === 'danger'
                     ? { chip: 'bg-danger-50 text-danger-600 ring-danger-100', ic: 'text-danger-500' }
                     : al.ton === 'amber'
@@ -162,27 +190,24 @@ export function Accueil({ onOpen, primaires }: { onOpen: (vue: string) => void; 
             </section>
           )}
 
-          {/* Anomalies de flux — mouvements suivis (M15) — supervision uniquement */}
-          {montrerTableau && (
+          {/* Anomalies de flux (24 h) — supervision réelle */}
+          {montrerTableau && anomalies.length > 0 && (
             <section className="pt-7">
               <div className="mb-3 flex items-center gap-2">
                 <Activity className="h-4 w-4 text-amber-600" />
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted">Anomalies de flux — au-dessus de la tendance</h2>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-muted">Anomalies de flux (24 h)</h2>
               </div>
               <div className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-sand-300/50">
-                {fluxAnormaux.map((f, i) => (
+                {anomalies.map((f, i) => (
                   <div key={f.serie} className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? 'border-t border-sand-200' : ''}`}>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-ink">{f.serie}</span>
-                      <span className="block text-[11px] text-muted">tendance du site {f.moyenne} {f.unite}</span>
-                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{f.serie}</span>
                     <span className="tnum inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
-                      {f.jour} {f.unite} · +{f.delta}
+                      {f.valeur}
                     </span>
                   </div>
                 ))}
               </div>
-              <p className="mt-2 text-[11px] text-muted">On ne compte pas les objets, on compte les mouvements. Un écart à la tendance propre du site est signalé, jamais un seuil absolu.</p>
+              <p className="mt-2 text-[11px] text-muted">On ne compte pas les objets, on compte les mouvements. Chiffres réels des dernières 24 h.</p>
             </section>
           )}
         </div>
