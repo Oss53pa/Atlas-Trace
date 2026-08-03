@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UserPlus, X, Check, Loader2, LogIn, CreditCard, Users } from 'lucide-react';
+import { UserPlus, X, Check, Loader2, LogIn, CreditCard, Users, Ban, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthz } from '../../lib/authz';
 import { Button } from '../../components/ui/Button';
@@ -27,6 +27,7 @@ export function PersonnesLive() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
   const [badgePour, setBadgePour] = useState<Personne | null>(null);
+  const [suspendreCible, setSuspendreCible] = useState<Personne | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   function flash(m: string) { setToast(m); setTimeout(() => setToast(null), 3200); }
@@ -74,6 +75,20 @@ export function PersonnesLive() {
     setBadgePour(null); flash(`Badge ${numero} délivré (${zonesChoisies.join(', ')})`); charger();
   }
 
+  // I4 : suspendre une personne suspend ses badges (le poste refuse alors
+  // BADGE_SUSPENDU). Réactiver relève les badges non expirés. Vérifié serveur.
+  async function suspendre(p: Personne, motif: string) {
+    const { error } = await supabase.rpc('at_suspendre_personne', { p_id: p.id, p_suspendre: true, p_motif: motif });
+    setSuspendreCible(null);
+    if (error) { flash('Refusé : ' + error.message); return; }
+    flash(`${p.prenom} ${p.nom} suspendu(e) · badge bloqué au poste`); charger();
+  }
+  async function reactiver(p: Personne) {
+    const { error } = await supabase.rpc('at_suspendre_personne', { p_id: p.id, p_suspendre: false });
+    if (error) { flash('Refusé : ' + error.message); return; }
+    flash(`${p.prenom} ${p.nom} réactivé(e)`); charger();
+  }
+
   if (chargement || !pret) return <div className="flex min-h-[60vh] items-center justify-center gap-2 text-sm text-muted"><Loader2 className="h-5 w-5 animate-spin" /> Chargement…</div>;
   if (!connecte) return (
     <div className="mx-auto flex min-h-[60vh] max-w-sm flex-col items-center justify-center px-6 text-center">
@@ -85,6 +100,7 @@ export function PersonnesLive() {
 
   const peutDeclarer = a('DECLARER_PERSONNEL');
   const peutBadger = a('DELIVRER_BADGE');
+  const peutSuspendre = a('SUSPENDRE_ACCES');
 
   return (
     <div className="min-h-screen bg-sand-100">
@@ -103,16 +119,21 @@ export function PersonnesLive() {
         <ul className="space-y-2">
           {gens.map((p) => {
             const badge = p.at_badges.find((b) => b.statut === 'ACTIF') ?? p.at_badges[0];
+            const suspendu = p.statut === 'SUSPENDU';
             return (
               <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-sand-300/60">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-forest-50 text-sm font-bold text-forest-700">{(p.prenom || p.nom || '?').slice(0, 1).toUpperCase()}</span>
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${suspendu ? 'bg-danger-50 text-danger-600' : 'bg-forest-50 text-forest-700'}`}>{(p.prenom || p.nom || '?').slice(0, 1).toUpperCase()}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-ink">{p.prenom} {p.nom}</p>
                   <p className="truncate text-xs text-muted">{p.fonction ?? '—'} · {p.at_entreprises?.raison_sociale ?? 'sans entreprise'}</p>
                 </div>
-                {badge ? <Badge tone="forest"><CreditCard className="h-3 w-3" /> {badge.numero}</Badge>
+                {suspendu && <Badge tone="danger" dot>Suspendu</Badge>}
+                {badge ? <Badge tone={suspendu ? 'neutral' : 'forest'}><CreditCard className="h-3 w-3" /> {badge.numero}</Badge>
                   : peutBadger ? <Button size="sm" variant="outline" icon={<CreditCard className="h-4 w-4" />} onClick={() => setBadgePour(p)}>Délivrer un badge</Button>
                     : <Badge tone="neutral">Sans badge</Badge>}
+                {peutSuspendre && (suspendu
+                  ? <Button size="sm" variant="outline" icon={<ShieldCheck className="h-4 w-4" />} onClick={() => reactiver(p)}>Réactiver</Button>
+                  : <Button size="sm" variant="ghost" icon={<Ban className="h-4 w-4" />} onClick={() => setSuspendreCible(p)}>Suspendre</Button>)}
               </li>
             );
           })}
@@ -122,12 +143,37 @@ export function PersonnesLive() {
 
       {sheet && <PersonneSheet entreprises={entreprises} onAnnuler={() => setSheet(false)} onDeclarer={declarer} />}
       {badgePour && <BadgeSheet personne={badgePour} zones={zones} onAnnuler={() => setBadgePour(null)} onDelivrer={(zs) => delivrerBadge(badgePour, zs)} />}
+      {suspendreCible && <SuspendreSheet personne={suspendreCible} onAnnuler={() => setSuspendreCible(null)} onConfirmer={(m) => suspendre(suspendreCible, m)} />}
 
       {toast && (
         <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
           <div className="flex items-center gap-2 rounded-full bg-forest-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card-lg"><Check className="h-4 w-4" strokeWidth={3} /> {toast}</div>
         </div>
       )}
+    </div>
+  );
+}
+
+function SuspendreSheet({ personne, onAnnuler, onConfirmer }: { personne: Personne; onAnnuler: () => void; onConfirmer: (motif: string) => void }) {
+  const [motif, setMotif] = useState('');
+  const pret = motif.trim().length >= 3;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onAnnuler}>
+      <div className="w-full max-w-md rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-card-lg ring-1 ring-sand-300/60 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="text-lg font-extrabold text-ink">Suspendre · {personne.prenom} {personne.nom}</h3>
+          <button onClick={onAnnuler} aria-label="Fermer" className="rounded-full p-1.5 text-muted hover:bg-sand-100 hover:text-ink"><X className="h-5 w-5" /></button>
+        </div>
+        <p className="mb-3 text-xs text-muted">Refus immédiat au poste : les badges actifs de la personne passent en « suspendu » (invariant I4). Motif tracé au journal d'audit.</p>
+        <label className="block"><span className="mb-1 block text-xs font-semibold text-muted">Motif (obligatoire)</span>
+          <textarea value={motif} onChange={(e) => setMotif(e.target.value)} rows={2} placeholder="Ex. : habilitation retirée, incident de sécurité"
+            className="w-full resize-none rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
+        </label>
+        <div className="mt-4 flex gap-2">
+          <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onAnnuler}>Annuler</Button>
+          <Button variant="danger" size="lg" block disabled={!pret} onClick={() => onConfirmer(motif.trim())}>Suspendre l'accès</Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -175,7 +221,7 @@ function PersonneSheet({ entreprises, onAnnuler, onDeclarer }: { entreprises: En
 function BadgeSheet({ personne, zones, onAnnuler, onDelivrer }: { personne: Personne; zones: string[]; onAnnuler: () => void; onDelivrer: (zones: string[]) => Promise<void> }) {
   const [sel, setSel] = useState<Set<string>>(new Set(zones));
   const [envoi, setEnvoi] = useState(false);
-  const bascule = (z: string) => setSel((s) => { const n = new Set(s); n.has(z) ? n.delete(z) : n.add(z); return n; });
+  const bascule = (z: string) => setSel((s) => { const n = new Set(s); if (n.has(z)) n.delete(z); else n.add(z); return n; });
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onAnnuler}>
