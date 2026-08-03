@@ -43,3 +43,42 @@ self.addEventListener('fetch', (e) => {
     ),
   );
 });
+
+/* ---------- Alertes push (Web Push / VAPID) ----------
+ * Réveille le téléphone du HSE Officer et du Directeur de la Construction
+ * quand un incident est consigné, application fermée. */
+self.addEventListener('push', (e) => {
+  let d = { titre: 'Atlas Trace', corps: 'Nouvel incident au poste', urgence: 'mineur' };
+  try {
+    if (e.data) d = { ...d, ...e.data.json() };
+  } catch {
+    if (e.data) d.corps = e.data.text();
+  }
+  const majeur = d.urgence === 'majeur';
+  e.waitUntil(
+    self.registration.showNotification(d.titre, {
+      body: d.corps,
+      icon: '/pwa-192.png',
+      badge: '/favicon-32.png',
+      tag: d.id ? `incident-${d.id}` : 'incident',
+      renotify: majeur,
+      requireInteraction: majeur,
+      vibrate: majeur ? [200, 100, 200, 100, 200] : [120],
+      data: { url: '/?vue=maincourante', id: d.id || null },
+    }),
+  );
+});
+
+/* Un appui ouvre la main courante, en réutilisant l'onglet déjà ouvert. */
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const cible = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((liste) => {
+      for (const c of liste) {
+        if (c.url.includes(self.location.origin)) return c.focus();
+      }
+      return self.clients.openWindow(cible);
+    }),
+  );
+});
