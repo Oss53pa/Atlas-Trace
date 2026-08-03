@@ -15,7 +15,6 @@ export const POUVOIRS: { code: string; effet: string }[] = [
   { code: 'CLOTURER_JOURNEE', effet: 'Déclencher ou ajuster la clôture de journée' },
   { code: 'SUIVRE_INCIDENTS', effet: 'Compléter et clôturer un rapport d’incident' },
   { code: 'DECLARER_MATERIEL', effet: 'Déclarer du matériel' },
-  { code: 'VISER_MATERIEL', effet: 'Viser un parc déclaré' },
   { code: 'DEMANDER_SORTIE', effet: 'Créer une demande de sortie de matériel' },
   { code: 'VISER_SORTIE', effet: 'Viser une demande de sortie' },
   { code: 'APPROUVER_SORTIE', effet: 'Approuver une sortie (génère le code)' },

@@ -23,7 +23,7 @@ interface OngletDef {
 }
 
 const ONGLETS: OngletDef[] = [
-  { v: 'parcs', label: 'Entrée & dotation', icon: <Boxes className="h-4 w-4" />, pouvoirs: ['DECLARER_MATERIEL', 'VISER_MATERIEL'] },
+  { v: 'parcs', label: 'Entrée & dotation', icon: <Boxes className="h-4 w-4" />, pouvoirs: ['DECLARER_MATERIEL'] },
   { v: 'sorties', label: 'Sorties', icon: <FileOutput className="h-4 w-4" />, pouvoirs: ['DEMANDER_SORTIE', 'VISER_SORTIE', 'APPROUVER_SORTIE'] },
   { v: 'vehicules', label: 'Véhicules', icon: <Truck className="h-4 w-4" />, pouvoirs: ['CONTROLER_AU_POSTE', 'GERER_VEHICULE'] },
   { v: 'evacuations', label: 'Évacuations', icon: <Trash2 className="h-4 w-4" />, pouvoirs: ['AUTORISER_EVACUATION', 'CONTROLER_AU_POSTE'] },
