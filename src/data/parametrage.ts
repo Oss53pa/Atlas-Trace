@@ -9,7 +9,7 @@ export const POUVOIRS: { code: string; effet: string }[] = [
   { code: 'DECLARER_PERSONNEL', effet: 'Déclarer des personnes et leurs photos' },
   { code: 'DEPOSER_LISTE', effet: 'Alimenter le registre de présence' },
   { code: 'DELIVRER_BADGE', effet: 'Imprimer un badge, attribuer un badge temporaire' },
-  { code: 'SUSPENDRE_ACCES', effet: 'Suspendre une personne, une entreprise, un véhicule' },
+  { code: 'SUSPENDRE_ACCES', effet: 'Suspendre une personne ou une entreprise' },
   { code: 'CONTROLER_AU_POSTE', effet: 'Scanner, autoriser, refuser, enregistrer un contrôle physique' },
   { code: 'FORCER_ACCES', effet: 'Autoriser malgré un refus du système' },
   { code: 'CLOTURER_JOURNEE', effet: 'Déclencher ou ajuster la clôture de journée' },
