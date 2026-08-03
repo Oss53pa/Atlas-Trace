@@ -18,7 +18,6 @@ export const POUVOIRS: { code: string; effet: string }[] = [
   { code: 'DEMANDER_SORTIE', effet: 'Créer une demande de sortie de matériel' },
   { code: 'VISER_SORTIE', effet: 'Viser une demande de sortie' },
   { code: 'APPROUVER_SORTIE', effet: 'Approuver une sortie (génère le code)' },
-  { code: 'GERER_VEHICULE', effet: 'Créer un laissez-passer' },
   { code: 'DEMANDER_LIVRAISON', effet: 'Déposer un préavis' },
   { code: 'VALIDER_CRENEAU', effet: 'Attribuer ou refuser un créneau de livraison' },
   { code: 'RECEPTIONNER', effet: 'Accuser la prise en charge d’une livraison' },
@@ -26,7 +25,6 @@ export const POUVOIRS: { code: string; effet: string }[] = [
   { code: 'CONSULTER_TABLEAU', effet: 'Accéder au tableau de bord du site' },
   { code: 'EXPORTER', effet: 'Produire les registres' },
   { code: 'CONSULTER_AUDIT', effet: 'Accéder au journal d’audit' },
-  { code: 'PARAMETRER_SITE', effet: 'Modifier les référentiels et les circuits' },
   { code: 'ADMINISTRER_ORGANISATION', effet: 'Créer des sites, des rôles, des utilisateurs' },
 ];
 

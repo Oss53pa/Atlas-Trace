@@ -33,7 +33,7 @@ export const CARTES: Carte[] = [
   { id: 'sortie_demande', titre: 'Demandes de sortie à créer', pouvoir: 'DEMANDER_SORTIE', portee: 'ENTITE', vue: 'materiel' },
   { id: 'sortie_visa', titre: 'Sorties en attente de visa', pouvoir: 'VISER_SORTIE', portee: ['SITE', 'EMPRISE'], vue: 'materiel' },
   { id: 'sortie_appro', titre: 'Sorties en attente d’approbation', pouvoir: 'APPROUVER_SORTIE', portee: ['SITE', 'EMPRISE'], vue: 'materiel' },
-  { id: 'vehicules', titre: 'Véhicules & laissez-passer', pouvoir: 'GERER_VEHICULE', portee: ['ENTITE', 'SITE'], vue: 'materiel' },
+  { id: 'vehicules', titre: 'Véhicules & laissez-passer', pouvoir: 'CONTROLER_AU_POSTE', portee: ['ENTITE', 'SITE'], vue: 'materiel' },
   { id: 'anomalies_veh', titre: 'Anomalies véhicules', pouvoir: 'CONSULTER_TABLEAU', portee: 'SITE', vue: 'materiel' },
   { id: 'preavis', titre: 'Préavis de livraison', pouvoir: 'DEMANDER_LIVRAISON', portee: 'ENTITE', vue: 'materiel' },
   { id: 'creneaux', titre: 'Créneaux à valider', pouvoir: 'VALIDER_CRENEAU', portee: 'SITE', vue: 'materiel' },
@@ -47,7 +47,7 @@ export const CARTES: Carte[] = [
   { id: 'entites', titre: 'Entités & rattachements', pouvoir: 'ADMINISTRER_ORGANISATION', portee: 'ORGANISATION', vue: 'admin' },
   { id: 'exports', titre: 'Registres & exports', pouvoir: 'EXPORTER', portee: ['SITE', 'EMPRISE', 'ENTITE'], vue: 'registres' },
   { id: 'audit', titre: 'Journal d’audit', pouvoir: 'CONSULTER_AUDIT', portee: 'ORGANISATION', vue: 'admin' },
-  { id: 'parametrage', titre: 'Paramétrage du site', pouvoir: 'PARAMETRER_SITE', portee: 'SITE', vue: 'parametrage' },
+  { id: 'parametrage', titre: 'Paramétrage du site', pouvoir: 'ADMINISTRER_ORGANISATION', portee: 'SITE', vue: 'parametrage' },
   { id: 'qualite', titre: 'Indicateurs de qualité de gestion', pouvoir: 'CONSULTER_TABLEAU', portee: 'SITE', vue: 'tableau' },
   { id: 'fiche_entite', titre: 'Fiche de l’entité', pouvoir: 'DECLARER_ENTREPRISE', portee: 'ENTITE', vue: 'entreprises' },
 ];
