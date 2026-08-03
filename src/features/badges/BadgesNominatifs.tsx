@@ -1,44 +1,90 @@
-import { useMemo, useState } from 'react';
-import { Printer, CreditCard } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Printer, CreditCard, Loader2, LogIn } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { BadgeCard, type BadgeCardData } from './BadgeCard';
-import { CATEGORIES, PERSONNEL } from '../../data/badges';
+import { useAuthz } from '../../lib/authz';
+import { chargerBadgesNominatifs, type BadgeLive } from './api';
 
-const fmt = (iso?: string) => (iso ? iso.split('-').reverse().join('/') : '—');
+const fmt = (iso?: string | null) => (iso ? iso.split('-').reverse().join('/') : '—');
+
+/** Charte des bandes de catégorie (chap. 8), par libellé de catégorie. */
+const CAT: Record<string, { hex: string; zone: string }> = {
+  Chantier: { hex: '#0F5044', zone: 'Travaux · circulation' },
+  Aménagement: { hex: '#C08A2A', zone: 'Galerie · circulation' },
+  Visiteur: { hex: '#6F7C75', zone: 'Circulation accompagnée' },
+};
+const catDe = (c: string) => CAT[c] ?? { hex: '#0F5044', zone: c };
 
 export function BadgesNominatifs() {
+  const { connecte, chargement: authEnCours } = useAuthz();
+  const [badges, setBadges] = useState<BadgeLive[]>([]);
+  const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState<string | null>(null);
   const [entreprise, setEntreprise] = useState('TOUTES');
-  const [toast, setToast] = useState<string | null>(null);
+
+  const rafraichir = useCallback(async () => {
+    try {
+      setBadges(await chargerBadgesNominatifs());
+      setErreur(null);
+    } catch (e) {
+      setErreur((e as Error).message);
+    } finally {
+      setChargement(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!connecte) {
+      setChargement(false);
+      return;
+    }
+    rafraichir();
+  }, [connecte, rafraichir]);
+
+  const entreprises = useMemo(() => Array.from(new Set(badges.map((b) => b.entreprise))), [badges]);
 
   const actifs = useMemo(
     () =>
-      PERSONNEL.filter((p) => p.badgeStatut === 'ACTIF').filter(
-        (p) => entreprise === 'TOUTES' || p.entreprise === entreprise,
-      ),
-    [entreprise],
+      badges
+        .filter((b) => b.statut === 'ACTIF')
+        .filter((b) => entreprise === 'TOUTES' || b.entreprise === entreprise),
+    [badges, entreprise],
   );
 
-  const cartes: BadgeCardData[] = actifs.map((p) => {
-    const cat = CATEGORIES[p.categorieId];
+  const cartes: BadgeCardData[] = actifs.map((b) => {
+    const c = catDe(b.categorie);
     return {
-      numero: p.badgeNumero!,
+      numero: b.numero,
       typeLabel: 'Nominatif',
-      nom: p.nom,
-      prenom: p.prenom,
-      fonction: p.fonction,
-      entreprise: p.entreprise,
-      categorieLabel: cat.libelle,
-      categorieHex: cat.hex,
-      zoneLabel: cat.zoneLabel,
-      validite: `Induction éch. ${fmt(p.inductionEcheance)}`,
+      nom: b.nom,
+      prenom: b.prenom,
+      fonction: b.fonction,
+      entreprise: b.entreprise,
+      categorieLabel: b.categorie,
+      categorieHex: c.hex,
+      zoneLabel: c.zone,
+      validite: `Induction éch. ${fmt(b.inductionEcheance)}`,
     };
   });
 
-  const entreprises = Array.from(new Set(PERSONNEL.map((p) => p.entreprise)));
+  if (authEnCours || chargement) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center text-muted">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
 
-  function imprimer() {
-    setToast(`Planche d'impression générée · ${cartes.length} badge(s) · format carte CR80`);
-    setTimeout(() => setToast(null), 3200);
+  if (!connecte) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-3 px-6 text-center text-muted">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-forest-600 shadow-card ring-1 ring-sand-200/60">
+          <LogIn className="h-7 w-7" />
+        </span>
+        <p className="text-base font-bold text-ink">Connexion requise</p>
+        <p className="text-sm">Les badges sont une donnée du site : il faut un compte pour les consulter.</p>
+      </div>
+    );
   }
 
   return (
@@ -67,24 +113,29 @@ export function BadgesNominatifs() {
               ))}
             </select>
           </label>
-          <Button variant="primary" icon={<Printer className="h-4 w-4" />} onClick={imprimer}>
+          <Button variant="primary" icon={<Printer className="h-4 w-4" />} disabled={cartes.length === 0} onClick={() => window.print()}>
             Imprimer le lot ({cartes.length})
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-5">
-        {cartes.map((c) => (
-          <BadgeCard key={c.numero} data={c} />
-        ))}
-      </div>
+      {erreur && (
+        <p className="mb-4 rounded-xl bg-danger-50 px-3 py-2 text-sm font-semibold text-danger-600 ring-1 ring-danger-100">
+          {erreur}
+        </p>
+      )}
 
-      {toast && (
-        <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
-          <div className="flex items-center gap-2 rounded-full bg-forest-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card-lg">
-            <Printer className="h-4 w-4" />
-            {toast}
-          </div>
+      {cartes.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-sand-300 bg-white/60 px-6 py-12 text-center">
+          <CreditCard className="mx-auto h-8 w-8 text-sand-300" />
+          <p className="mt-2 text-sm font-semibold text-ink">Aucun badge nominatif actif</p>
+          <p className="mt-1 text-sm text-muted">Les badges nominatifs sont délivrés depuis la déclaration des personnes.</p>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-5">
+          {cartes.map((c) => (
+            <BadgeCard key={c.numero} data={c} />
+          ))}
         </div>
       )}
     </div>
