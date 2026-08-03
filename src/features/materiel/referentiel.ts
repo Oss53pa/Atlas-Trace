@@ -25,6 +25,9 @@ export function useEntreprises(): EntrepriseOption[] {
   return entreprises;
 }
 
+/** Unités de mesure proposées pour les lignes de sortie. */
+export const UNITES = ['u', 'lot', 'm', 'kg', 'L'];
+
 /** Vocabulaire contrôlé des types de sortie (le code vit en base, le libellé ici). */
 export const TYPE_SORTIE_LABEL: Record<'SITE' | 'ENTREPRISE' | 'DECHETS', string> = {
   SITE: 'Matériel du site',

@@ -19,8 +19,7 @@ import { StatCard } from '../../components/ui/StatCard';
 import { LignesEditeur } from '../../components/ui/LignesEditeur';
 import { FakeQR } from '../badges/FakeQR';
 import { useAuthz } from '../../lib/authz';
-import { CIRCUIT_SORTIE, TYPE_SORTIE_LABEL, useEntreprises } from './referentiel';
-import { UNITES } from '../../data/entrees';
+import { CIRCUIT_SORTIE, TYPE_SORTIE_LABEL, UNITES, useEntreprises } from './referentiel';
 import {
   approuverSortie,
   chargerAutorisations,
