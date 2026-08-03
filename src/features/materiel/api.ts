@@ -477,3 +477,117 @@ export async function enregistrerControleEvac(p: {
   if (error) throw new Error(error.message);
   return data as { id: string; resultat: ResultatControle };
 }
+
+/* ===================== Livraisons & prise en charge (M12/M13) ===================== */
+
+export type StatutPreavis = 'SOUMIS' | 'VALIDE' | 'PRIS_EN_CHARGE' | 'REFUSE' | 'EXPIRE';
+
+export interface Creneau {
+  id: string;
+  libelle: string;
+  quota: number;
+  utilises: number;
+  ordre: number;
+}
+
+export interface Preavis {
+  id: string;
+  numero: string;
+  entreprise: string;
+  fournisseur: string;
+  nature: string;
+  quantitePrevue: number;
+  unite: string;
+  levage: boolean;
+  matieresDangereuses: boolean;
+  creneauId: string;
+  statut: StatutPreavis;
+  code?: string | null;
+  derogation?: string | null;
+  pecResponsable?: string | null;
+  pecReserve?: string | null;
+  pecAt?: string | null;
+}
+
+export async function chargerCreneaux(): Promise<Creneau[]> {
+  const { data, error } = await supabase
+    .from('at_creneaux_livraison')
+    .select('id, libelle, quota, utilises, ordre')
+    .eq('actif', true)
+    .order('ordre');
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((c) => ({
+    id: c.id, libelle: c.libelle, quota: c.quota, utilises: c.utilises, ordre: c.ordre,
+  }));
+}
+
+export async function chargerPreavis(): Promise<Preavis[]> {
+  const { data, error } = await supabase
+    .from('at_preavis_livraison')
+    .select('id, numero, fournisseur, nature, quantite_prevue, unite, levage, matieres_dangereuses, creneau_id, statut, code, derogation, pec_responsable, pec_reserve, pec_at, entreprise:at_entreprises(raison_sociale)')
+    .order('numero', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((p) => {
+    const ent = p.entreprise as unknown as { raison_sociale: string } | null;
+    return {
+      id: p.id,
+      numero: p.numero,
+      entreprise: ent?.raison_sociale ?? '—',
+      fournisseur: p.fournisseur,
+      nature: p.nature,
+      quantitePrevue: Number(p.quantite_prevue),
+      unite: p.unite,
+      levage: p.levage,
+      matieresDangereuses: p.matieres_dangereuses,
+      creneauId: p.creneau_id,
+      statut: p.statut as StatutPreavis,
+      code: p.code,
+      derogation: p.derogation,
+      pecResponsable: p.pec_responsable,
+      pecReserve: p.pec_reserve,
+      pecAt: p.pec_at,
+    };
+  });
+}
+
+export async function deposerPreavis(p: {
+  entrepriseId: string;
+  creneauId: string;
+  fournisseur: string;
+  nature: string;
+  quantite: number;
+  unite: string;
+  levage: boolean;
+  matieresDangereuses: boolean;
+  derogation?: string;
+}): Promise<{ numero: string; statut: StatutPreavis }> {
+  const { data, error } = await supabase.rpc('at_deposer_preavis', {
+    p_entreprise_id: p.entrepriseId,
+    p_creneau_id: p.creneauId,
+    p_fournisseur: p.fournisseur,
+    p_nature: p.nature,
+    p_quantite: p.quantite,
+    p_unite: p.unite,
+    p_levage: p.levage,
+    p_matieres_dangereuses: p.matieresDangereuses,
+    p_derogation: p.derogation ?? null,
+  });
+  if (error) throw new Error(error.message);
+  return data as { numero: string; statut: StatutPreavis };
+}
+
+export async function viserPreavis(id: string): Promise<{ code: string }> {
+  const { data, error } = await supabase.rpc('at_viser_preavis', { p_id: id });
+  if (error) throw new Error(error.message);
+  return data as { code: string };
+}
+
+/** Prise en charge oui/non (M13) : le serveur exige la photo, jamais de quantité. */
+export async function prendreEnCharge(id: string, reserve: string, photo: boolean): Promise<void> {
+  const { error } = await supabase.rpc('at_prendre_en_charge', {
+    p_id: id,
+    p_reserve: reserve || null,
+    p_photo: photo,
+  });
+  if (error) throw new Error(error.message);
+}

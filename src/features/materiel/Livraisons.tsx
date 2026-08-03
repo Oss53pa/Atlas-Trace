@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Truck,
   Plus,
@@ -10,64 +10,130 @@ import {
   ShieldCheck,
   Flame,
   ArrowUpFromLine,
+  LogIn,
+  Loader2,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
 import { PhotoCapture } from '../../components/device/PhotoCapture';
+import { useAuthz } from '../../lib/authz';
+import { useEntreprises } from './referentiel';
 import {
-  CRENEAUX,
-  FOURNISSEURS,
-  NATURES_LIVRAISON,
-  PREAVIS,
-  creneauSature,
+  chargerCreneaux,
+  chargerPreavis,
+  deposerPreavis,
+  viserPreavis,
+  prendreEnCharge,
   type Creneau,
   type Preavis,
   type StatutPreavis,
-} from '../../data/livraisons';
+} from './api';
+
+const FOURNISSEURS = ['Ciments d’Afrique', 'Carrelage Décor', 'Sablière du Sud', 'Quincaillerie Centrale', 'Clim Import'];
+const NATURES_LIVRAISON = ['Ciment (sacs 50 kg)', 'Carrelage grès', 'Sable 0/4', 'Aciers HA', 'Quincaillerie', 'Groupe froid + fluide R32'];
+const creneauSature = (c: Creneau) => c.utilises >= c.quota;
 
 export function Livraisons() {
-  const [preavis, setPreavis] = useState<Preavis[]>(PREAVIS);
-  const [creneaux, setCreneaux] = useState<Creneau[]>(CRENEAUX);
+  const { connecte, chargement: authEnCours, a } = useAuthz();
+  const peutDemander = a('DEMANDER_LIVRAISON');
+  const peutViser = a('VALIDER_CRENEAU');
+  const peutReceptionner = a('RECEPTIONNER');
+
+  const [preavis, setPreavis] = useState<Preavis[]>([]);
+  const [creneaux, setCreneaux] = useState<Creneau[]>([]);
+  const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
   const [pec, setPec] = useState<Preavis | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const entreprises = useEntreprises();
+
+  const rafraichir = useCallback(async () => {
+    try {
+      const [c, p] = await Promise.all([chargerCreneaux(), chargerPreavis()]);
+      setCreneaux(c);
+      setPreavis(p);
+      setErreur(null);
+    } catch (e) {
+      setErreur((e as Error).message);
+    } finally {
+      setChargement(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!connecte) {
+      setChargement(false);
+      return;
+    }
+    rafraichir();
+  }, [connecte, rafraichir]);
 
   function flash(m: string) {
     setToast(m);
-    setTimeout(() => setToast(null), 2800);
+    setTimeout(() => setToast(null), 3200);
   }
 
   const stats = useMemo(() => ({
     total: preavis.length,
+    aViser: preavis.filter((p) => p.statut === 'SOUMIS').length,
     aPrendreEnCharge: preavis.filter((p) => p.statut === 'VALIDE').length,
-    nonPrises: preavis.filter((p) => p.arriveeNonPriseEnCharge && p.statut !== 'PRIS_EN_CHARGE').length,
   }), [preavis]);
 
-  const nonPrises = preavis.filter((p) => p.arriveeNonPriseEnCharge && p.statut !== 'PRIS_EN_CHARGE');
-
-  function viser(id: string) {
-    setPreavis((ps) => ps.map((p) => (p.id === id ? { ...p, statut: 'VALIDE', code: `PL-${p.numero.slice(-2)}-VISA` } : p)));
-    flash('Visa conditionnel apposé · créneau validé · code transmis');
+  async function viser(id: string) {
+    try {
+      await viserPreavis(id);
+      await rafraichir();
+      flash('Visa conditionnel apposé · créneau validé · code transmis');
+    } catch (e) {
+      setErreur((e as Error).message);
+    }
   }
 
-  function prendreEnCharge(id: string, reserve: string) {
-    setPreavis((ps) =>
-      ps.map((p) =>
-        p.id !== id
-          ? p
-          : { ...p, statut: 'PRIS_EN_CHARGE', arriveeNonPriseEnCharge: false, priseEnCharge: { responsable: 'M. Sanou (entité destinataire)', heure: '31/07 09:40', reserve: reserve.trim() || undefined, photo: true } },
-      ),
+  async function accuser(id: string, reserve: string) {
+    try {
+      await prendreEnCharge(id, reserve, true);
+      setPec(null);
+      await rafraichir();
+      flash('Prise en charge accusée · responsabilité de l’entité engagée');
+    } catch (e) {
+      setErreur((e as Error).message);
+    }
+  }
+
+  async function creer(p: {
+    entrepriseId: string; creneauId: string; fournisseur: string; nature: string;
+    quantite: number; unite: string; levage: boolean; matieresDangereuses: boolean; derogation?: string;
+  }) {
+    try {
+      const res = await deposerPreavis(p);
+      setSheet(false);
+      await rafraichir();
+      flash(`Préavis ${res.numero} déposé${res.statut === 'SOUMIS' ? ' · à viser' : ' · créneau validé'}`);
+    } catch (e) {
+      setErreur((e as Error).message);
+    }
+  }
+
+  if (authEnCours || chargement) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center text-muted">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
     );
-    setPec(null);
-    flash('Prise en charge accusée · responsabilité de l’entité engagée');
   }
 
-  function creer(p: Preavis, creneauId: string) {
-    setPreavis((ps) => [p, ...ps]);
-    setCreneaux((cs) => cs.map((c) => (c.id === creneauId ? { ...c, utilises: c.utilises + 1 } : c)));
-    setSheet(false);
-    flash(`Préavis ${p.numero} déposé`);
+  if (!connecte) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-3 px-6 text-center text-muted">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-forest-600 shadow-card ring-1 ring-sand-200/60">
+          <LogIn className="h-7 w-7" />
+        </span>
+        <p className="text-base font-bold text-ink">Connexion requise</p>
+        <p className="text-sm">Les préavis de livraison et créneaux sont une donnée du site.</p>
+      </div>
+    );
   }
 
   return (
@@ -84,43 +150,76 @@ export function Livraisons() {
               transmis. Prise en charge oui/non par l’entité destinataire — aucune quantité, aucun écart.
             </p>
           </div>
-          <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setSheet(true)}>
-            Nouveau préavis
-          </Button>
+          {peutDemander && (
+            <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setSheet(true)}>
+              Nouveau préavis
+            </Button>
+          )}
         </div>
+
+        {erreur && (
+          <p className="mb-4 rounded-xl bg-danger-50 px-3 py-2 text-sm font-semibold text-danger-600 ring-1 ring-danger-100">
+            {erreur}
+          </p>
+        )}
 
         <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <StatCard tone="forest" label="Préavis du jour" value={stats.total} icon={<CalendarClock className="h-5 w-5" />} />
-          <StatCard tone="amber" label="À prendre en charge" value={stats.aPrendreEnCharge} icon={<PackageCheck className="h-5 w-5" />} />
-          <DangerStat label="Non prises en charge > 24 h" value={stats.nonPrises} />
+          <StatCard tone="forest" label="Préavis" value={stats.total} icon={<CalendarClock className="h-5 w-5" />} />
+          <StatCard tone="amber" label="À viser" value={stats.aViser} icon={<ShieldCheck className="h-5 w-5" />} />
+          <StatCard tone="plain" label="À prendre en charge" value={stats.aPrendreEnCharge} icon={<PackageCheck className="h-5 w-5" />} />
         </div>
-
-        {/* Alerte : livraison arrivée non prise en charge sous 24 h */}
-        {nonPrises.length > 0 && (
-          <div className="mb-5 flex items-center gap-2 rounded-2xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-600 ring-1 ring-danger-100">
-            <AlertTriangle className="h-4 w-4" />
-            {nonPrises.length} livraison(s) arrivée(s) non prise(s) en charge sous 24 h — relancer l’entité destinataire
-          </div>
-        )}
 
         {/* Créneaux & quotas */}
         <h2 className="mb-2 text-sm font-bold text-ink">Créneaux &amp; quotas du jour</h2>
-        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {creneaux.map((c) => (
-            <CreneauCard key={c.id} c={c} />
-          ))}
-        </div>
+        {creneaux.length === 0 ? (
+          <p className="mb-6 rounded-2xl border border-dashed border-sand-300 bg-white/60 px-4 py-6 text-center text-sm text-muted">
+            Aucun créneau paramétré pour ce site.
+          </p>
+        ) : (
+          <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {creneaux.map((c) => (
+              <CreneauCard key={c.id} c={c} />
+            ))}
+          </div>
+        )}
 
         <h2 className="mb-2 text-sm font-bold text-ink">Préavis</h2>
-        <ul className="space-y-2">
-          {preavis.map((p) => (
-            <PreavisRow key={p.id} p={p} creneaux={creneaux} onViser={() => viser(p.id)} onPrendreEnCharge={() => setPec(p)} />
-          ))}
-        </ul>
+        {preavis.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-sand-300 bg-white/60 px-6 py-10 text-center">
+            <Truck className="mx-auto h-8 w-8 text-sand-300" />
+            <p className="mt-2 text-sm font-semibold text-ink">Aucun préavis</p>
+            <p className="mt-1 text-sm text-muted">
+              {peutDemander
+                ? 'Déposez un préavis : fournisseur, nature, créneau sous quota.'
+                : 'Le dépôt relève du référent d’entreprise (pouvoir DEMANDER_LIVRAISON).'}
+            </p>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {preavis.map((p) => (
+              <PreavisRow
+                key={p.id}
+                p={p}
+                creneaux={creneaux}
+                peutViser={peutViser}
+                peutReceptionner={peutReceptionner}
+                onViser={() => viser(p.id)}
+                onPrendreEnCharge={() => setPec(p)}
+              />
+            ))}
+          </ul>
+        )}
       </div>
 
-      {sheet && <PreavisSheet numero={`PL-2026-000${45 + preavis.filter((p) => p.id.startsWith('new')).length}`} creneaux={creneaux} onAnnuler={() => setSheet(false)} onConfirmer={creer} />}
-      {pec && <PriseEnChargeSheet p={pec} onAnnuler={() => setPec(null)} onConfirmer={(reserve) => prendreEnCharge(pec.id, reserve)} />}
+      {sheet && (
+        <PreavisSheet
+          entreprises={entreprises}
+          creneaux={creneaux}
+          onAnnuler={() => setSheet(false)}
+          onConfirmer={creer}
+        />
+      )}
+      {pec && <PriseEnChargeSheet p={pec} onAnnuler={() => setPec(null)} onConfirmer={(reserve) => accuser(pec.id, reserve)} />}
 
       {toast && (
         <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
@@ -159,10 +258,24 @@ const statutChip: Record<StatutPreavis, React.ReactNode> = {
   EXPIRE: <Badge tone="danger" dot>Expiré</Badge>,
 };
 
-function PreavisRow({ p, creneaux, onViser, onPrendreEnCharge }: { p: Preavis; creneaux: Creneau[]; onViser: () => void; onPrendreEnCharge: () => void }) {
+function PreavisRow({
+  p,
+  creneaux,
+  peutViser,
+  peutReceptionner,
+  onViser,
+  onPrendreEnCharge,
+}: {
+  p: Preavis;
+  creneaux: Creneau[];
+  peutViser: boolean;
+  peutReceptionner: boolean;
+  onViser: () => void;
+  onPrendreEnCharge: () => void;
+}) {
   const cr = creneaux.find((c) => c.id === p.creneauId);
   return (
-    <li className={`rounded-2xl bg-white p-4 shadow-card ring-1 ${p.arriveeNonPriseEnCharge && p.statut !== 'PRIS_EN_CHARGE' ? 'ring-danger-200' : 'ring-sand-300/70'}`}>
+    <li className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-sand-300/70">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -172,29 +285,28 @@ function PreavisRow({ p, creneaux, onViser, onPrendreEnCharge }: { p: Preavis; c
           </div>
           <p className="mt-1 text-sm font-bold text-ink">{p.entreprise} · {p.fournisseur}</p>
           <p className="text-xs text-muted">
-            {p.nature} · {p.quantitePrevue} {p.unite} · créneau {cr?.libelle}
-            {p.chauffeur && ` · ${p.immatriculation} (${p.chauffeur})`}
+            {p.nature} · {p.quantitePrevue} {p.unite}{cr ? ` · créneau ${cr.libelle}` : ''}
           </p>
           {p.code && <p className="mt-0.5 font-mono text-[11px] text-muted">Code {p.code}</p>}
           {p.derogation && <p className="mt-0.5 text-[11px] font-semibold text-amber-700">Dérogation : {p.derogation}</p>}
-          {p.priseEnCharge && (
+          {p.pecResponsable && (
             <p className="mt-0.5 text-[11px] text-muted">
-              Pris en charge · {p.priseEnCharge.responsable}
-              {p.priseEnCharge.reserve && <span className="text-amber-700"> · réserve : {p.priseEnCharge.reserve}</span>}
+              Pris en charge · {p.pecResponsable}
+              {p.pecReserve && <span className="text-amber-700"> · réserve : {p.pecReserve}</span>}
             </p>
           )}
         </div>
         {statutChip[p.statut]}
       </div>
 
-      {p.statut === 'SOUMIS' && (
+      {p.statut === 'SOUMIS' && peutViser && (
         <div className="mt-3 border-t border-sand-200 pt-3">
           <Button variant="primary" size="sm" icon={<ShieldCheck className="h-4 w-4" />} onClick={onViser}>
             Viser (levage / matières dangereuses)
           </Button>
         </div>
       )}
-      {p.statut === 'VALIDE' && (
+      {p.statut === 'VALIDE' && peutReceptionner && (
         <div className="mt-3 border-t border-sand-200 pt-3">
           <Button variant="accent" size="sm" icon={<PackageCheck className="h-4 w-4" />} onClick={onPrendreEnCharge}>
             Accuser la prise en charge
@@ -202,20 +314,6 @@ function PreavisRow({ p, creneaux, onViser, onPrendreEnCharge }: { p: Preavis; c
         </div>
       )}
     </li>
-  );
-}
-
-function DangerStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-2xl border border-sand-300/60 bg-danger-500 p-5 text-white shadow-card">
-      <div className="flex items-start justify-between">
-        <p className="text-sm font-medium text-white/85">{label}</p>
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
-          <AlertTriangle className="h-5 w-5" />
-        </span>
-      </div>
-      <div className="mt-3 text-3xl font-extrabold tracking-tight">{value}</div>
-    </div>
   );
 }
 
@@ -256,14 +354,28 @@ function PriseEnChargeSheet({ p, onAnnuler, onConfirmer }: { p: Preavis; onAnnul
             Oui, prise en charge
           </Button>
         </div>
+        {!photo && <p className="mt-2 text-center text-[11px] font-medium text-amber-700">La photo est exigée pour accuser la prise en charge.</p>}
       </div>
     </div>
   );
 }
 
 /* ---------- Nouveau préavis (M12) ---------- */
-function PreavisSheet({ numero, creneaux, onAnnuler, onConfirmer }: { numero: string; creneaux: Creneau[]; onAnnuler: () => void; onConfirmer: (p: Preavis, creneauId: string) => void }) {
-  const [entreprise, setEntreprise] = useState('Bâti-Sud');
+function PreavisSheet({
+  entreprises,
+  creneaux,
+  onAnnuler,
+  onConfirmer,
+}: {
+  entreprises: { id: string; raisonSociale: string }[];
+  creneaux: Creneau[];
+  onAnnuler: () => void;
+  onConfirmer: (p: {
+    entrepriseId: string; creneauId: string; fournisseur: string; nature: string;
+    quantite: number; unite: string; levage: boolean; matieresDangereuses: boolean; derogation?: string;
+  }) => void;
+}) {
+  const [entrepriseId, setEntrepriseId] = useState(entreprises[0]?.id ?? '');
   const [fournisseur, setFournisseur] = useState(FOURNISSEURS[0]);
   const [nature, setNature] = useState(NATURES_LIVRAISON[0]);
   const [quantite, setQuantite] = useState('10');
@@ -279,19 +391,14 @@ function PreavisSheet({ numero, creneaux, onAnnuler, onConfirmer }: { numero: st
   const disponibles = creneaux.filter((c) => !creneauSature(c));
   const conditionne = levage || md;
   const derogationOk = !horsDelai || derogation.trim().length >= 5;
-  const pret = !!creneauId && !sature && derogationOk && Number(quantite) > 0;
+  const pret = !!creneauId && !sature && !!entrepriseId && derogationOk && Number(quantite) > 0;
 
   function soumettre() {
-    onConfirmer(
-      {
-        id: `new-${numero}`, numero, entreprise, fournisseur, nature,
-        quantitePrevue: Number(quantite), unite, levage, matieresDangereuses: md,
-        creneauId, statut: conditionne ? 'SOUMIS' : 'VALIDE',
-        code: conditionne ? undefined : `PL-${numero.slice(-2)}-${Math.floor(quantite.length)}X${unite[0].toUpperCase()}`,
-        derogation: horsDelai ? derogation.trim() : undefined,
-      },
-      creneauId,
-    );
+    onConfirmer({
+      entrepriseId, creneauId, fournisseur, nature,
+      quantite: Number(quantite), unite, levage, matieresDangereuses: md,
+      derogation: horsDelai ? derogation.trim() : undefined,
+    });
   }
 
   const toggle = (v: boolean, set: (b: boolean) => void, label: string, icon: React.ReactNode) => (
@@ -307,13 +414,14 @@ function PreavisSheet({ numero, creneaux, onAnnuler, onConfirmer }: { numero: st
           <h3 className="text-lg font-extrabold text-ink">Nouveau préavis</h3>
           <button onClick={onAnnuler} className="text-muted"><X className="h-5 w-5" /></button>
         </div>
-        <p className="mb-4 text-xs text-muted">N° <b className="font-mono text-ink">{numero}</b> · déposé par le référent</p>
+        <p className="mb-4 text-xs text-muted">Le numéro et le code sont générés par le serveur au dépôt.</p>
 
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <label className="block"><span className="mb-1 block text-xs font-semibold text-muted">Entreprise</span>
-              <select value={entreprise} onChange={(e) => setEntreprise(e.target.value)} className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400">
-                {['Bâti-Sud', 'Aménag-Preneur K', 'Froid & Clim', 'VRD Services'].map((e) => <option key={e}>{e}</option>)}
+              <select value={entrepriseId} onChange={(e) => setEntrepriseId(e.target.value)} className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400">
+                {entreprises.length === 0 && <option value="">Aucune entreprise</option>}
+                {entreprises.map((e) => <option key={e.id} value={e.id}>{e.raisonSociale}</option>)}
               </select>
             </label>
             <label className="block"><span className="mb-1 block text-xs font-semibold text-muted">Fournisseur</span>
@@ -350,11 +458,11 @@ function PreavisSheet({ numero, creneaux, onAnnuler, onConfirmer }: { numero: st
 
           <label className="block"><span className="mb-1 block text-xs font-semibold text-muted">Créneau souhaité</span>
             <select value={creneauId} onChange={(e) => setCreneauId(e.target.value)} className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400">
+              {creneaux.length === 0 && <option value="">Aucun créneau</option>}
               {creneaux.map((c) => <option key={c.id} value={c.id}>{c.libelle} {creneauSature(c) ? '— saturé' : `(${c.utilises}/${c.quota})`}</option>)}
             </select>
           </label>
 
-          {/* cas 33 : créneau saturé */}
           {sature && (
             <div className="rounded-xl bg-danger-50 p-3 ring-1 ring-danger-100">
               <p className="text-xs font-bold text-danger-600">Créneau saturé — quota atteint.</p>
@@ -369,7 +477,6 @@ function PreavisSheet({ numero, creneaux, onAnnuler, onConfirmer }: { numero: st
             </div>
           )}
 
-          {/* cas 32 : hors délai minimal */}
           <button onClick={() => setHorsDelai((v) => !v)} className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${horsDelai ? 'border-danger-200 bg-danger-50 text-danger-600' : 'border-sand-300 bg-white text-muted'}`}>
             <AlertTriangle className="h-3.5 w-3.5" /> Demande tardive (hors délai minimal) {horsDelai && <Check className="ml-auto h-3.5 w-3.5" />}
           </button>
