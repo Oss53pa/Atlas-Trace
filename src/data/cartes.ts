@@ -37,7 +37,7 @@ export const CARTES: Carte[] = [
   { id: 'anomalies_veh', titre: 'Anomalies véhicules', pouvoir: 'CONSULTER_TABLEAU', portee: 'SITE', vue: 'materiel' },
   { id: 'preavis', titre: 'Préavis de livraison', pouvoir: 'DEMANDER_LIVRAISON', portee: 'ENTITE', vue: 'materiel' },
   { id: 'creneaux', titre: 'Créneaux à valider', pouvoir: 'VALIDER_CRENEAU', portee: 'SITE', vue: 'materiel' },
-  { id: 'prises_en_charge', titre: 'Prises en charge à effectuer', pouvoir: 'PRENDRE_EN_CHARGE', portee: ['SITE', 'EMPRISE'], vue: 'materiel' },
+  { id: 'prises_en_charge', titre: 'Prises en charge à effectuer', pouvoir: 'RECEPTIONNER', portee: ['SITE', 'EMPRISE'], vue: 'materiel' },
   { id: 'evacuations', titre: 'Autorisations d’évacuation', pouvoir: 'AUTORISER_EVACUATION', portee: 'SITE', vue: 'materiel' },
   { id: 'anomalies_flux', titre: 'Anomalies de flux', pouvoir: 'CONSULTER_TABLEAU', portee: 'SITE', vue: 'tableau' },
   { id: 'refus', titre: 'Refus & forçages', pouvoir: 'CONSULTER_TABLEAU', portee: 'SITE', vue: 'tableau' },

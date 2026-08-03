@@ -13,6 +13,7 @@ export const POUVOIRS: { code: string; effet: string }[] = [
   { code: 'CONTROLER_AU_POSTE', effet: 'Scanner, autoriser, refuser, enregistrer un contrôle physique' },
   { code: 'FORCER_ACCES', effet: 'Autoriser malgré un refus du système' },
   { code: 'CLOTURER_JOURNEE', effet: 'Déclencher ou ajuster la clôture de journée' },
+  { code: 'SUIVRE_INCIDENTS', effet: 'Compléter et clôturer un rapport d’incident' },
   { code: 'DECLARER_MATERIEL', effet: 'Déclarer du matériel' },
   { code: 'VISER_MATERIEL', effet: 'Viser un parc déclaré' },
   { code: 'DEMANDER_SORTIE', effet: 'Créer une demande de sortie de matériel' },
@@ -21,65 +22,13 @@ export const POUVOIRS: { code: string; effet: string }[] = [
   { code: 'GERER_VEHICULE', effet: 'Créer un laissez-passer' },
   { code: 'DEMANDER_LIVRAISON', effet: 'Déposer un préavis' },
   { code: 'VALIDER_CRENEAU', effet: 'Attribuer ou refuser un créneau de livraison' },
-  { code: 'PRENDRE_EN_CHARGE', effet: 'Accuser la prise en charge d’une livraison' },
+  { code: 'RECEPTIONNER', effet: 'Accuser la prise en charge d’une livraison' },
   { code: 'AUTORISER_EVACUATION', effet: 'Autoriser une évacuation de déblais' },
   { code: 'CONSULTER_TABLEAU', effet: 'Accéder au tableau de bord du site' },
   { code: 'EXPORTER', effet: 'Produire les registres' },
   { code: 'CONSULTER_AUDIT', effet: 'Accéder au journal d’audit' },
   { code: 'PARAMETRER_SITE', effet: 'Modifier les référentiels et les circuits' },
   { code: 'ADMINISTRER_ORGANISATION', effet: 'Créer des sites, des rôles, des utilisateurs' },
-];
-
-export interface RoleModele {
-  nom: string;
-  pouvoirs: string[];
-}
-
-export interface ModeleSectoriel {
-  id: string;
-  nom: string;
-  description: string;
-  donneurOrdreLabel: string | null;
-  empriseLabel: string;
-  roles: RoleModele[];
-  categories: string[];
-}
-
-export const MODELES: ModeleSectoriel[] = [
-  {
-    id: 'btp',
-    nom: 'Chantier BTP',
-    description: 'Chantier avec preneurs et cellules commerciales (cas Cosmos Angré).',
-    donneurOrdreLabel: 'Maître d’ouvrage',
-    empriseLabel: 'Cellule commerciale',
-    roles: [
-      { nom: 'Direction du site', pouvoirs: ['CONSULTER_TABLEAU', 'CONSULTER_AUDIT', 'EXPORTER', 'SUSPENDRE_ACCES', 'ADMINISTRER_ORGANISATION'] },
-      { nom: 'Directeur de la Construction', pouvoirs: ['APPROUVER_HABILITATION', 'APPROUVER_SORTIE', 'AUTORISER_EVACUATION', 'CONSULTER_TABLEAU'] },
-      { nom: 'Responsable HSE', pouvoirs: ['VISER_HABILITATION', 'VISER_SORTIE', 'VISER_MATERIEL', 'DECLARER_PERSONNEL'] },
-      { nom: 'Pilote de coordination', pouvoirs: ['VALIDER_CRENEAU', 'GERER_CONDITIONS_BLOQUANTES', 'CONSULTER_TABLEAU'] },
-      { nom: 'Chef de poste', pouvoirs: ['CONTROLER_AU_POSTE', 'FORCER_ACCES', 'DELIVRER_BADGE', 'CLOTURER_JOURNEE', 'PRENDRE_EN_CHARGE'] },
-      { nom: 'Agent de contrôle', pouvoirs: ['CONTROLER_AU_POSTE'] },
-      { nom: 'Référent entreprise', pouvoirs: ['DECLARER_ENTREPRISE', 'DECLARER_PERSONNEL', 'DEPOSER_LISTE', 'DECLARER_MATERIEL', 'DEMANDER_SORTIE', 'DEMANDER_LIVRAISON'] },
-    ],
-    categories: ['Entreprise de chantier', 'Aménagement de preneur', 'Visiteur'],
-  },
-  {
-    id: 'minier',
-    nom: 'Site industriel / minier',
-    description: 'Site en exploitation, magasin central, rotations postées, sans preneur externe.',
-    donneurOrdreLabel: null,
-    empriseLabel: 'Secteur',
-    roles: [
-      { nom: 'Direction du site', pouvoirs: ['CONSULTER_TABLEAU', 'CONSULTER_AUDIT', 'EXPORTER', 'SUSPENDRE_ACCES', 'ADMINISTRER_ORGANISATION'] },
-      { nom: 'Responsable d’exploitation', pouvoirs: ['APPROUVER_HABILITATION', 'APPROUVER_SORTIE', 'AUTORISER_EVACUATION', 'CONSULTER_TABLEAU'] },
-      { nom: 'Responsable HSE', pouvoirs: ['VISER_HABILITATION', 'VISER_SORTIE', 'DECLARER_PERSONNEL'] },
-      { nom: 'Responsable magasin', pouvoirs: ['VISER_MATERIEL', 'PRENDRE_EN_CHARGE', 'VALIDER_CRENEAU'] },
-      { nom: 'Chef de poste', pouvoirs: ['CONTROLER_AU_POSTE', 'FORCER_ACCES', 'DELIVRER_BADGE', 'CLOTURER_JOURNEE'] },
-      { nom: 'Agent de contrôle', pouvoirs: ['CONTROLER_AU_POSTE'] },
-      { nom: 'Référent contractant', pouvoirs: ['DECLARER_ENTREPRISE', 'DECLARER_PERSONNEL', 'DEPOSER_LISTE', 'DECLARER_MATERIEL', 'DEMANDER_SORTIE'] },
-    ],
-    categories: ['Entreprise contractante', 'Sous-traitant', 'Visiteur', 'Personnel propre'],
-  },
 ];
 
 export type NatureEtape = 'VISA' | 'APPROBATION';

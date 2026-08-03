@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Layers, KeyRound, GitBranch, SlidersHorizontal } from 'lucide-react';
+import { Layers, GitBranch, SlidersHorizontal } from 'lucide-react';
 import { ProfilSite } from './ProfilSite';
-import { RolesPouvoirs } from './RolesPouvoirs';
 import { Circuits } from './Circuits';
 import { Referentiels } from './Referentiels';
 
-type SousVue = 'profil' | 'roles' | 'circuits' | 'referentiels';
+type SousVue = 'profil' | 'circuits' | 'referentiels';
 
 export function Parametrage() {
   const [sousVue, setSousVue] = useState<SousVue>('profil');
@@ -15,14 +14,12 @@ export function Parametrage() {
       <div className="flex justify-center px-4 pt-6">
         <div className="flex flex-wrap justify-center gap-1 rounded-3xl bg-white/90 p-1 shadow-card ring-1 ring-sand-300">
           {onglet('profil', 'Profil de site', <Layers className="h-3.5 w-3.5" />)}
-          {onglet('roles', 'Rôles & pouvoirs', <KeyRound className="h-3.5 w-3.5" />)}
           {onglet('circuits', 'Chaînes de validation', <GitBranch className="h-3.5 w-3.5" />)}
           {onglet('referentiels', 'Référentiels', <SlidersHorizontal className="h-3.5 w-3.5" />)}
         </div>
       </div>
 
       {sousVue === 'profil' && <ProfilSite />}
-      {sousVue === 'roles' && <RolesPouvoirs />}
       {sousVue === 'circuits' && <Circuits />}
       {sousVue === 'referentiels' && <Referentiels />}
     </div>

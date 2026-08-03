@@ -1,25 +1,22 @@
 import { useState } from 'react';
-import { Users, CreditCard, Layers } from 'lucide-react';
-import { Personnel } from './Personnel';
+import { CreditCard, Layers } from 'lucide-react';
 import { BadgesNominatifs } from './BadgesNominatifs';
 import { Temporaires } from './Temporaires';
 
-type SousVue = 'personnel' | 'nominatifs' | 'temporaires';
+type SousVue = 'nominatifs' | 'temporaires';
 
 export function Badges() {
-  const [sousVue, setSousVue] = useState<SousVue>('personnel');
+  const [sousVue, setSousVue] = useState<SousVue>('nominatifs');
 
   return (
     <div className="min-h-screen bg-sand-100">
       <div className="sticky top-14 z-20 overflow-x-auto bg-sand-100/85 px-4 py-3 backdrop-blur [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="mx-auto flex w-max gap-1.5 rounded-full bg-white/90 p-1 shadow-card ring-1 ring-sand-300">
-          {onglet('personnel', 'Personnel', <Users className="h-4 w-4" />)}
-          {onglet('nominatifs', 'Nominatifs', <CreditCard className="h-4 w-4" />)}
+          {onglet('nominatifs', 'Impression nominatifs', <CreditCard className="h-4 w-4" />)}
           {onglet('temporaires', 'Temporaires & visiteurs', <Layers className="h-4 w-4" />)}
         </div>
       </div>
 
-      {sousVue === 'personnel' && <Personnel />}
       {sousVue === 'nominatifs' && <BadgesNominatifs />}
       {sousVue === 'temporaires' && <Temporaires />}
     </div>
