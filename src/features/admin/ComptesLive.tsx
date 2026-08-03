@@ -41,16 +41,17 @@ export function ComptesLive() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connecte]);
 
-  async function inviter(nom: string, email: string, password: string, roleId: string, siteId: string | null) {
-    const { data, error } = await supabase.functions.invoke('invite-compte', { body: { nom, email, password, role_id: roleId, site_id: siteId } });
-    if (error) {
-      let msg = 'échec';
-      try { const j = await (error as any).context?.json(); msg = j?.error ?? msg; } catch { /* ignore */ }
-      flash('Refusé : ' + msg);
-      return;
-    }
+  // L'administrateur choisit le rôle ; la personne choisira son mot de passe
+  // depuis le QR reçu par courriel. Aucun identifiant n'est fabriqué ici.
+  async function inviter(nom: string, email: string, roleId: string, siteId: string | null) {
+    const { data, error } = await supabase.rpc('at_creer_invitation', {
+      p_nom: nom, p_contact: email, p_role_id: roleId, p_site_id: siteId, p_validite_heures: 72,
+    });
+    if (error) { flash('Refusé : ' + error.message); return; }
     setSheet(false);
-    flash(`Compte créé : ${(data as any)?.email ?? email}`);
+    const echeance = new Date((data as { expire_at: string }).expire_at)
+      .toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+    flash(`Invitation envoyée à ${email} · valable jusqu'au ${echeance}`);
     charger();
   }
 
@@ -111,19 +112,18 @@ export function ComptesLive() {
 
 function CompteSheet({ roles, sites, onAnnuler, onInviter }: {
   roles: Role[]; sites: Site[];
-  onAnnuler: () => void; onInviter: (nom: string, email: string, password: string, roleId: string, siteId: string | null) => Promise<void>;
+  onAnnuler: () => void; onInviter: (nom: string, email: string, roleId: string, siteId: string | null) => Promise<void>;
 }) {
   const [nom, setNom] = useState('');
   const [email, setEmail] = useState('');
-  const [mdp, setMdp] = useState('');
   const [roleId, setRoleId] = useState(roles[0]?.id ?? '');
   const [siteId, setSiteId] = useState(sites[0]?.id ?? '');
   const [envoi, setEnvoi] = useState(false);
-  const pret = nom.trim().length > 1 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && mdp.length >= 8 && roleId;
+  const pret = nom.trim().length > 1 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && !!roleId;
 
   async function go() {
     setEnvoi(true);
-    await onInviter(nom.trim(), email.trim(), mdp, roleId, siteId || null);
+    await onInviter(nom.trim(), email.trim(), roleId, siteId || null);
     setEnvoi(false);
   }
 
@@ -131,7 +131,7 @@ function CompteSheet({ roles, sites, onAnnuler, onInviter }: {
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onAnnuler}>
       <div className="flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-white shadow-card-lg ring-1 ring-sand-300/60 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-sand-200 px-5 py-4">
-          <h3 className="text-lg font-extrabold text-ink">Nouvel utilisateur</h3>
+          <h3 className="text-lg font-extrabold text-ink">Inviter un utilisateur</h3>
           <button onClick={onAnnuler} aria-label="Fermer" className="rounded-full p-1.5 text-muted hover:bg-sand-100 hover:text-ink"><X className="h-5 w-5" /></button>
         </div>
         <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
@@ -139,8 +139,11 @@ function CompteSheet({ roles, sites, onAnnuler, onInviter }: {
             <input value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Ex. : M. Diby" className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100" /></label>
           <label className="block"><span className="mb-1 block text-xs font-semibold text-muted">E-mail</span>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="prenom.nom@newheaven.ci" className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100" /></label>
-          <label className="block"><span className="mb-1 block text-xs font-semibold text-muted">Mot de passe initial (8 car. min.)</span>
-            <input type="text" value={mdp} onChange={(e) => setMdp(e.target.value)} placeholder="À communiquer à la personne" className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100" /></label>
+          <p className="rounded-xl bg-forest-50 px-3 py-2.5 text-[11px] leading-relaxed text-forest-800 ring-1 ring-forest-100">
+            <b>Aucun mot de passe à saisir ici.</b> La personne reçoit un courriel avec un QR code
+            personnel, valable 72 h et utilisable une seule fois. Elle installe l'application, scanne,
+            et choisit elle-même son mot de passe — avec les droits du rôle que vous sélectionnez.
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <label className="block"><span className="mb-1 block text-xs font-semibold text-muted">Rôle</span>
               <select value={roleId} onChange={(e) => setRoleId(e.target.value)} className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400">
@@ -154,7 +157,7 @@ function CompteSheet({ roles, sites, onAnnuler, onInviter }: {
         </div>
         <div className="border-t border-sand-200 px-5 py-4">
           <Button variant="primary" size="lg" block disabled={!pret || envoi} onClick={go}>
-            {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} Créer le compte
+            {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} Envoyer l'invitation
           </Button>
         </div>
       </div>
