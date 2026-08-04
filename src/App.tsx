@@ -4,12 +4,13 @@ import type { Session } from '@supabase/supabase-js';
 import {
   Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound,
+  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound, HelpCircle,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
 import { supabase } from './lib/supabase';
 import { useAuthz } from './lib/authz';
 import { primairesPour } from './lib/roles';
+import { CommentCaMarche } from './features/aide/CommentCaMarche';
 
 // Chargement à la demande : chaque écran forme son propre chunk, seul l'écran
 // affiché est téléchargé (démarrage mobile allégé).
@@ -124,6 +125,7 @@ export default function App() {
   // QR d'invitation de compte (/?invitation=jeton) : l'activation prend tout l'écran.
   const jetonInvitation = new URLSearchParams(window.location.search).get('invitation');
   const [more, setMore] = useState(false);
+  const [aide, setAide] = useState(false);
   const { connecte, pouvoirs } = useAuthz();
 
   // Interface par rôle : hors session on montre tout (démo) ; connecté, on ne
@@ -149,12 +151,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-sand-100">
-      <TopBar vue={vue} />
+      <TopBar vue={vue} onAide={() => setAide(true)} />
       <main className="pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
         <Suspense fallback={<ChargementVue />}>{renderVue(vue, go, primaires)}</Suspense>
       </main>
       <BottomNav vue={vue} onGo={go} onMore={() => setMore(true)} moreActif={more} primaires={primaires} />
       {more && <MoreSheet vue={vue} onGo={go} onClose={() => setMore(false)} autorise={autorise} primaires={primaires} />}
+      {aide && <CommentCaMarche primaires={primaires.map(destOf)} onClose={() => setAide(false)} />}
     </div>
   );
 }
@@ -168,7 +171,7 @@ function ChargementVue() {
 }
 
 /* ---------- Barre d'application (haut) ---------- */
-function TopBar({ vue }: { vue: Vue }) {
+function TopBar({ vue, onAide }: { vue: Vue; onAide: () => void }) {
   const d = destOf(vue);
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-r from-[#0A2E28] via-[#0C4238] to-[#0F5044] pt-[env(safe-area-inset-top)] shadow-soft backdrop-blur-md">
@@ -178,6 +181,13 @@ function TopBar({ vue }: { vue: Vue }) {
           <span className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/85 ring-1 ring-inset ring-white/15 backdrop-blur sm:inline-flex">
             {d.court}
           </span>
+          <button
+            onClick={onAide}
+            aria-label="Comment ça marche"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/90 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/15"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </button>
           <CompteBouton />
         </div>
       </div>
