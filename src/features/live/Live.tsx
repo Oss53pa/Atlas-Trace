@@ -30,10 +30,10 @@ export function Live() {
   return (
     <div className="min-h-screen bg-sand-100">
       <div className="border-b border-sand-300/70 bg-sand-50 px-5 py-4">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2">
           <p className="flex items-center gap-2 text-sm font-bold text-ink"><Cloud className="h-4 w-4 text-forest-500" /> Connexion en direct · Supabase</p>
           {session && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge tone="forest" dot>{session.user.email}</Badge>
               <Button variant="outline" size="sm" icon={<LogOut className="h-4 w-4" />} onClick={() => supabase.auth.signOut()}>Déconnexion</Button>
             </div>

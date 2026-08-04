@@ -52,20 +52,20 @@ export function LiensExternes() {
       <ul className="space-y-2">
         {liens.map((l) => (
           <li key={l.id} className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-sand-300/70">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <p className="text-sm font-bold text-ink">{l.entreprise} <span className="font-normal text-muted">· {l.referent}</span></p>
-                <p className="mt-1 flex items-center gap-1.5 font-mono text-xs text-forest-700">
-                  <Link2 className="h-3 w-3" /> {url(l.jeton)}
+                <p className="mt-1 flex items-center gap-1.5 break-all font-mono text-xs text-forest-700">
+                  <Link2 className="h-3 w-3 shrink-0" /> {url(l.jeton)}
                 </p>
                 {ancien[l.id] && (
-                  <p className="mt-1 flex items-center gap-1.5 font-mono text-[11px] text-danger-500 line-through">
-                    <ShieldAlert className="h-3 w-3" /> {url(ancien[l.id])} — inopérant
+                  <p className="mt-1 flex items-center gap-1.5 break-all font-mono text-[11px] text-danger-500 line-through">
+                    <ShieldAlert className="h-3 w-3 shrink-0" /> {url(ancien[l.id])} — inopérant
                   </p>
                 )}
                 <p className="mt-1 text-[11px] text-muted">Créé le {l.cree}</p>
               </div>
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge tone="forest" dot>Actif</Badge>
                 <Button variant="primary" size="sm" icon={<QrCode className="h-4 w-4" />} onClick={() => setQrPour(l)}>QR d'activation</Button>
                 <Button variant="outline" size="sm" icon={<Copy className="h-4 w-4" />} onClick={() => flash('Lien copié')}>Copier</Button>
