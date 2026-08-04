@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import type { AxesProfil } from '../../data/profils';
 
 /** Référentiels paramétrables (M19). Listes éditables par organisation. */
 export interface Referentiel {
@@ -77,4 +78,41 @@ export async function enregistrerCircuit(cle: string, etapes: EtapeCircuit[]): P
   const { data, error } = await supabase.rpc('at_enregistrer_circuit', { p_cle: cle, p_etapes: payload });
   if (error) throw new Error(error.message);
   return data as { version: number };
+}
+
+/* ===================== Profil de site ===================== */
+
+export interface ProfilSiteApplique {
+  baseId: string;
+  etiquette: string;
+  axes: AxesProfil;
+  appliqueAt: string;
+  appliquePar: string | null;
+}
+
+export async function chargerProfilSite(): Promise<ProfilSiteApplique | null> {
+  const { data, error } = await supabase
+    .from('at_profils_site')
+    .select('base_id, etiquette, axes, applique_at, applique_par')
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return {
+    baseId: data.base_id,
+    etiquette: data.etiquette,
+    axes: data.axes as AxesProfil,
+    appliqueAt: data.applique_at,
+    appliquePar: data.applique_par,
+  };
+}
+
+/** Applique (upsert) le profil du site. Le serveur exige ADMINISTRER_ORGANISATION. */
+export async function appliquerProfil(baseId: string, etiquette: string, axes: AxesProfil): Promise<void> {
+  const { error } = await supabase.rpc('at_appliquer_profil', {
+    p_base_id: baseId,
+    p_etiquette: etiquette,
+    p_axes: axes,
+  });
+  if (error) throw new Error(error.message);
 }

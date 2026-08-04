@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Layers, Building2, Zap, Anchor, FilePlus2, Check, X, Plus, ArrowRight, ArrowLeft,
-  GitBranch, MapPin, Users, KeyRound, ClipboardCheck, Save, RotateCcw, Info,
+  GitBranch, MapPin, Users, KeyRound, ClipboardCheck, Save, RotateCcw, Info, Loader2, LogIn,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { useAuthz } from '../../lib/authz';
+import { chargerProfilSite, appliquerProfil } from './api';
 import {
   EFFET_AXE, PREREGLAGES, PROFIL_VIERGE,
   type AxesProfil, type Prereglage, type RegimeVisiteurs,
@@ -25,7 +27,12 @@ const ICONE: Record<string, React.ReactNode> = {
   chantier: <Building2 className="h-5 w-5" />, industriel: <Zap className="h-5 w-5" />, portuaire: <Anchor className="h-5 w-5" />, vierge: <FilePlus2 className="h-5 w-5" />,
 };
 
+const baseDeId = (id: string): Prereglage => PREREGLAGES.find((p) => p.id === id) ?? PROFIL_VIERGE_COMPLET;
+
 export function ProfilSite() {
+  const { connecte, chargement: authEnCours, a } = useAuthz();
+  const peutAppliquer = a('ADMINISTRER_ORGANISATION');
+
   const [etape, setEtape] = useState(1);
   const [base, setBase] = useState<Prereglage>(PREREGLAGES[0]);
   const [axes, setAxes] = useState<AxesProfil>(PREREGLAGES[0].axes);
@@ -33,6 +40,31 @@ export function ProfilSite() {
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [modelesMaison, setModelesMaison] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [actuel, setActuel] = useState<{ etiquette: string; appliqueAt: string; appliquePar: string | null } | null>(null);
+
+  const charger = useCallback(async () => {
+    try {
+      const p = await chargerProfilSite();
+      if (p) {
+        setBase(baseDeId(p.baseId));
+        setAxes(p.axes);
+        setModifie(false);
+        setActuel({ etiquette: p.etiquette, appliqueAt: p.appliqueAt, appliquePar: p.appliquePar });
+      }
+      setErreur(null);
+    } catch (e) {
+      setErreur((e as Error).message);
+    } finally {
+      setChargement(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!connecte) { setChargement(false); return; }
+    charger();
+  }, [connecte, charger]);
 
   function flash(m: string) { setToast(m); setTimeout(() => setToast(null), 2600); }
   function maj<K extends keyof AxesProfil>(k: K, v: AxesProfil[K]) { setAxes((a) => ({ ...a, [k]: v })); setModifie(true); }
@@ -43,6 +75,31 @@ export function ProfilSite() {
 
   const etiquette = modifie ? `Profil personnalisé, issu de « ${base.nom} »` : base.nom;
 
+  async function appliquer() {
+    try {
+      await appliquerProfil(base.id, etiquette, axes);
+      setActuel({ etiquette, appliqueAt: new Date().toISOString(), appliquePar: null });
+      setEtape(4);
+      setErreur(null);
+    } catch (e) {
+      setErreur((e as Error).message);
+    }
+  }
+
+  if (authEnCours || chargement) {
+    return <div className="flex min-h-[60vh] items-center justify-center text-muted"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  }
+
+  if (!connecte) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-3 px-6 text-center text-muted">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-forest-600 shadow-card ring-1 ring-sand-200/60"><LogIn className="h-7 w-7" /></span>
+        <p className="text-base font-bold text-ink">Connexion requise</p>
+        <p className="text-sm">Le profil de site est une configuration réservée aux comptes autorisés.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-5 py-8">
       <div className="mb-4">
@@ -51,11 +108,27 @@ export function ProfilSite() {
         <p className="mt-1 text-sm text-muted">La configuration d’un site se pose par axes structurels. Les préréglages ne sont que des points de départ — tout reste modifiable ensuite.</p>
       </div>
 
+      {actuel && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl bg-forest-50 px-4 py-3 text-sm text-forest-800 ring-1 ring-forest-100">
+          <Check className="h-4 w-4 shrink-0 text-forest-500" />
+          Profil actuel : <b>{actuel.etiquette}</b>
+          <span className="text-xs text-forest-600">· appliqué le {new Date(actuel.appliqueAt).toLocaleDateString('fr-FR')}{actuel.appliquePar ? ` par ${actuel.appliquePar}` : ''}</span>
+        </div>
+      )}
+      {erreur && (
+        <div className="mb-4 rounded-xl bg-danger-50 px-3 py-2 text-sm font-semibold text-danger-600 ring-1 ring-danger-100">{erreur}</div>
+      )}
+      {!peutAppliquer && (
+        <div className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+          Lecture seule — l'application d'un profil requiert le pouvoir ADMINISTRER_ORGANISATION.
+        </div>
+      )}
+
       <Progression etape={etape} />
 
       {etape === 1 && <Etape1 modelesMaison={modelesMaison} onChoisir={choisir} />}
       {etape === 2 && <Etape2 axes={axes} maj={maj} onRetour={() => setEtape(1)} onSuite={() => setEtape(3)} />}
-      {etape === 3 && <Etape3 base={base} axes={axes} etiquette={etiquette} onRetour={() => setEtape(2)} onAppliquer={() => { setEtape(4); }} />}
+      {etape === 3 && <Etape3 base={base} axes={axes} etiquette={etiquette} peutAppliquer={peutAppliquer} onRetour={() => setEtape(2)} onAppliquer={appliquer} />}
       {etape === 4 && (
         <Etape4
           base={base} etiquette={etiquette} modifie={modifie} checklist={checklist}
@@ -225,7 +298,7 @@ function NiveauxEmprise({ niveaux, onChange }: { niveaux: string[]; onChange: (n
 }
 
 /* ---------- Temps 3 : récapitulatif ---------- */
-function Etape3({ base, axes, etiquette, onRetour, onAppliquer }: { base: Prereglage; axes: AxesProfil; etiquette: string; onRetour: () => void; onAppliquer: () => void }) {
+function Etape3({ base, axes, etiquette, peutAppliquer, onRetour, onAppliquer }: { base: Prereglage; axes: AxesProfil; etiquette: string; peutAppliquer: boolean; onRetour: () => void; onAppliquer: () => void }) {
   const chaines = base.chaines.filter((c) => {
     if (c.objet === 'Sortie de matériel') return axes.fluxMatiereSortant;
     if (c.objet === 'Laissez-passer véhicule') return axes.vehiculesLivraisons;
@@ -279,7 +352,7 @@ function Etape3({ base, axes, etiquette, onRetour, onAppliquer }: { base: Prereg
 
       <div className="flex gap-2">
         <Button variant="ghost" className="flex-none px-4" icon={<ArrowLeft className="h-4 w-4" />} onClick={onRetour}>Retour</Button>
-        <Button variant="primary" block icon={<Check className="h-4 w-4" strokeWidth={3} />} onClick={onAppliquer}>Appliquer le profil</Button>
+        <Button variant="primary" block disabled={!peutAppliquer} icon={<Check className="h-4 w-4" strokeWidth={3} />} onClick={onAppliquer}>Appliquer le profil</Button>
       </div>
     </div>
   );
