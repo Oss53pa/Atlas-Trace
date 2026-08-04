@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Layers, GitBranch, SlidersHorizontal } from 'lucide-react';
+import { Layers, GitBranch, SlidersHorizontal, Image as ImageIcon } from 'lucide-react';
 import { ProfilSite } from './ProfilSite';
 import { Circuits } from './Circuits';
 import { Referentiels } from './Referentiels';
+import { LogoSite } from './LogoSite';
 
-type SousVue = 'profil' | 'circuits' | 'referentiels';
+type SousVue = 'profil' | 'marque' | 'circuits' | 'referentiels';
 
 export function Parametrage() {
   const [sousVue, setSousVue] = useState<SousVue>('profil');
@@ -14,12 +15,14 @@ export function Parametrage() {
       <div className="flex justify-center px-4 pt-6">
         <div className="flex flex-wrap justify-center gap-1 rounded-3xl bg-white/90 p-1 shadow-card ring-1 ring-sand-300">
           {onglet('profil', 'Profil de site', <Layers className="h-3.5 w-3.5" />)}
+          {onglet('marque', 'Logo & identité', <ImageIcon className="h-3.5 w-3.5" />)}
           {onglet('circuits', 'Chaînes de validation', <GitBranch className="h-3.5 w-3.5" />)}
           {onglet('referentiels', 'Référentiels', <SlidersHorizontal className="h-3.5 w-3.5" />)}
         </div>
       </div>
 
       {sousVue === 'profil' && <ProfilSite />}
+      {sousVue === 'marque' && <div className="mx-auto max-w-3xl px-5 py-8"><LogoSite /></div>}
       {sousVue === 'circuits' && <Circuits />}
       {sousVue === 'referentiels' && <Referentiels />}
     </div>

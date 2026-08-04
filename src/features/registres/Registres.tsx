@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   FileSpreadsheet, Filter, Search, Clock, CheckCircle2, XCircle,
-  ShieldAlert, WifiOff, Download, Loader2, Lock, MoonStar,
+  ShieldAlert, WifiOff, Download, Loader2, Lock, MoonStar, Printer,
 } from 'lucide-react';
 import type { Resultat, Sens } from '../../types';
 import { Badge } from '../../components/ui/Badge';
@@ -12,6 +12,9 @@ import { MOTIFS } from '../poste/motifs';
 import { MOUVEMENTS_JOUR } from '../../data/registre';
 import { RapportsAuto } from './RapportsAuto';
 import { chargerAcces, telechargerCSV, EXPORTS, type AccesLigne } from './api';
+import { imprimerRapport, chargerEnteteSite, type EnteteSite } from '../../lib/impression';
+
+const COLONNES_ACCES = ['Heure', 'Personne', 'Entreprise', 'Sens', 'Résultat', 'Motif', 'Mode', 'Sortie'];
 
 type FiltreResultat = 'TOUS' | Resultat;
 type FiltreSens = 'TOUS' | Sens;
@@ -32,6 +35,11 @@ export function Registres() {
   const [entreprise, setEntreprise] = useState('TOUTES');
   const [recherche, setRecherche] = useState('');
   const [toast, setToast] = useState<string | null>(null);
+  const [entete, setEntete] = useState<EnteteSite | null>(null);
+
+  useEffect(() => {
+    if (connecte) chargerEnteteSite().then(setEntete).catch(() => setEntete(null));
+  }, [connecte]);
 
   useEffect(() => {
     if (!connecte) { setMvts(MOCK); setLive(false); return; }
@@ -76,6 +84,18 @@ export function Registres() {
       lignes.map((m) => [m.horodatage, m.personneLabel, m.entrepriseLabel, m.sens, m.resultat, m.motif ?? '', m.mode,
         m.sens === 'SORTIE' ? (m.constatee ? 'Constatée' : 'Non constatée') : '']));
     flash(`Registre d'accès exporté · réf ${ref}`);
+  }
+
+  function imprimerAcces() {
+    if (!entete) return;
+    imprimerRapport({
+      titre: 'Registre d’accès',
+      base: 'ACCES',
+      colonnes: COLONNES_ACCES,
+      lignes: lignes.map((m) => [m.horodatage, m.personneLabel, m.entrepriseLabel, m.sens, m.resultat, m.motif ?? '', m.mode,
+        m.sens === 'SORTIE' ? (m.constatee ? 'Constatée' : 'Non constatée') : '']),
+    }, entete);
+    flash('Impression du registre d’accès préparée');
   }
 
   return (
@@ -138,9 +158,14 @@ export function Registres() {
               Entrées &amp; sorties de personnes
               <span className="ml-2 font-medium text-muted">{lignes.length} ligne(s){chargement ? ' · chargement…' : ''}</span>
             </p>
-            <Button variant="primary" size="sm" icon={<Download className="h-4 w-4" />} onClick={exporterAcces} disabled={lignes.length === 0}>
-              Exporter (CSV)
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="primary" size="sm" icon={<Printer className="h-4 w-4" />} onClick={imprimerAcces} disabled={lignes.length === 0 || !entete}>
+                PDF
+              </Button>
+              <Button variant="outline" size="sm" icon={<Download className="h-4 w-4" />} onClick={exporterAcces} disabled={lignes.length === 0}>
+                CSV
+              </Button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
@@ -165,7 +190,7 @@ export function Registres() {
         <h2 className="mb-3 mt-8 text-sm font-bold uppercase tracking-wider text-muted">Registres exportables</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {EXPORTS.map((r) => (
-            <ExportCard key={r.id} reg={r} connecte={connecte} autorise={!r.pouvoir || a(r.pouvoir)} onFlash={flash} />
+            <ExportCard key={r.id} reg={r} connecte={connecte} autorise={!r.pouvoir || a(r.pouvoir)} onFlash={flash} entete={entete} />
           ))}
         </div>
 
@@ -186,11 +211,24 @@ export function Registres() {
   );
 }
 
-function ExportCard({ reg, connecte, autorise, onFlash }: {
-  reg: (typeof EXPORTS)[number]; connecte: boolean; autorise: boolean; onFlash: (m: string) => void;
+function ExportCard({ reg, connecte, autorise, onFlash, entete }: {
+  reg: (typeof EXPORTS)[number]; connecte: boolean; autorise: boolean; onFlash: (m: string) => void; entete: EnteteSite | null;
 }) {
   const [busy, setBusy] = useState(false);
   const bloque = !connecte || !autorise;
+  async function imprimer() {
+    if (!entete) return;
+    setBusy(true);
+    try {
+      const { headers, rows } = await reg.charger();
+      imprimerRapport({ titre: reg.libelle, base: reg.base, colonnes: headers, lignes: rows }, entete);
+      onFlash(`${reg.libelle} · impression préparée (${rows.length} ligne(s))`);
+    } catch (e) {
+      onFlash('Erreur : ' + (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   async function telecharger() {
     setBusy(true);
     try {
@@ -210,12 +248,18 @@ function ExportCard({ reg, connecte, autorise, onFlash }: {
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold text-ink">{reg.libelle}</p>
-        <p className="text-[11px] text-muted">{bloque ? (!connecte ? 'Connexion requise' : 'Pouvoir requis') : 'CSV horodaté'}</p>
+        <p className="text-[11px] text-muted">{bloque ? (!connecte ? 'Connexion requise' : 'Pouvoir requis') : 'PDF prêt à imprimer ou CSV'}</p>
       </div>
-      <Button variant="outline" size="sm" disabled={bloque || busy}
-        icon={busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} onClick={telecharger}>
-        CSV
-      </Button>
+      <div className="flex gap-1.5">
+        <Button variant="primary" size="sm" disabled={bloque || busy || !entete}
+          icon={busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />} onClick={imprimer}>
+          PDF
+        </Button>
+        <Button variant="outline" size="sm" disabled={bloque || busy}
+          icon={<Download className="h-4 w-4" />} onClick={telecharger}>
+          CSV
+        </Button>
+      </div>
     </div>
   );
 }
