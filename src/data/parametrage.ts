@@ -59,35 +59,6 @@ export const CIRCUITS: Circuit[] = [
   ] },
 ];
 
-export interface Referentiel {
-  cle: string;
-  libelle: string;
-  portee: 'Site' | 'Organisation';
-  valeurs: string[];
-}
-
-export const REFERENTIELS: Referentiel[] = [
-  { cle: 'zones', libelle: 'Zones', portee: 'Site', valeurs: ['Abords & poste', 'Circulation & base vie', 'Travaux', 'Galerie & cellules', 'Magasins & stockage sensible', 'Locaux techniques'] },
-  { cle: 'motifs', libelle: 'Motifs de refus', portee: 'Organisation', valeurs: ['Badge inconnu', 'Badge expiré', 'Badge suspendu', 'Entité suspendue', 'Preneur bloqué', 'Personne suspendue', 'Déjà entré', 'Hors nœud autorisé', 'Hors plage horaire', 'Induction expirée', 'Photographie manquante'] },
-  { cle: 'materiel', libelle: 'Catégories de matériel à déclaration obligatoire', portee: 'Site', valeurs: ['Électroportatif', 'Appareils de mesure', 'Câbles & cuivre', 'Échafaudages', 'Carburants'] },
-  { cle: 'sensibles', libelle: 'Familles sensibles — photo obligatoire & tirage renforcé', portee: 'Site', valeurs: ['Câble cuivre', 'Carrelage', 'Robinetterie', 'Luminaires', 'Outillage électroportatif', 'Carburant', 'Ferraille'] },
-];
-
-export interface BadgeCategorieConf {
-  libelle: string;
-  hex: string;
-}
-export const BADGE_CATEGORIES_CONF: BadgeCategorieConf[] = [
-  { libelle: 'Chantier', hex: '#0F5044' },
-  { libelle: 'Aménagement preneur', hex: '#C08A2A' },
-  { libelle: 'Visiteur', hex: '#6F7C75' },
-  { libelle: 'Personnel propre', hex: '#0A362E' },
-];
-
-export const PARAMETRES_SCALAIRES = [
-  { cle: 'Plage d’accès', valeur: '06:30 – 18:30' },
-  { cle: 'Heure limite dépôt des listes', valeur: '07:30' },
-  { cle: 'Validité d’une autorisation de sortie', valeur: '24 heures' },
-  { cle: 'Taux de contrôle inopiné des évacuations', valeur: '1 sur 5' },
-  { cle: 'Rétention locale hors ligne', valeur: '72 heures' },
-];
+// Les référentiels paramétrables, la charte des catégories de badges et les
+// paramètres du site vivent désormais en base (table at_referentiels, M19) et
+// sont servis par features/parametrage/api.ts.
