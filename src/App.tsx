@@ -7,6 +7,7 @@ import {
   ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound, HelpCircle,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
+import { AlertesTempsReel } from './components/AlertesTempsReel';
 import { supabase } from './lib/supabase';
 import { useAuthz } from './lib/authz';
 import { primairesPour, familleDe, type Famille } from './lib/roles';
@@ -119,9 +120,14 @@ function renderVue(vue: Vue, go: (v: string) => void, primaires: Vue[]): ReactNo
 
 export default function App() {
   // Lien d'invitation référent (/?r=jeton) : on ouvre directement le portail.
-  const [vue, setVue] = useState<Vue>(() =>
-    new URLSearchParams(window.location.search).has('r') ? 'referent' : 'accueil',
-  );
+  // Deep-link (/?vue=maincourante) : ouvert par la notification push / le pop-up.
+  const [vue, setVue] = useState<Vue>(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.has('r')) return 'referent';
+    const v = p.get('vue');
+    if (v && DESTINATIONS.some((d) => d.vue === v)) return v as Vue;
+    return 'accueil';
+  });
   // QR d'invitation de compte (/?invitation=jeton) : l'activation prend tout l'écran.
   const jetonInvitation = new URLSearchParams(window.location.search).get('invitation');
   const [more, setMore] = useState(false);
@@ -158,6 +164,7 @@ export default function App() {
       <BottomNav vue={vue} onGo={go} onMore={() => setMore(true)} moreActif={more} primaires={primaires} />
       {more && <MoreSheet vue={vue} onGo={go} onClose={() => setMore(false)} autorise={autorise} primaires={primaires} />}
       {aide && <CommentCaMarche primaires={primaires.map(destOf)} onClose={() => setAide(false)} />}
+      <AlertesTempsReel onVoir={() => go('maincourante')} />
     </div>
   );
 }
