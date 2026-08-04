@@ -28,36 +28,8 @@ export const POUVOIRS: { code: string; effet: string }[] = [
   { code: 'ADMINISTRER_ORGANISATION', effet: 'Créer des sites, des rôles, des utilisateurs' },
 ];
 
-export type NatureEtape = 'VISA' | 'APPROBATION';
-export interface EtapeCircuit {
-  ordre: number;
-  role: string;
-  nature: NatureEtape;
-  effetFinal: boolean;
-}
-export interface Circuit {
-  id: string;
-  objet: string;
-  etapes: EtapeCircuit[];
-  version: number;
-}
-
-export const CIRCUITS: Circuit[] = [
-  { id: 'hab', objet: 'Habilitation entreprise', version: 3, etapes: [
-    { ordre: 1, role: 'Référent entreprise', nature: 'VISA', effetFinal: false },
-    { ordre: 2, role: 'Responsable HSE', nature: 'VISA', effetFinal: false },
-    { ordre: 3, role: 'Directeur de la Construction', nature: 'APPROBATION', effetFinal: true },
-  ] },
-  { id: 'sortie', objet: 'Sortie de matériel', version: 2, etapes: [
-    { ordre: 1, role: 'Référent entreprise', nature: 'VISA', effetFinal: false },
-    { ordre: 2, role: 'Responsable HSE', nature: 'VISA', effetFinal: false },
-    { ordre: 3, role: 'Directeur de la Construction', nature: 'APPROBATION', effetFinal: true },
-  ] },
-  { id: 'livraison', objet: 'Préavis de livraison', version: 1, etapes: [
-    { ordre: 1, role: 'Référent entreprise', nature: 'VISA', effetFinal: false },
-    { ordre: 2, role: 'Pilote de coordination', nature: 'APPROBATION', effetFinal: true },
-  ] },
-];
+// Les chaînes de validation vivent désormais en base (table at_circuits, M19),
+// servies par features/parametrage/api.ts.
 
 // Les référentiels paramétrables, la charte des catégories de badges et les
 // paramètres du site vivent désormais en base (table at_referentiels, M19) et
