@@ -92,7 +92,7 @@ export function Cloture() {
     <div className="mx-auto max-w-3xl px-5 py-8">
       <div className="mb-4">
         <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
-          <Moon className="h-3.5 w-3.5" /> M25 · Lot 1
+          <Moon className="h-3.5 w-3.5" /> Clôture de journée
         </p>
         <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Clôture de journée</h1>
         <p className="mt-1 text-sm text-muted">

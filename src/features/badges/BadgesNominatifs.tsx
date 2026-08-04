@@ -92,7 +92,7 @@ export function BadgesNominatifs() {
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
-            <CreditCard className="h-3.5 w-3.5" /> M3 · Badges nominatifs
+            <CreditCard className="h-3.5 w-3.5" /> Badges nominatifs
           </p>
           <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Badges nominatifs</h1>
           <p className="mt-1 text-sm text-muted">

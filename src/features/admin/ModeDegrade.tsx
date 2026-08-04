@@ -23,7 +23,7 @@ export function ModeDegrade() {
   return (
     <div className="mx-auto max-w-3xl px-5 py-8">
       <div className="mb-5">
-        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500"><FileWarning className="h-3.5 w-3.5" /> M18 · Administration</p>
+        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500"><FileWarning className="h-3.5 w-3.5" /> Administration</p>
         <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Mode dégradé &amp; rattrapage</h1>
         <p className="mt-1 text-sm text-muted">
           Le papier reste le secours (R7). Procédure écrite, affichée au poste et testée. À la reprise, saisie de rattrapage identifiée et non modifiable.

@@ -87,7 +87,7 @@ export function Circuits() {
   return (
     <div className="mx-auto max-w-4xl px-5 py-8">
       <div className="mb-5">
-        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500"><GitBranch className="h-3.5 w-3.5" /> M19 · Paramétrage</p>
+        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500"><GitBranch className="h-3.5 w-3.5" /> Paramétrage</p>
         <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Chaînes de validation</h1>
         <p className="mt-1 text-sm text-muted">
           Une séquence ordonnée d'étapes, éditable et versionnée en base. Le franchissement de l'étape à effet final génère le code / active l'objet.

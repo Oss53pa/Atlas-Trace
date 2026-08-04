@@ -83,7 +83,7 @@ export function Registres() {
       <div className="mx-auto max-w-6xl px-5 py-8">
         <div className="mb-6">
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-500">
-            M6 · Lot 1
+            Registres
             {live ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-forest-50 px-2 py-0.5 text-[11px] font-semibold text-forest-700 ring-1 ring-forest-200">Données réelles</span>
             ) : (

@@ -71,7 +71,7 @@ export function JournalAudit() {
   return (
     <div className="mx-auto max-w-5xl px-5 py-8">
       <div className="mb-5">
-        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500"><ShieldCheck className="h-3.5 w-3.5" /> M18 · Administration</p>
+        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500"><ShieldCheck className="h-3.5 w-3.5" /> Administration</p>
         <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Journal d'audit</h1>
         <p className="mt-1 text-sm text-muted">
           Toute action sensible est tracée : utilisateur, entité, valeur avant et après, horodatage, appareil.

@@ -117,7 +117,7 @@ export function AutorisationsSortie() {
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
-              <FileOutput className="h-3.5 w-3.5" /> M9 · Lot matière
+              <FileOutput className="h-3.5 w-3.5" /> Matière
             </p>
             <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">
               Autorisation de sortie de matériel

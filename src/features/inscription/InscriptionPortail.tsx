@@ -70,7 +70,7 @@ export function InscriptionPortail() {
     <div className="mx-auto max-w-lg px-5 py-8">
       <div className="mb-4">
         <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
-          <UserPlus className="h-3.5 w-3.5" /> M23 · Lot 1
+          <UserPlus className="h-3.5 w-3.5" /> Inscription au poste
         </p>
         <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Inscription au poste</h1>
         <p className="mt-1 text-sm text-muted">

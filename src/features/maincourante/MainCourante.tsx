@@ -180,7 +180,7 @@ export function MainCourante() {
       <div className="mx-auto max-w-4xl px-5 py-8">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-amber-500">M16 · Lot 3</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-500">Main courante</p>
             <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Main courante &amp; incidents</h1>
             <p className="mt-1 text-sm text-muted">
               Saisie au poste avec photo. Journal horodaté, fiche flash et rapport détaillé pour les incidents.

@@ -46,7 +46,7 @@ export function ProfilSite() {
   return (
     <div className="mx-auto max-w-4xl px-5 py-8">
       <div className="mb-4">
-        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500"><Layers className="h-3.5 w-3.5" /> M19 · Paramétrage</p>
+        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500"><Layers className="h-3.5 w-3.5" /> Paramétrage</p>
         <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Profil de site</h1>
         <p className="mt-1 text-sm text-muted">La configuration d’un site se pose par axes structurels. Les préréglages ne sont que des points de départ — tout reste modifiable ensuite.</p>
       </div>

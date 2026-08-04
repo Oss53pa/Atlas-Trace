@@ -57,7 +57,7 @@ export function ClesRegistre() {
     <div className="min-h-screen bg-sand-100">
       <div className="mx-auto max-w-4xl px-5 py-8">
         <div className="mb-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-amber-500">M17 · Lot 3</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-500">Clés & zones</p>
           <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Clés &amp; zones sensibles</h1>
           <p className="mt-1 text-sm text-muted">
             Registre nominatif des remises et restitutions. Alerte sur toute clé non restituée.

@@ -116,7 +116,7 @@ export function Tableau() {
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
-              M15 · <Radio className="h-3.5 w-3.5" /> Temps réel
+              <Radio className="h-3.5 w-3.5" /> Temps réel
             </p>
             <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Tableau de bord</h1>
             <p className="mt-1 flex items-center gap-1.5 text-sm capitalize text-muted">

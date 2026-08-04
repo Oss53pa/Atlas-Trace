@@ -65,7 +65,7 @@ export function SuiviDepots() {
   return (
     <div className="mx-auto max-w-5xl px-5 py-8">
       <div className="mb-5">
-        <p className="text-xs font-bold uppercase tracking-wider text-amber-500">M4 · Encadrement</p>
+        <p className="text-xs font-bold uppercase tracking-wider text-amber-500">Registre de présence</p>
         <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Registre de présence — suivi</h1>
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
           <span className="inline-flex items-center gap-1.5">
