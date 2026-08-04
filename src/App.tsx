@@ -9,7 +9,7 @@ import {
 import { Logo } from './components/ui/Logo';
 import { supabase } from './lib/supabase';
 import { useAuthz } from './lib/authz';
-import { primairesPour } from './lib/roles';
+import { primairesPour, familleDe, type Famille } from './lib/roles';
 import { CommentCaMarche } from './features/aide/CommentCaMarche';
 
 // Chargement à la demande : chaque écran forme son propre chunk, seul l'écran
@@ -196,7 +196,16 @@ function TopBar({ vue, onAide }: { vue: Vue; onAide: () => void }) {
 }
 
 /* ---------- Compte / connexion ---------- */
+const FAMILLE_LABEL: Record<Famille, string> = {
+  DIRECTION: 'Direction',
+  TERRAIN: 'Poste',
+  VALIDATION: 'Validation',
+  REFERENT: 'Référent',
+  BASE: 'Accès',
+};
+
 function CompteBouton() {
+  const { connecte, pouvoirs } = useAuthz();
   const [session, setSession] = useState<Session | null>(null);
   const [ouvre, setOuvre] = useState(false);
 
@@ -208,6 +217,7 @@ function CompteBouton() {
 
   if (session) {
     const initiale = (session.user.email ?? '?').slice(0, 1).toUpperCase();
+    const role = connecte ? FAMILLE_LABEL[familleDe(pouvoirs)] : null;
     return (
       <button
         onClick={() => supabase.auth.signOut()}
@@ -215,6 +225,7 @@ function CompteBouton() {
         title="Se déconnecter"
       >
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-300/25 text-[11px] font-bold text-amber-100">{initiale}</span>
+        {role && <span className="max-w-[7rem] truncate">{role}</span>}
         <LogOut className="h-3.5 w-3.5" />
       </button>
     );
