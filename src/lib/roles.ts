@@ -39,8 +39,12 @@ export const PRIMAIRES_PAR_FAMILLE: Record<Famille, string[]> = {
   BASE: ['accueil'],
 };
 
-/** Barre du bas hors session (démo) : on montre le parcours complet. */
-export const PRIMAIRES_DEMO = ['accueil', 'poste', 'materiel', 'tableau'];
+/**
+ * Barre du bas hors session (démo) : on présente l'interface de la Direction /
+ * Admin — c'est elle qui donne accès à l'application aux autres utilisateurs,
+ * donc l'interface par défaut de référence.
+ */
+export const PRIMAIRES_DEMO = PRIMAIRES_PAR_FAMILLE.DIRECTION;
 
 /** Vues primaires pour un utilisateur donné (ordre conservé, avant filtrage d'accès). */
 export function primairesPour(pouvoirs: Set<string>, connecte: boolean): string[] {
