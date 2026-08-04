@@ -2,8 +2,12 @@
  * Stratégie : network-first pour la navigation et les données (jamais de contenu périmé
  * sur un outil de contrôle d'accès), cache-first pour les assets statiques immuables.
  * On ne met JAMAIS en cache les appels Supabase (auth/RLS/edge) : toujours le réseau. */
-const CACHE = 'atlas-trace-v1';
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg', '/pwa-192.png', '/pwa-512.png'];
+// Le numéro de version force le remplacement du service worker et la purge des
+// anciens caches à chaque évolution : les appareils reçoivent la mise à jour.
+const CACHE = 'atlas-trace-v2';
+// On NE précache PAS le HTML (/, /index.html) : la navigation est toujours
+// network-first, jamais une page d'app périmée servie depuis le cache.
+const APP_SHELL = ['/manifest.webmanifest', '/icon.svg', '/pwa-192.png', '/pwa-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(APP_SHELL)).then(() => self.skipWaiting()));
@@ -16,6 +20,11 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Permet à la page de forcer l'activation immédiate d'un SW en attente.
+self.addEventListener('message', (e) => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
@@ -24,9 +33,18 @@ self.addEventListener('fetch', (e) => {
   // Jamais de cache pour le backend (Supabase : REST, auth, storage, edge functions).
   if (url.hostname.endsWith('.supabase.co')) return;
 
-  // Navigation : réseau d'abord, repli sur le shell en cache si hors-ligne.
+  // Navigation : réseau d'abord (toujours la dernière version), et on garde une
+  // copie de l'HTML pour le repli hors-ligne uniquement.
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).catch(() => caches.match('/index.html')));
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put('/index.html', copy));
+          return res;
+        })
+        .catch(() => caches.match('/index.html')),
+    );
     return;
   }
 
