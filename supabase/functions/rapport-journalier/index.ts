@@ -49,7 +49,10 @@ type Rapport = {
   incidents_ouverts: number; evenements: number;
 };
 
-async function construirePdf(r: Rapport): Promise<Uint8Array> {
+async function construirePdf(
+  r: Rapport,
+  marque: { logoBytes: Uint8Array | null; logoJpg: boolean; raisonSociale: string },
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const normal = await doc.embedFont(StandardFonts.Helvetica);
   const gras = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -81,9 +84,24 @@ async function construirePdf(r: Rapport): Promise<Uint8Array> {
     page.drawText(propre(d), { x: 480, y, size: 10, font: gras });
   };
 
-  // En-tête
+  // En-tête — logo du site (haut droite) si défini, sans jamais bloquer le rapport.
+  if (marque.logoBytes) {
+    try {
+      const img = marque.logoJpg ? await doc.embedJpg(marque.logoBytes) : await doc.embedPng(marque.logoBytes);
+      const hLogo = 40;
+      const wLogo = Math.min(150, (img.width / img.height) * hLogo);
+      page.drawImage(img, { x: 545 - wLogo, y: y - 22, width: wLogo, height: hLogo });
+    } catch {
+      // Logo illisible : le rapport est produit sans logo.
+    }
+  }
+
   ecrire('Atlas Trace', { taille: 20, police: gras, couleur: VERT });
-  saut(20);
+  saut(18);
+  if (marque.raisonSociale) {
+    ecrire(marque.raisonSociale, { taille: 10, police: gras, couleur: GRIS });
+    saut(14);
+  }
   ecrire('Rapport journalier de poste', { taille: 12, police: gras });
   saut(15);
   ecrire(`${r.site} — ${new Date(r.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`, { couleur: GRIS });
@@ -164,7 +182,26 @@ Deno.serve(async (req) => {
     if (error || !donnees) { bilan.push({ site: s.id, erreur: error?.message ?? 'sans données' }); continue; }
     const r = donnees as Rapport;
 
-    const pdf = await construirePdf(r);
+    // Logo + raison sociale pour l'en-tête (défensif : jamais bloquant).
+    const [siteRow, orgRow] = await Promise.all([
+      admin.from('at_sites').select('logo_url').eq('id', s.id).maybeSingle(),
+      admin.from('at_organisations').select('raison_sociale').eq('id', r.organisation_id).maybeSingle(),
+    ]);
+    let logoBytes: Uint8Array | null = null;
+    let logoJpg = false;
+    const dataUrl: string | null = (siteRow.data as { logo_url: string | null } | null)?.logo_url ?? null;
+    const mm = dataUrl ? /^data:image\/(png|jpe?g);base64,(.+)$/i.exec(dataUrl) : null;
+    if (mm) {
+      try {
+        logoBytes = Uint8Array.from(atob(mm[2]), (c) => c.charCodeAt(0));
+        logoJpg = /jpe?g/i.test(mm[1]);
+      } catch {
+        logoBytes = null;
+      }
+    }
+    const raisonSociale = (orgRow.data as { raison_sociale: string } | null)?.raison_sociale ?? '';
+
+    const pdf = await construirePdf(r, { logoBytes, logoJpg, raisonSociale });
     const chemin = `${r.organisation_id}/${s.id}/${dateRapport}.pdf`;
     const { error: eUp } = await admin.storage
       .from('at-rapports')
