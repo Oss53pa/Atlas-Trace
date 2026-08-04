@@ -10,7 +10,7 @@
  *
  * Secrets : RESEND_API_KEY, RESEND_FROM.
  */
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1';
+import { PDFDocument, PDFFont, PDFImage, PDFPage, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const CORS = {
@@ -65,6 +65,7 @@ class Document {
   pages: PDFPage[] = [];
   reference = '';
   entete = { titre: '', site: '' };
+  logo?: PDFImage;
 
   static async creer(): Promise<Document> {
     const d = new Document();
@@ -73,6 +74,16 @@ class Document {
     d.gras = await d.doc.embedFont(StandardFonts.HelveticaBold);
     d.italique = await d.doc.embedFont(StandardFonts.HelveticaOblique);
     return d;
+  }
+
+  /** Logo du site pour la couverture (défensif : ignoré si illisible). */
+  async definirLogo(src: { bytes: Uint8Array; jpg: boolean } | null) {
+    if (!src) return;
+    try {
+      this.logo = src.jpg ? await this.doc.embedJpg(src.bytes) : await this.doc.embedPng(src.bytes);
+    } catch {
+      this.logo = undefined;
+    }
   }
 
   nouvellePage(avecEnteteCourant = true) {
@@ -161,6 +172,17 @@ class Document {
       x: LARGEUR - MARGE - this.normal.widthOfTextAtSize(diff, 7.5),
       y: HAUTEUR - 68, size: 7.5, font: this.normal, color: rgb(0.85, 0.89, 0.87),
     });
+
+    // Logo du site en bas droite du bandeau, sur un cartouche blanc pour rester
+    // lisible quelle que soit l'image. Défensif : rien si pas de logo.
+    if (this.logo) {
+      const h = 30;
+      const w = Math.min(120, (this.logo.width / this.logo.height) * h);
+      const lx = LARGEUR - MARGE - w;
+      const ly = HAUTEUR - 128;
+      this.page.drawRectangle({ x: lx - 6, y: ly - 5, width: w + 12, height: h + 10, color: BLANC });
+      this.page.drawImage(this.logo, { x: lx, y: ly, width: w, height: h });
+    }
 
     this.y = HAUTEUR - 168;
   }
@@ -364,8 +386,9 @@ type Journalier = {
   incidents_ouverts: number; evenements: number;
 };
 
-async function pdfJournalier(r: Journalier, reference: string): Promise<Uint8Array> {
+async function pdfJournalier(r: Journalier, reference: string, logo: { bytes: Uint8Array; jpg: boolean } | null): Promise<Uint8Array> {
   const d = await Document.creer();
+  await d.definirLogo(logo);
   d.couverture({
     titre: 'Rapport journalier de poste',
     site: r.site,
@@ -477,8 +500,9 @@ type Incident = {
   agent: string; photo: boolean; horodatage: string; jour: string;
 };
 
-async function pdfIncident(i: Incident, reference: string): Promise<Uint8Array> {
+async function pdfIncident(i: Incident, reference: string, logo: { bytes: Uint8Array; jpg: boolean } | null): Promise<Uint8Array> {
   const d = await Document.creer();
+  await d.definirLogo(logo);
   const majeur = i.gravite === 'MAJEUR';
   d.couverture({
     titre: `Rapport d incident ${majeur ? 'majeur' : ''}`.trim(),
@@ -571,6 +595,19 @@ async function adressesDe(organisationId: string): Promise<string[]> {
   return ((data ?? []) as { courriel: string }[]).map((c) => c.courriel);
 }
 
+/** Logo du site (data URL en base) décodé pour pdf-lib. Défensif : null si absent/illisible. */
+async function chargerLogo(siteId: string): Promise<{ bytes: Uint8Array; jpg: boolean } | null> {
+  const { data } = await admin.from('at_sites').select('logo_url').eq('id', siteId).maybeSingle();
+  const url = (data as { logo_url: string | null } | null)?.logo_url ?? null;
+  const m = url ? /^data:image\/(png|jpe?g);base64,(.+)$/i.exec(url) : null;
+  if (!m) return null;
+  try {
+    return { bytes: Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0)), jpg: /jpe?g/i.test(m[1]) };
+  } catch {
+    return null;
+  }
+}
+
 /* ============================================================
  * Entrée
  * ========================================================== */
@@ -592,7 +629,7 @@ Deno.serve(async (req) => {
     const i = data as Incident;
 
     const reference = `ATS-RI-${i.numero ?? i.id.slice(0, 8)}`;
-    const pdf = await pdfIncident(i, reference);
+    const pdf = await pdfIncident(i, reference, await chargerLogo(i.site_id));
     const chemin = `${i.organisation_id}/${i.site_id}/incidents/${i.numero ?? i.id}.pdf`;
     const { error: eUp } = await admin.storage
       .from('at-rapports').upload(chemin, pdf, { contentType: 'application/pdf', upsert: true });
@@ -645,7 +682,7 @@ Deno.serve(async (req) => {
     const r = data as Journalier;
 
     const reference = `ATS-RJ-${dateRapport.replace(/-/g, '')}-${s.id.slice(0, 4).toUpperCase()}`;
-    const pdf = await pdfJournalier(r, reference);
+    const pdf = await pdfJournalier(r, reference, await chargerLogo(s.id));
     const chemin = `${r.organisation_id}/${s.id}/${dateRapport}.pdf`;
     const { error: eUp } = await admin.storage
       .from('at-rapports').upload(chemin, pdf, { contentType: 'application/pdf', upsert: true });
