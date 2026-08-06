@@ -17,6 +17,7 @@ import { StatCard } from '../../components/ui/StatCard';
 import { PhotoCapture } from '../../components/device/PhotoCapture';
 import { useAuthz } from '../../lib/authz';
 import { lirePlaque } from '../../lib/ocr';
+import { televerserPhoto, urlPhotoSignee } from '../../lib/stockage';
 import { useEntreprises } from './referentiel';
 import {
   chargerVehicules,
@@ -104,6 +105,7 @@ export function VehiculesMouvements() {
     couverture?: string;
     force?: boolean;
     photo?: boolean;
+    photoUrl?: string | null;
   }) {
     try {
       const res = await enregistrerMouvementVehicule(p);
@@ -335,14 +337,41 @@ function MouvementSheet({
     couverture?: string;
     force?: boolean;
     photo?: boolean;
+    photoUrl?: string | null;
   }) => void;
 }) {
+  const { portees } = useAuthz();
+  const orgId = portees[0]?.organisationId ?? '';
   const sens = v.statut === 'SUR_SITE' ? 'SORTIE' : 'ENTREE';
   const [etat, setEtat] = useState<EtatCharge>('VIDE');
   const [nature, setNature] = useState('');
   const [controle, setControle] = useState<ControleEffectue | ''>('');
   const [couverture, setCouverture] = useState('');
   const [photo, setPhoto] = useState(false);
+  const [photoPath, setPhotoPath] = useState<string | null>(null);
+  const [telev, setTelev] = useState(false);
+  const [entreeSignee, setEntreeSignee] = useState<string | null>(null);
+
+  // À la sortie : récupère la photo prise à l'entrée pour comparaison.
+  useEffect(() => {
+    if (sens === 'SORTIE' && v.photoEntreeUrl) {
+      urlPhotoSignee(v.photoEntreeUrl).then(setEntreeSignee).catch(() => setEntreeSignee(null));
+    }
+  }, [sens, v.photoEntreeUrl]);
+
+  async function capturerPhoto(dataUrl: string) {
+    setPhoto(true);
+    if (!orgId) return;
+    setTelev(true);
+    try {
+      const chemin = await televerserPhoto(dataUrl, orgId, 'vehicules');
+      setPhotoPath(chemin);
+    } catch {
+      /* échec upload : la photo reste visuellement prise, sans stockage */
+    } finally {
+      setTelev(false);
+    }
+  }
 
   // Prévisualisation de l'anomalie (le serveur reste l'arbitre) : sortie d'un
   // véhicule entré vide, ressortant chargé, sans couverture.
@@ -362,6 +391,7 @@ function MouvementSheet({
       couverture: couverture || undefined,
       force: force || undefined,
       photo: photo || undefined,
+      photoUrl: photoPath,
     });
   }
 
@@ -437,8 +467,31 @@ function MouvementSheet({
               seul le forçage tracé est possible (photo + alerte chef de poste).
             </p>
             <div className="mt-2">
-              <PhotoCapture label="Photographier le chargement" onCapture={() => setPhoto(true)} />
+              <PhotoCapture label="Photographier le chargement" onCapture={capturerPhoto} />
             </div>
+          </div>
+        )}
+
+        {/* Entrée chargée : photo du coffre / chargement, conservée pour comparaison à la sortie */}
+        {sens === 'ENTREE' && etat === 'CHARGE' && !anomalie && (
+          <div className="mb-3 rounded-xl bg-sand-50 p-3 ring-1 ring-sand-200">
+            <p className="mb-2 text-[11px] font-semibold text-muted">
+              Photo du coffre / du chargement — conservée pour vérifier qu'il ressort identique.
+            </p>
+            <PhotoCapture label={telev ? 'Enregistrement…' : photo ? 'Reprendre la photo' : 'Photographier le coffre / chargement'} onCapture={capturerPhoto} />
+          </div>
+        )}
+
+        {/* Sortie : rappel de la photo prise à l'entrée pour comparaison */}
+        {sens === 'SORTIE' && (entreeSignee || v.photoEntreeUrl) && (
+          <div className="mb-3 rounded-xl bg-sand-50 p-3 ring-1 ring-sand-200">
+            <p className="mb-2 text-[11px] font-semibold text-muted">Photo à l'entrée — comparez avec ce qui ressort.</p>
+            {entreeSignee ? (
+              <img src={entreeSignee} alt="Chargement à l'entrée" className="mb-2 max-h-48 w-full rounded-lg object-contain ring-1 ring-sand-200" />
+            ) : (
+              <p className="mb-2 text-[11px] text-muted">Chargement de la photo d'entrée…</p>
+            )}
+            <PhotoCapture label={telev ? 'Enregistrement…' : photo ? 'Reprendre la photo de sortie' : 'Photographier à la sortie'} onCapture={capturerPhoto} />
           </div>
         )}
         {!controleOk && (

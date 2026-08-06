@@ -264,6 +264,7 @@ export interface Vehicule {
   etatEntree?: EtatCharge | null;
   natureEntree?: string | null;
   entreeAt?: string | null;
+  photoEntreeUrl?: string | null;
 }
 
 export interface MouvementVehicule {
@@ -285,7 +286,7 @@ export interface MouvementVehicule {
 export async function chargerVehicules(): Promise<Vehicule[]> {
   const { data, error } = await supabase
     .from('at_vehicules')
-    .select('id, entreprise_id, immatriculation, type, chauffeur, laissez_passer, statut, etat_entree, nature_entree, entree_at, entreprise:at_entreprises(raison_sociale)')
+    .select('id, entreprise_id, immatriculation, type, chauffeur, laissez_passer, statut, etat_entree, nature_entree, entree_at, photo_entree_url, entreprise:at_entreprises(raison_sociale)')
     .order('immatriculation');
   if (error) throw new Error(error.message);
   return (data ?? []).map((v) => {
@@ -302,6 +303,7 @@ export async function chargerVehicules(): Promise<Vehicule[]> {
       etatEntree: v.etat_entree as EtatCharge | null,
       natureEntree: v.nature_entree,
       entreeAt: v.entree_at,
+      photoEntreeUrl: v.photo_entree_url,
     };
   });
 }
@@ -357,6 +359,7 @@ export async function enregistrerMouvementVehicule(p: {
   couverture?: string;
   force?: boolean;
   photo?: boolean;
+  photoUrl?: string | null;
 }): Promise<{ anomalie: boolean; force: boolean; statut: StatutVehicule }> {
   const { data, error } = await supabase.rpc('at_enregistrer_mouvement_vehicule', {
     p_vehicule_id: p.vehiculeId,
@@ -367,6 +370,7 @@ export async function enregistrerMouvementVehicule(p: {
     p_couverture: p.couverture ?? null,
     p_force: p.force ?? false,
     p_photo: p.photo ?? false,
+    p_photo_url: p.photoUrl ?? null,
   });
   if (error) throw new Error(error.message);
   return data as { anomalie: boolean; force: boolean; statut: StatutVehicule };
