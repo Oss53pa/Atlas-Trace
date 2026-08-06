@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import {
-  Palette, Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
+  Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Home, Cloud, Link2, Users,
   ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound, HelpCircle,
 } from 'lucide-react';
@@ -40,12 +40,11 @@ const Cloture = lazy(() => import('./features/cloture/Cloture').then((m) => ({ d
 const InscriptionPortail = lazy(() => import('./features/inscription/InscriptionPortail').then((m) => ({ default: m.InscriptionPortail })));
 const Plafonds = lazy(() => import('./features/plafonds/Plafonds').then((m) => ({ default: m.Plafonds })));
 const Vivier = lazy(() => import('./features/vivier/Vivier').then((m) => ({ default: m.Vivier })));
-const DesignShowcase = lazy(() => import('./DesignShowcase'));
 import { ActivationCompte } from './features/admin/ActivationCompte';
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
-  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'design' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription' | 'plafonds' | 'vivier';
+  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription' | 'plafonds' | 'vivier';
 
 interface Dest {
   vue: Vue;
@@ -82,7 +81,6 @@ const DESTINATIONS: Dest[] = [
   { vue: 'live', label: 'Console Live', court: 'Live', icon: <Cloud className="h-5 w-5" />, pouvoir: ['CONSULTER_TABLEAU'] },
   { vue: 'referent', label: 'Portail référent', court: 'Référent', icon: <Link2 className="h-5 w-5" /> },
   { vue: 'registres', label: 'Registres & exports', court: 'Registres', icon: <Table2 className="h-5 w-5" />, pouvoir: ['EXPORTER', 'CONSULTER_AUDIT'] },
-  { vue: 'design', label: 'Design system', court: 'Design', icon: <Palette className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
 ];
 
 const destOf = (v: Vue) => DESTINATIONS.find((d) => d.vue === v)!;
@@ -101,7 +99,6 @@ function renderVue(vue: Vue, go: (v: string) => void, primaires: Vue[]): ReactNo
     case 'plafonds': return <Plafonds />;
     case 'vivier': return <Vivier />;
     case 'accueil': return <Accueil onOpen={go} primaires={primaires} />;
-    case 'design': return <DesignShowcase />;
     case 'tableau': return <Tableau />;
     case 'entreprises': return <Habilitations />;
     case 'listes': return <Listes />;
@@ -251,8 +248,8 @@ function CompteBouton() {
 }
 
 function ConnexionSheet({ onClose }: { onClose: () => void }) {
-  const [email, setEmail] = useState('demo@newheaven.ci');
-  const [mdp, setMdp] = useState('AtlasTrace2026');
+  const [email, setEmail] = useState('');
+  const [mdp, setMdp] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
 
@@ -299,7 +296,6 @@ function ConnexionSheet({ onClose }: { onClose: () => void }) {
         >
           {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />} Se connecter
         </button>
-        <p className="mt-3 text-center text-[11px] text-muted">Démo : <b className="text-ink">demo@newheaven.ci</b> · Direction du site</p>
       </div>
     </div>
   );
