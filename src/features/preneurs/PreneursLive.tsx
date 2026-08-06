@@ -226,7 +226,7 @@ function PreneurSheet({ onAnnuler, onCreer }: { onAnnuler: () => void; onCreer: 
         </label>
         <div className="mt-3 flex gap-2">
           <button onClick={() => setInterne(false)} className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${!interne ? 'border-forest-200 bg-forest-50 text-forest-700' : 'border-sand-300 bg-white text-muted'}`}>Externe</button>
-          <button onClick={() => setInterne(true)} className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${interne ? 'border-forest-200 bg-forest-50 text-forest-700' : 'border-sand-300 bg-white text-muted'}`}>Interne (service New Heaven)</button>
+          <button onClick={() => setInterne(true)} className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${interne ? 'border-forest-200 bg-forest-50 text-forest-700' : 'border-sand-300 bg-white text-muted'}`}>Interne (service de l’organisation)</button>
         </div>
         <Button variant="primary" size="lg" block className="mt-4" disabled={raison.trim().length < 2} onClick={() => onCreer(raison.trim(), interne)}>Créer le preneur</Button>
       </div>

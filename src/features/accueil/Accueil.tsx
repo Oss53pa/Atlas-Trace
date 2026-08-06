@@ -4,6 +4,7 @@ import {
   LayoutDashboard, AlertTriangle, ChevronRight, Wifi, Activity, Building2, BookText, Table2, Settings,
 } from 'lucide-react';
 import { useAuthz } from '../../lib/authz';
+import { useContexteSite } from '../../lib/contexte';
 import { chargerTableauBord, type TableauBord } from '../tableau/api';
 
 const alerteVue: Record<string, string> = {
@@ -31,6 +32,7 @@ export function Accueil({ onOpen, primaires }: { onOpen: (vue: string) => void; 
   // réservée aux comptes connectés qui consultent le tableau. Hors session,
   // aucun chiffre n'est affiché (pas de vitrine).
   const peutSuperviser = connecte && a('CONSULTER_TABLEAU');
+  const ctx = useContexteSite();
   const [tb, setTb] = useState<TableauBord | null>(null);
 
   const charger = useCallback(async () => {
@@ -90,7 +92,9 @@ export function Accueil({ onOpen, primaires }: { onOpen: (vue: string) => void; 
             <div className="min-w-0">
               <p className="text-xs font-medium capitalize text-white/60">{dateJour}</p>
               <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-white">Bonjour</h1>
-              <p className="truncate text-sm text-white/70">Chantier Cosmos Angré · New Heaven SA</p>
+              <p className="truncate text-sm text-white/70">
+                {ctx.site ? `${ctx.site}${ctx.organisation ? ` · ${ctx.organisation}` : ''}` : 'Contrôle d’accès de site'}
+              </p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 ring-1 ring-inset ring-white/15 backdrop-blur">
               <Wifi className="h-3.5 w-3.5" /> En ligne

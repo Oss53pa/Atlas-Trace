@@ -1,6 +1,5 @@
 import { Avatar } from '../../components/ui/Avatar';
 import { FakeQR } from './FakeQR';
-import { SITE } from '../../data/badges';
 
 export interface BadgeCardData {
   numero: string;
@@ -14,6 +13,9 @@ export interface BadgeCardData {
   zoneLabel: string;
   validite: string;
   accompagnateur?: string;
+  /** Organisation et site — lus du contexte connecté, jamais codés en dur. */
+  organisation: string;
+  site: string;
 }
 
 /**
@@ -64,13 +66,13 @@ export function BadgeCard({ data }: { data: BadgeCardData }) {
           <p className="mt-1.5 font-mono text-xs font-bold tracking-wide text-ink">{data.numero}</p>
         </div>
         <div className="shrink-0 rounded-lg border border-sand-200 p-1">
-          <FakeQR value={`${SITE.site}|${data.numero}`} size={72} />
+          <FakeQR value={`${data.site}|${data.numero}`} size={72} />
         </div>
       </div>
 
       {/* Mention légale au verso (info personnes, chap. 16) */}
       <div className="bg-sand-100 px-4 py-1.5 text-center text-[9px] leading-tight text-muted">
-        {SITE.organisation} · {SITE.site} — Données traitées à des fins de sûreté du site. Aucune
+        {data.organisation} · {data.site} — Données traitées à des fins de sûreté du site. Aucune
         biométrie. Photo = contrôle visuel.
       </div>
     </div>

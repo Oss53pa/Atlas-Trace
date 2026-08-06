@@ -3,6 +3,7 @@ import { Printer, CreditCard, Loader2, LogIn } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { BadgeCard, type BadgeCardData } from './BadgeCard';
 import { useAuthz } from '../../lib/authz';
+import { useContexteSite } from '../../lib/contexte';
 import { chargerBadgesNominatifs, type BadgeLive } from './api';
 
 const fmt = (iso?: string | null) => (iso ? iso.split('-').reverse().join('/') : '—');
@@ -17,6 +18,7 @@ const catDe = (c: string) => CAT[c] ?? { hex: '#0F5044', zone: c };
 
 export function BadgesNominatifs() {
   const { connecte, chargement: authEnCours } = useAuthz();
+  const ctx = useContexteSite();
   const [badges, setBadges] = useState<BadgeLive[]>([]);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -64,6 +66,8 @@ export function BadgesNominatifs() {
       categorieHex: c.hex,
       zoneLabel: c.zone,
       validite: `Induction éch. ${fmt(b.inductionEcheance)}`,
+      organisation: ctx.organisation ?? '—',
+      site: ctx.site ?? '—',
     };
   });
 
