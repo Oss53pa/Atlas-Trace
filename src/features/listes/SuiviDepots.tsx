@@ -84,7 +84,7 @@ export function SuiviDepots() {
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 rounded-full bg-sand-100 px-2 py-0.5 text-[11px] font-semibold text-muted ring-1 ring-sand-300">
-              Démo · connectez-vous pour le suivi réel
+              Aperçu · connectez-vous pour le suivi réel
             </span>
           )}
         </p>

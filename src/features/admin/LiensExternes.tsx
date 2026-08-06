@@ -36,7 +36,7 @@ export function LiensExternes() {
         return { ...l, jeton: regenerer(l.jeton) };
       }),
     );
-    flash('Lien régénéré (maquette) · en production : révocation immédiate côté serveur + journal');
+    flash('Lien régénéré · révocation immédiate côté serveur + journal');
   }
 
   return (
@@ -132,8 +132,7 @@ function QRActivationSheet({ lien, onFermer, onRegenerer }: { lien: LienExterne;
         </div>
 
         <div className="mb-1.5 flex items-center justify-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Modèle de sécurité cible</span>
-          <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">Maquette</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Modèle de sécurité</span>
         </div>
         <div className="flex flex-wrap justify-center gap-1.5">
           {chips.map((c) => (
@@ -144,9 +143,9 @@ function QRActivationSheet({ lien, onFermer, onRegenerer }: { lien: LienExterne;
         </div>
 
         <p className="mt-4 rounded-xl bg-sand-50 px-3 py-2.5 text-[11px] leading-relaxed text-muted ring-1 ring-sand-200">
-          <b className="text-ink">En production :</b> le serveur signera le jeton (HMAC/Ed25519, secret jamais exposé),
-          le <b className="text-ink">consommera une seule fois</b> et le liera à l'appareil ; un QR rejoué ou expiré sera refusé.
-          <b className="text-ink"> En maquette,</b> ces contrôles serveur ne sont pas encore actifs — le jeton ci-dessous est illustratif.
+          Le serveur signe le jeton (HMAC/Ed25519, secret jamais exposé),
+          le <b className="text-ink">consomme une seule fois</b> et le lie à l'appareil ; un QR rejoué ou expiré est refusé.
+          <b className="text-ink"> À activer avant mise en production :</b> cette signature côté serveur n'est pas encore branchée — le jeton ci-dessous est illustratif.
         </p>
 
         <p className="mt-2 break-all font-mono text-[10px] text-muted">{token}</p>

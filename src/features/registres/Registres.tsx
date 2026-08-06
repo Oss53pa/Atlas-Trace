@@ -107,7 +107,7 @@ export function Registres() {
             {live ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-forest-50 px-2 py-0.5 text-[11px] font-semibold text-forest-700 ring-1 ring-forest-200">Données réelles</span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-sand-100 px-2 py-0.5 text-[11px] font-semibold text-muted ring-1 ring-sand-300">Démo</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-sand-100 px-2 py-0.5 text-[11px] font-semibold text-muted ring-1 ring-sand-300">Aperçu</span>
             )}
           </p>
           <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Registres &amp; exports</h1>

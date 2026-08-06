@@ -59,8 +59,8 @@ function Centre({ children }: { children: React.ReactNode }) {
 }
 
 function Connexion() {
-  const [email, setEmail] = useState('demo@newheaven.ci');
-  const [mdp, setMdp] = useState('AtlasTrace2026');
+  const [email, setEmail] = useState('');
+  const [mdp, setMdp] = useState('');
   const [erreur, setErreur] = useState<string | null>(null);
   const [charge, setCharge] = useState(false);
 
@@ -88,7 +88,6 @@ function Connexion() {
         <Button variant="primary" block className="mt-4" disabled={charge} icon={charge ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />} onClick={connecter}>
           {charge ? 'Connexion…' : 'Se connecter'}
         </Button>
-        <p className="mt-3 text-center text-[11px] text-muted">Compte de démonstration pré-rempli · New Heaven SA</p>
       </div>
     </div>
   );

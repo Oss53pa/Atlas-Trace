@@ -62,7 +62,7 @@ export function CommentCaMarche({ primaires, onClose }: { primaires: { court: st
   const { pouvoirs, connecte } = useAuthz();
   const intro = connecte
     ? FAMILLE_INTRO[familleDe(pouvoirs)]
-    : { titre: 'Découverte', texte: 'Vous explorez Atlas Trace en démonstration : toutes les interfaces sont visibles.' };
+    : { titre: 'Découverte', texte: 'Vous parcourez Atlas Trace sans être connecté : toutes les interfaces sont visibles en aperçu.' };
   // Ordonné selon le catalogue ; repli sur le libellé « effet » si pas de phrase dédiée.
   const lignes = POUVOIRS.filter((p) => pouvoirs.has(p.code)).map((p) => POUVOIR_AIDE[p.code] ?? p.effet);
 
@@ -92,7 +92,7 @@ export function CommentCaMarche({ primaires, onClose }: { primaires: { court: st
 
         {!connecte && (
           <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
-            Mode démonstration : vous voyez toutes les interfaces. Une fois connecté, l’application n’affiche que ce que votre rôle autorise.
+            Aperçu (non connecté) : vous voyez toutes les interfaces. Une fois connecté, l’application n’affiche que ce que votre rôle autorise.
           </p>
         )}
 

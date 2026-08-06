@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import {
-  Building2, Plus, Check, X, ShieldCheck, ArrowRight, AlertTriangle, Loader2, Cloud, LogIn, Link2, Ban,
+  Building2, Plus, Check, X, ShieldCheck, ArrowRight, AlertTriangle, Loader2, Cloud, Link2, Ban,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -40,23 +40,11 @@ export function EntreprisesLive() {
 }
 
 function ConnexionRequise() {
-  const [charge, setCharge] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  async function connecter() {
-    setCharge(true); setErr(null);
-    const { error } = await supabase.auth.signInWithPassword({ email: 'demo@newheaven.ci', password: 'AtlasTrace2026' });
-    if (error) setErr(error.message);
-    setCharge(false);
-  }
   return (
     <div className="mx-auto max-w-md px-5 py-16 text-center">
       <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-forest-50 text-forest-600"><Cloud className="h-6 w-6" /></div>
-      <h2 className="text-lg font-extrabold text-ink">Écran branché sur Supabase</h2>
-      <p className="mt-1 text-sm text-muted">Les entreprises sont lues et écrites en direct, sous RLS. Connectez-vous pour continuer.</p>
-      {err && <p className="mt-3 text-xs font-semibold text-danger-600">{err}</p>}
-      <Button variant="primary" className="mx-auto mt-4" disabled={charge} icon={charge ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />} onClick={connecter}>
-        Se connecter (compte démo)
-      </Button>
+      <h2 className="text-lg font-extrabold text-ink">Connexion requise</h2>
+      <p className="mt-1 text-sm text-muted">Les entreprises sont lues et écrites en direct, sous RLS. Connectez-vous via le bouton en haut de l'écran pour continuer.</p>
     </div>
   );
 }
