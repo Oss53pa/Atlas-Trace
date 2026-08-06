@@ -4,10 +4,10 @@
  * On ne met JAMAIS en cache les appels Supabase (auth/RLS/edge) : toujours le réseau. */
 // Le numéro de version force le remplacement du service worker et la purge des
 // anciens caches à chaque évolution : les appareils reçoivent la mise à jour.
-const CACHE = 'atlas-trace-v2';
+const CACHE = 'atlas-trace-v3';
 // On NE précache PAS le HTML (/, /index.html) : la navigation est toujours
 // network-first, jamais une page d'app périmée servie depuis le cache.
-const APP_SHELL = ['/manifest.webmanifest', '/icon.svg', '/pwa-192.png', '/pwa-512.png'];
+const APP_SHELL = ['/manifest.webmanifest', '/icon.svg', '/pwa-192-v2.png', '/pwa-512-v2.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(APP_SHELL)).then(() => self.skipWaiting()));
@@ -76,8 +76,8 @@ self.addEventListener('push', (e) => {
   e.waitUntil(
     self.registration.showNotification(d.titre, {
       body: d.corps,
-      icon: '/pwa-192.png',
-      badge: '/favicon-32.png',
+      icon: '/pwa-192-v2.png',
+      badge: '/favicon-32-v2.png',
       tag: d.id ? `incident-${d.id}` : 'incident',
       renotify: majeur,
       requireInteraction: majeur,
