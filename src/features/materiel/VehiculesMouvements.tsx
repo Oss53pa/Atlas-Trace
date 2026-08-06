@@ -16,6 +16,7 @@ import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
 import { PhotoCapture } from '../../components/device/PhotoCapture';
 import { useAuthz } from '../../lib/authz';
+import { lirePlaque } from '../../lib/ocr';
 import { useEntreprises } from './referentiel';
 import {
   chargerVehicules,
@@ -483,7 +484,20 @@ function VehiculeSheet({
   const [immatriculation, setImmatriculation] = useState('');
   const [type, setType] = useState('Benne');
   const [chauffeur, setChauffeur] = useState('');
+  const [ocr, setOcr] = useState<{ enCours: boolean; msg: string | null }>({ enCours: false, msg: null });
   const pret = entrepriseId && immatriculation.trim().length > 0;
+
+  async function scannerPlaque(dataUrl: string) {
+    setOcr({ enCours: true, msg: 'Lecture de la plaque…' });
+    try {
+      const p = await lirePlaque(dataUrl);
+      if (p) setOcr({ enCours: false, msg: `Plaque lue : ${p} — vérifiez et corrigez si besoin.` });
+      else setOcr({ enCours: false, msg: 'Plaque illisible — saisissez-la manuellement.' });
+      if (p) setImmatriculation(p);
+    } catch {
+      setOcr({ enCours: false, msg: 'Lecture impossible — saisissez la plaque manuellement.' });
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
@@ -515,6 +529,10 @@ function VehiculeSheet({
                 {['Benne', 'Camion', 'Utilitaire', 'Véhicule léger'].map((t) => <option key={t}>{t}</option>)}
               </select>
             </label>
+          </div>
+          <div>
+            <PhotoCapture label={ocr.enCours ? 'Lecture en cours…' : 'Scanner la plaque (photo → immatriculation)'} onCapture={scannerPlaque} />
+            {ocr.msg && <p className={`mt-1 text-[11px] font-medium ${ocr.enCours ? 'text-muted' : 'text-forest-700'}`}>{ocr.msg}</p>}
           </div>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-muted">Chauffeur</span>
