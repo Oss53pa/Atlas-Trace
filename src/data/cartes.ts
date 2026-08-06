@@ -70,15 +70,14 @@ export const PROFILS: Profil[] = [
     cartes: ['presence', 'suivi_activations', 'entites', 'conditions', 'anomalies_flux', 'refus', 'qualite', 'exports', 'audit', 'parametrage'],
     note: 'Administratrice de son organisation et de ses sites — pas administratrice racine de l’application (§5.3).' },
   { id: 'moe', nom: 'Maîtrise d’œuvre', typeEntite: 'Maître d’œuvre', portee: 'Site', acces: 'INTERNE', invitePar: 'Maîtrise d’ouvrage',
-    cartes: ['presence', 'hab_appro', 'sortie_appro', 'ecarts', 'materiel_retard', 'anomalies_veh', 'exports'] },
-  { id: 'hse', nom: 'HSE', typeEntite: 'HSE', portee: 'Site', acces: 'INTERNE', invitePar: 'Maîtrise d’ouvrage',
+    cartes: ['presence', 'hab_appro', 'sortie_appro', 'ecarts', 'materiel_retard', 'anomalies_veh', 'creneaux', 'preavis', 'exports'],
+    note: 'Porte aussi la coordination : le « pilote de coordination » est la Maîtrise d’œuvre elle-même (créneaux et préavis), pas une entité distincte.' },
+  { id: 'hse', nom: 'HSE Officer', typeEntite: 'Maître d’ouvrage', portee: 'Site', acces: 'INTERNE', invitePar: null,
     cartes: ['hab_visa', 'sortie_visa', 'parc', 'refus', 'main_courante', 'exports'],
-    note: 'Rôle attribuable à n’importe quelle entité (salarié MOA, cabinet indépendant, service MOE) — §3.2.' },
+    note: 'Rôle interne porté par un salarié de la Maîtrise d’ouvrage (visa habilitation & sortie) — §3.2.' },
   { id: 'gardiennage', nom: 'Prestataire de gardiennage', typeEntite: 'Prestataire de gardiennage', portee: 'Postes affectés', acces: 'INTERNE', invitePar: 'Maîtrise d’ouvrage',
     cartes: ['poste', 'badges_temp', 'registres_jour', 'main_courante', 'cles'],
     note: 'Aucune carte de matière ni d’export consolidé — minimisation des données (§5.1).' },
-  { id: 'pilote', nom: 'Pilote de coordination', typeEntite: 'Pilote', portee: 'Site', acces: 'INTERNE', invitePar: 'Maîtrise d’ouvrage',
-    cartes: ['creneaux', 'preavis', 'presence'] },
   { id: 'referent', nom: 'Entreprise d’exécution — référent', typeEntite: 'Entreprise d’exécution', portee: 'Entité (site ou lot)', acces: 'LIEN', invitePar: 'Maîtrise d’ouvrage',
     cartes: ['registres_jour', 'lignes_attente', 'vivier', 'demandes_badges', 'parc', 'sortie_demande', 'preavis'] },
   { id: 'representant', nom: 'Entreprise d’exécution — représentant', typeEntite: 'Entreprise d’exécution', portee: 'Entité', acces: 'LIEN', invitePar: 'Maîtrise d’ouvrage',
@@ -100,7 +99,9 @@ export const FONCTIONS_ACCES = [
 ];
 
 /** §3.5 — types d'entité livrés en standard (extensibles sans développement). */
+// « HSE » (rôle d'un salarié MOA) et « Pilote de coordination » (rôle porté par
+// la MOE) ne sont pas des types d'entité : ce sont des rôles, pas des acteurs distincts.
 export const TYPES_ENTITE = [
-  'Maître d’ouvrage', 'Maître d’œuvre', 'HSE', 'Prestataire de gardiennage', 'Pilote de coordination',
+  'Maître d’ouvrage', 'Maître d’œuvre', 'Prestataire de gardiennage',
   'Entreprise d’exécution', 'Preneur', 'Bureau de contrôle', 'Fournisseur', 'Visiteur',
 ];
