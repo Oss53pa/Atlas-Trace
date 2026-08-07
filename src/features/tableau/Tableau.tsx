@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
   Minus,
   LogOut,
+  ChevronRight,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Donut, ColumnChart, BarEffectif, Sparkline } from './charts';
@@ -53,9 +54,11 @@ interface Kpi {
   icon: React.ReactNode;
   trend?: { actuel: number; precedent: number; neutre?: boolean };
   spark?: number[];
+  /** Vue de détail ouverte au clic. */
+  lien?: string;
 }
 
-export function Tableau() {
+export function Tableau({ onOpen }: { onOpen?: (v: string) => void }) {
   const { connecte, chargement: authEnCours } = useAuthz();
   const [tb, setTb] = useState<TableauBord | null>(null);
   const [chargement, setChargement] = useState(true);
@@ -95,26 +98,26 @@ export function Tableau() {
 
     if (role === 'poste') {
       return [
-        { id: 'presents', label: 'Présents sur site', value: tb.present, unit: `/ ${tb.declare} déclarés`, tone: 'forest', icon: <Users className="h-5 w-5" /> },
-        { id: 'refus', label: `Refus (${sfx})`, value: tb.controles.refus, tone: 'danger', icon: <XCircle className="h-5 w-5" />, trend: { actuel: tb.controles.refus, precedent: p.refus }, spark: sRefus },
-        { id: 'forcages', label: `Forçages (${sfx})`, value: tb.controles.forcages, tone: 'amber', icon: <ShieldAlert className="h-5 w-5" />, trend: { actuel: tb.controles.forcages, precedent: p.forcages } },
-        { id: 'badges', label: 'Badges actifs', value: tb.badges_actifs, tone: 'plain', icon: <CreditCard className="h-5 w-5" /> },
+        { id: 'presents', label: 'Présents sur site', value: tb.present, unit: `/ ${tb.declare} déclarés`, tone: 'forest', icon: <Users className="h-5 w-5" />, lien: 'listes' },
+        { id: 'refus', label: `Refus (${sfx})`, value: tb.controles.refus, tone: 'danger', icon: <XCircle className="h-5 w-5" />, trend: { actuel: tb.controles.refus, precedent: p.refus }, spark: sRefus, lien: 'registres' },
+        { id: 'forcages', label: `Forçages (${sfx})`, value: tb.controles.forcages, tone: 'amber', icon: <ShieldAlert className="h-5 w-5" />, trend: { actuel: tb.controles.forcages, precedent: p.forcages }, lien: 'registres' },
+        { id: 'badges', label: 'Badges actifs', value: tb.badges_actifs, tone: 'plain', icon: <CreditCard className="h-5 w-5" />, lien: 'personnes' },
       ];
     }
     if (role === 'hse') {
       return [
-        { id: 'presents', label: 'Présents sur site', value: tb.present, unit: `/ ${tb.declare} déclarés`, tone: 'forest', icon: <Users className="h-5 w-5" /> },
-        { id: 'incidents', label: `Incidents (${sfx})`, value: tb.incidents.total, tone: 'danger', icon: <FileWarning className="h-5 w-5" />, trend: { actuel: tb.incidents.total, precedent: p.incidents } },
-        { id: 'majeurs', label: 'Majeurs ouverts', value: tb.incidents.majeurs, tone: 'amber', icon: <ShieldAlert className="h-5 w-5" /> },
-        { id: 'anomalies', label: `Anomalies (${sfx})`, value: tb.anomalies.total, tone: 'amber', icon: <Activity className="h-5 w-5" />, trend: { actuel: tb.anomalies.total, precedent: p.anomalies }, spark: sRefus },
+        { id: 'presents', label: 'Présents sur site', value: tb.present, unit: `/ ${tb.declare} déclarés`, tone: 'forest', icon: <Users className="h-5 w-5" />, lien: 'listes' },
+        { id: 'incidents', label: `Incidents (${sfx})`, value: tb.incidents.total, tone: 'danger', icon: <FileWarning className="h-5 w-5" />, trend: { actuel: tb.incidents.total, precedent: p.incidents }, lien: 'maincourante' },
+        { id: 'majeurs', label: 'Majeurs ouverts', value: tb.incidents.majeurs, tone: 'amber', icon: <ShieldAlert className="h-5 w-5" />, lien: 'maincourante' },
+        { id: 'anomalies', label: `Anomalies (${sfx})`, value: tb.anomalies.total, tone: 'amber', icon: <Activity className="h-5 w-5" />, trend: { actuel: tb.anomalies.total, precedent: p.anomalies }, spark: sRefus, lien: 'maincourante' },
       ];
     }
     // direction
     return [
-      { id: 'presents', label: 'Présents sur site', value: tb.present, unit: `/ ${tb.declare} déclarés`, tone: 'forest', icon: <Users className="h-5 w-5" /> },
-      { id: 'entrees', label: `Entrées (${sfx})`, value: tb.entrees, tone: 'plain', icon: <Users className="h-5 w-5" />, trend: { actuel: tb.entrees, precedent: p.entrees, neutre: true }, spark: sEntrees },
-      { id: 'ecart', label: 'Écart déclaré / entré', value: tb.ecart, tone: 'amber', icon: <UserMinus className="h-5 w-5" /> },
-      { id: 'anomalies', label: `Anomalies (${sfx})`, value: tb.anomalies.total, tone: 'danger', icon: <Activity className="h-5 w-5" />, trend: { actuel: tb.anomalies.total, precedent: p.anomalies } },
+      { id: 'presents', label: 'Présents sur site', value: tb.present, unit: `/ ${tb.declare} déclarés`, tone: 'forest', icon: <Users className="h-5 w-5" />, lien: 'listes' },
+      { id: 'entrees', label: `Entrées (${sfx})`, value: tb.entrees, tone: 'plain', icon: <Users className="h-5 w-5" />, trend: { actuel: tb.entrees, precedent: p.entrees, neutre: true }, spark: sEntrees, lien: 'registres' },
+      { id: 'ecart', label: 'Écart déclaré / entré', value: tb.ecart, tone: 'amber', icon: <UserMinus className="h-5 w-5" />, lien: 'listes' },
+      { id: 'anomalies', label: `Anomalies (${sfx})`, value: tb.anomalies.total, tone: 'danger', icon: <Activity className="h-5 w-5" />, trend: { actuel: tb.anomalies.total, precedent: p.anomalies }, lien: 'maincourante' },
     ];
   }, [tb, role, sfx]);
 
@@ -154,11 +157,11 @@ export function Tableau() {
   const totalControles = tb.controles.autorises + tb.controles.refus + tb.controles.forcages;
   const fluxTotal = tb.serie.reduce((s, p) => s + p.entrees + p.sorties, 0);
 
-  const alertes: { cle: string; libelle: string; valeur: number; ton: 'amber' | 'danger' | 'forest' }[] = [
-    { cle: 'listes', libelle: 'Entreprises sans registre', valeur: tb.entreprises_sans_liste, ton: tb.entreprises_sans_liste > 0 ? 'danger' : 'forest' },
-    { cle: 'sorties', libelle: 'Autorisations de sortie en attente', valeur: tb.sorties_attente, ton: tb.sorties_attente > 0 ? 'amber' : 'forest' },
-    { cle: 'incidents', libelle: 'Incidents ouverts', valeur: tb.incidents.ouverts, ton: tb.incidents.ouverts > 0 ? 'danger' : 'forest' },
-    { cle: 'preavis', libelle: 'Préavis de livraison du jour', valeur: tb.preavis_jour, ton: 'forest' },
+  const alertes: { cle: string; libelle: string; valeur: number; ton: 'amber' | 'danger' | 'forest'; vue: string }[] = [
+    { cle: 'listes', libelle: 'Entreprises sans registre', valeur: tb.entreprises_sans_liste, ton: tb.entreprises_sans_liste > 0 ? 'danger' : 'forest', vue: 'listes' },
+    { cle: 'sorties', libelle: 'Autorisations de sortie en attente', valeur: tb.sorties_attente, ton: tb.sorties_attente > 0 ? 'amber' : 'forest', vue: 'materiel' },
+    { cle: 'incidents', libelle: 'Incidents ouverts', valeur: tb.incidents.ouverts, ton: tb.incidents.ouverts > 0 ? 'danger' : 'forest', vue: 'maincourante' },
+    { cle: 'preavis', libelle: 'Préavis de livraison du jour', valeur: tb.preavis_jour, ton: 'forest', vue: 'materiel' },
   ];
 
   return (
@@ -213,7 +216,7 @@ export function Tableau() {
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {kpis.map((k) => (
-            <KpiCard key={k.id} kpi={k} />
+            <KpiCard key={k.id} kpi={k} onOpen={onOpen} />
           ))}
         </div>
 
@@ -255,10 +258,10 @@ export function Tableau() {
         {(estDir || estHse) && (
           <Panneau titre="Ressources & incidents" className="mt-4" icon={<Boxes className="h-4 w-4 text-forest-500" />}>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <RessourceItem icon={<FileWarning className="h-4 w-4" />} label="Incidents ouverts" value={tb.incidents.ouverts} sub={`${tb.incidents.majeurs} majeur(s)`} alerte={tb.incidents.ouverts > 0} />
-              <RessourceItem icon={<Boxes className="h-4 w-4" />} label="Dotations présentes" value={tb.dotations.quantite} sub={`${tb.dotations.entreprises} entreprise(s)`} />
-              <RessourceItem icon={<KeyRound className="h-4 w-4" />} label="Clés sorties" value={tb.cles.sorties} sub={`sur ${tb.cles.total}`} alerte={tb.cles.sorties > 0} />
-              <RessourceItem icon={<Truck className="h-4 w-4" />} label="Préavis livraison (jour)" value={tb.preavis_jour} />
+              <RessourceItem icon={<FileWarning className="h-4 w-4" />} label="Incidents ouverts" value={tb.incidents.ouverts} sub={`${tb.incidents.majeurs} majeur(s)`} alerte={tb.incidents.ouverts > 0} onOuvrir={() => onOpen?.('maincourante')} />
+              <RessourceItem icon={<Boxes className="h-4 w-4" />} label="Dotations présentes" value={tb.dotations.quantite} sub={`${tb.dotations.entreprises} entreprise(s)`} onOuvrir={() => onOpen?.('materiel')} />
+              <RessourceItem icon={<KeyRound className="h-4 w-4" />} label="Clés sorties" value={tb.cles.sorties} sub={`sur ${tb.cles.total}`} alerte={tb.cles.sorties > 0} onOuvrir={() => onOpen?.('cles')} />
+              <RessourceItem icon={<Truck className="h-4 w-4" />} label="Préavis livraison (jour)" value={tb.preavis_jour} onOuvrir={() => onOpen?.('materiel')} />
             </div>
           </Panneau>
         )}
@@ -298,10 +301,10 @@ export function Tableau() {
           {estPoste && (
             <Panneau titre="Clés & préavis" icon={<KeyRound className="h-4 w-4 text-forest-500" />}>
               <div className="grid grid-cols-2 gap-3">
-                <RessourceItem icon={<KeyRound className="h-4 w-4" />} label="Clés sorties" value={tb.cles.sorties} sub={`sur ${tb.cles.total}`} alerte={tb.cles.sorties > 0} />
-                <RessourceItem icon={<LogOut className="h-4 w-4" />} label="Sorties en attente" value={tb.sorties_attente} alerte={tb.sorties_attente > 0} />
-                <RessourceItem icon={<Truck className="h-4 w-4" />} label="Préavis du jour" value={tb.preavis_jour} />
-                <RessourceItem icon={<PackageCheck className="h-4 w-4" />} label="Badges actifs" value={tb.badges_actifs} />
+                <RessourceItem icon={<KeyRound className="h-4 w-4" />} label="Clés sorties" value={tb.cles.sorties} sub={`sur ${tb.cles.total}`} alerte={tb.cles.sorties > 0} onOuvrir={() => onOpen?.('cles')} />
+                <RessourceItem icon={<LogOut className="h-4 w-4" />} label="Sorties en attente" value={tb.sorties_attente} alerte={tb.sorties_attente > 0} onOuvrir={() => onOpen?.('materiel')} />
+                <RessourceItem icon={<Truck className="h-4 w-4" />} label="Préavis du jour" value={tb.preavis_jour} onOuvrir={() => onOpen?.('materiel')} />
+                <RessourceItem icon={<PackageCheck className="h-4 w-4" />} label="Badges actifs" value={tb.badges_actifs} onOuvrir={() => onOpen?.('personnes')} />
               </div>
             </Panneau>
           )}
@@ -309,9 +312,17 @@ export function Tableau() {
           <Panneau titre="Alertes du jour" icon={<BellRing className="h-4 w-4 text-amber-500" />} className={estHse ? 'lg:col-span-2' : ''}>
             <ul className="space-y-2">
               {alertes.map((a) => (
-                <li key={a.cle} className="flex items-center justify-between rounded-xl bg-sand-50 px-3 py-2.5 ring-1 ring-sand-200">
-                  <span className="text-sm font-medium text-ink">{a.libelle}</span>
-                  <Badge tone={a.ton} dot>{a.valeur}</Badge>
+                <li key={a.cle}>
+                  <button
+                    onClick={() => onOpen?.(a.vue)}
+                    className="group flex w-full items-center justify-between rounded-xl bg-sand-50 px-3 py-2.5 text-left ring-1 ring-sand-200 transition-colors hover:bg-sand-100"
+                  >
+                    <span className="text-sm font-medium text-ink">{a.libelle}</span>
+                    <span className="flex items-center gap-1.5">
+                      <Badge tone={a.ton} dot>{a.valeur}</Badge>
+                      <ChevronRight className="h-4 w-4 text-muted transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -322,9 +333,9 @@ export function Tableau() {
         {(estDir || estHse) && (
           <Panneau titre={`Anomalies de flux (${sfx})`} className="mt-4" icon={<Activity className="h-4 w-4 text-forest-500" />}>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <AnomalieItem icon={<Truck className="h-4 w-4" />} label="Véhicules (entré vide → chargé)" value={tb.anomalies.vehicules} />
-              <AnomalieItem icon={<Trash2 className="h-4 w-4" />} label="Contrôles d'évacuation" value={tb.anomalies.evacuations} />
-              <AnomalieItem icon={<XCircle className="h-4 w-4" />} label="Sorties refusées faute de couverture" value={tb.anomalies.sorties_refusees} />
+              <AnomalieItem icon={<Truck className="h-4 w-4" />} label="Véhicules (entré vide → chargé)" value={tb.anomalies.vehicules} onOuvrir={() => onOpen?.('materiel')} />
+              <AnomalieItem icon={<Trash2 className="h-4 w-4" />} label="Contrôles d'évacuation" value={tb.anomalies.evacuations} onOuvrir={() => onOpen?.('materiel')} />
+              <AnomalieItem icon={<XCircle className="h-4 w-4" />} label="Sorties refusées faute de couverture" value={tb.anomalies.sorties_refusees} onOuvrir={() => onOpen?.('materiel')} />
             </div>
             <p className="mt-3 text-[11px] text-muted">On ne compte pas les objets, on compte les mouvements. Chiffres réels de la période, bornés à l'organisation.</p>
           </Panneau>
@@ -361,36 +372,50 @@ function Tendance({ actuel, precedent, neutre, clair }: { actuel: number; preced
   );
 }
 
-function AnomalieItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+function AnomalieItem({ icon, label, value, onOuvrir }: { icon: React.ReactNode; label: string; value: number; onOuvrir?: () => void }) {
   const alerte = value > 0;
+  const cliquable = !!onOuvrir;
   return (
-    <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ring-1 ${alerte ? 'bg-amber-50 ring-amber-200' : 'bg-sand-50 ring-sand-200'}`}>
+    <button
+      type="button"
+      onClick={onOuvrir}
+      disabled={!cliquable}
+      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left ring-1 ${alerte ? 'bg-amber-50 ring-amber-200' : 'bg-sand-50 ring-sand-200'} ${cliquable ? 'transition-colors hover:brightness-[0.98]' : 'cursor-default'}`}
+    >
       <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${alerte ? 'bg-amber-500 text-ink' : 'bg-white text-muted ring-1 ring-sand-200'}`}>
         {icon}
       </span>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-lg font-extrabold tracking-tight text-ink">{value}</p>
         <p className="truncate text-[11px] text-muted">{label}</p>
       </div>
-    </div>
+      {cliquable && <ChevronRight className="h-4 w-4 shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />}
+    </button>
   );
 }
 
-function RessourceItem({ icon, label, value, sub, alerte }: { icon: React.ReactNode; label: string; value: number; sub?: string; alerte?: boolean }) {
+function RessourceItem({ icon, label, value, sub, alerte, onOuvrir }: { icon: React.ReactNode; label: string; value: number; sub?: string; alerte?: boolean; onOuvrir?: () => void }) {
+  const cliquable = !!onOuvrir;
   return (
-    <div className={`rounded-xl px-3 py-3 ring-1 ${alerte ? 'bg-amber-50 ring-amber-200' : 'bg-sand-50 ring-sand-200'}`}>
+    <button
+      type="button"
+      onClick={onOuvrir}
+      disabled={!cliquable}
+      className={`group relative rounded-xl px-3 py-3 text-left ring-1 ${alerte ? 'bg-amber-50 ring-amber-200' : 'bg-sand-50 ring-sand-200'} ${cliquable ? 'transition-colors hover:brightness-[0.98]' : 'cursor-default'}`}
+    >
       <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${alerte ? 'bg-amber-500 text-ink' : 'bg-white text-forest-600 ring-1 ring-sand-200'}`}>
         {icon}
       </span>
+      {cliquable && <ChevronRight className="absolute right-2.5 top-3 h-4 w-4 text-muted transition-transform group-hover:translate-x-0.5" />}
       <p className="mt-2 text-2xl font-extrabold leading-none tracking-tight text-ink">{value}</p>
       <p className="mt-1 text-[11px] font-medium text-muted">{label}</p>
       {sub && <p className="text-[11px] text-muted/80">{sub}</p>}
-    </div>
+    </button>
   );
 }
 
-function KpiCard({ kpi }: { kpi: Kpi }) {
-  const { label, value, unit, tone, icon, trend, spark } = kpi;
+function KpiCard({ kpi, onOpen }: { kpi: Kpi; onOpen?: (v: string) => void }) {
+  const { label, value, unit, tone, icon, trend, spark, lien } = kpi;
   const bg: Record<Tone, string> = {
     forest: 'bg-forest-500 text-white',
     amber: 'bg-amber-500 text-ink',
@@ -399,8 +424,9 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
   };
   const inverted = tone !== 'plain';
   const sparkColor = inverted ? 'rgba(255,255,255,0.85)' : '#5C6B12';
-  return (
-    <div className={`flex flex-col rounded-2xl border border-sand-300/50 p-5 shadow-card ${bg[tone]}`}>
+  const cliquable = !!(lien && onOpen);
+  const contenu = (
+    <>
       <div className="flex items-start justify-between">
         <p className={`text-sm font-medium ${inverted ? 'text-white/85' : 'text-muted'}`}>{label}</p>
         <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${inverted ? 'bg-white/20' : 'bg-forest-50 text-forest-600'}`}>
@@ -417,8 +443,22 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
           <Sparkline data={spark} color={sparkColor} />
         </div>
       )}
-    </div>
+      {cliquable && (
+        <span className={`mt-2 inline-flex items-center gap-1 text-[11px] font-semibold ${inverted ? 'text-white/75' : 'text-forest-600'}`}>
+          Voir le détail <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </span>
+      )}
+    </>
   );
+  const cls = `flex flex-col rounded-2xl border border-sand-300/50 p-5 shadow-card ${bg[tone]}`;
+  if (cliquable) {
+    return (
+      <button type="button" onClick={() => onOpen!(lien!)} className={`group text-left transition-all hover:-translate-y-0.5 hover:shadow-card-lg ${cls}`}>
+        {contenu}
+      </button>
+    );
+  }
+  return <div className={cls}>{contenu}</div>;
 }
 
 function Panneau({ titre, icon, className, children }: { titre: string; icon?: React.ReactNode; className?: string; children: React.ReactNode }) {

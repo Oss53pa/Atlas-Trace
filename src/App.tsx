@@ -39,6 +39,7 @@ const InvitationsLive = lazy(() => import('./features/admin/InvitationsLive').th
 const PersonnesLive = lazy(() => import('./features/badges/PersonnesLive').then((m) => ({ default: m.PersonnesLive })));
 const Cloture = lazy(() => import('./features/cloture/Cloture').then((m) => ({ default: m.Cloture })));
 const InscriptionPortail = lazy(() => import('./features/inscription/InscriptionPortail').then((m) => ({ default: m.InscriptionPortail })));
+const LandingPage = lazy(() => import('./features/landing/LandingPage').then((m) => ({ default: m.LandingPage })));
 const Plafonds = lazy(() => import('./features/plafonds/Plafonds').then((m) => ({ default: m.Plafonds })));
 const Vivier = lazy(() => import('./features/vivier/Vivier').then((m) => ({ default: m.Vivier })));
 const ConfigurationChantier = lazy(() => import('./features/configuration/ConfigurationChantier').then((m) => ({ default: m.ConfigurationChantier })));
@@ -116,7 +117,7 @@ function renderVue(vue: Vue, go: (v: string) => void, primaires: Vue[]): ReactNo
     case 'plafonds': return <Plafonds />;
     case 'vivier': return <Vivier />;
     case 'accueil': return <Accueil onOpen={go} primaires={primaires} />;
-    case 'tableau': return <Tableau />;
+    case 'tableau': return <Tableau onOpen={go} />;
     case 'entreprises': return <Habilitations />;
     case 'listes': return <Listes />;
     case 'badges': return <Badges />;
@@ -150,6 +151,17 @@ export default function App() {
   );
   const [more, setMore] = useState(false);
   const [aide, setAide] = useState(false);
+  // Landing publique (modèle des produits Atlas Studio) : on montre la page de
+  // présentation aux visiteurs web, et on ouvre la connexion à la demande. En PWA
+  // installée (écran d'accueil) ou via ?app / ?vue, on va droit à l'application.
+  const [montrerConnexion, setMontrerConnexion] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.has('app') || p.has('vue') || p.has('r')) return true;
+    const standalone =
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    return Boolean(standalone);
+  });
   const { connecte, pouvoirs, chargement } = useAuthz();
 
   // Interface par rôle : hors session on montre tout (démo) ; connecté, on ne
@@ -203,10 +215,18 @@ export default function App() {
       </Suspense>
     );
 
-  // Mur d'authentification : on attend la vérification de session (pas de flash),
-  // puis on exige la connexion avant tout accès à l'application.
+  // Mur d'authentification : on attend la vérification de session (pas de flash).
+  // Hors session, on présente la landing publique ; « Accéder » ouvre la connexion.
   if (chargement) return <EcranChargement />;
-  if (!connecte) return <EcranConnexion />;
+  if (!connecte) {
+    return montrerConnexion ? (
+      <EcranConnexion onRetour={() => setMontrerConnexion(false)} />
+    ) : (
+      <Suspense fallback={<EcranChargement />}>
+        <LandingPage onEntrer={() => setMontrerConnexion(true)} />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-sand-100">
@@ -240,7 +260,7 @@ function EcranChargement() {
 }
 
 /* ---------- Mur d'authentification (plein écran) ---------- */
-function EcranConnexion() {
+function EcranConnexion({ onRetour }: { onRetour?: () => void }) {
   const [email, setEmail] = useState('');
   const [mdp, setMdp] = useState('');
   const [err, setErr] = useState<string | null>(null);
@@ -325,7 +345,12 @@ function EcranConnexion() {
           </button>
         </div>
 
-        <p className="mt-6 text-center text-xs text-white/50">Atlas Trace · accès réservé au personnel habilité</p>
+        {onRetour && (
+          <button onClick={onRetour} className="mt-6 block w-full text-center text-xs font-semibold text-white/60 transition-colors hover:text-white/90">
+            ← Retour à la présentation
+          </button>
+        )}
+        <p className="mt-4 text-center text-xs text-white/50">Atlas Trace · accès réservé au personnel habilité</p>
       </div>
     </div>
   );
