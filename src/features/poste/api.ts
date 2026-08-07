@@ -18,6 +18,24 @@ export interface Poste {
   agentLabel: string;
 }
 
+/** Une porte d'accès (poste de contrôle) du site, pour le sélecteur et la gestion. */
+export interface PosteItem {
+  id: string;
+  libelle: string;
+  zoneControlee: string | null;
+  empriseControlee: string | null;
+  statut: 'ACTIF' | 'INACTIF';
+}
+
+/** Porte choisie sur CET appareil (l'agent déclare la porte qu'il tient). */
+const CLE_PORTE = 'at_poste_actif';
+export const porteActiveId = (): string | null => {
+  try { return localStorage.getItem(CLE_PORTE); } catch { return null; }
+};
+export const definirPorteActive = (id: string): void => {
+  try { localStorage.setItem(CLE_PORTE, id); } catch { /* stockage indisponible */ }
+};
+
 /** Verdict rendu par le serveur. Les champs d'identité servent au contrôle visuel. */
 export interface Verdict {
   resultat: 'AUTORISE' | 'REFUSE';
@@ -55,31 +73,70 @@ export interface Passage {
 const heure = (iso: string) =>
   new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
-/** Poste actif du site + nom de l'agent connecté (pour l'en-tête et la trace). */
-export async function chargerPoste(): Promise<Poste> {
-  const { data, error } = await supabase
+/** Portes d'accès du site (postes de contrôle). Actives par défaut. */
+export async function chargerPostes(inclureInactifs = false): Promise<PosteItem[]> {
+  let req = supabase
     .from('at_postes')
-    .select('id, libelle, site:at_sites(libelle)')
-    .eq('statut', 'ACTIF')
-    .limit(1)
-    .maybeSingle();
+    .select('id, libelle, zone_controlee, emprise_controlee, statut')
+    .order('libelle');
+  if (!inclureInactifs) req = req.eq('statut', 'ACTIF');
+  const { data, error } = await req;
   if (error) throw new Error(error.message);
-  if (!data) throw new Error('Aucun poste de contrôle configuré pour ce site.');
+  return (data ?? []).map((p) => ({
+    id: p.id,
+    libelle: p.libelle,
+    zoneControlee: p.zone_controlee,
+    empriseControlee: p.emprise_controlee,
+    statut: p.statut as PosteItem['statut'],
+  }));
+}
+
+/**
+ * Porte de contrôle courante + agent connecté (en-tête et trace). La porte est
+ * celle choisie sur l'appareil (`porteActiveId`) si elle est encore active ;
+ * sinon la première porte active. Le choix est mémorisé.
+ */
+export async function chargerPoste(posteId?: string): Promise<Poste> {
+  const postes = await chargerPostes(false);
+  if (!postes.length) throw new Error('Aucune porte de contrôle configurée pour ce site.');
+  const voulu = posteId ?? porteActiveId() ?? '';
+  const choisi = postes.find((p) => p.id === voulu) ?? postes[0];
+  definirPorteActive(choisi.id);
 
   const { data: session } = await supabase.auth.getUser();
-  const { data: moi } = await supabase
-    .from('at_utilisateurs')
-    .select('nom')
-    .eq('user_id', session.user?.id ?? '')
-    .maybeSingle();
-
-  const site = data.site as unknown as { libelle: string } | null;
+  const [moi, site] = await Promise.all([
+    supabase.from('at_utilisateurs').select('nom').eq('user_id', session.user?.id ?? '').maybeSingle(),
+    supabase.from('at_sites').select('libelle').order('created_at').limit(1).maybeSingle(),
+  ]);
   return {
-    id: data.id,
-    libelle: data.libelle,
-    siteLabel: site?.libelle ?? '—',
-    agentLabel: moi?.nom ?? session.user?.email ?? 'Agent',
+    id: choisi.id,
+    libelle: choisi.libelle,
+    siteLabel: (site.data as { libelle?: string } | null)?.libelle ?? '—',
+    agentLabel: (moi.data as { nom?: string } | null)?.nom ?? session.user?.email ?? 'Agent',
   };
+}
+
+/** Crée une porte (serveur dérive org + site ; requiert ADMINISTRER_ORGANISATION). */
+export async function creerPoste(libelle: string, zone?: string): Promise<{ id: string; libelle: string }> {
+  const { data, error } = await supabase.rpc('at_creer_poste', {
+    p_libelle: libelle,
+    p_zone: zone ?? 'circulation',
+  });
+  if (error) throw new Error(error.message);
+  return data as { id: string; libelle: string };
+}
+
+/** Renomme / (dés)active une porte. RLS impose ADMINISTRER_ORGANISATION. */
+export async function modifierPoste(
+  id: string,
+  patch: { libelle?: string; zoneControlee?: string | null; statut?: PosteItem['statut'] },
+): Promise<void> {
+  const maj: Record<string, unknown> = {};
+  if (patch.libelle !== undefined) maj.libelle = patch.libelle;
+  if (patch.zoneControlee !== undefined) maj.zone_controlee = patch.zoneControlee;
+  if (patch.statut !== undefined) maj.statut = patch.statut;
+  const { error } = await supabase.from('at_postes').update(maj).eq('id', id);
+  if (error) throw new Error(error.message);
 }
 
 /** Décision du serveur, sans écriture — ce que l'agent voit avant de trancher. */

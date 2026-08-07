@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Loader2,
   Keyboard,
+  ChevronDown,
 } from 'lucide-react';
 import type { Mode, Resultat, Sens } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -23,6 +24,7 @@ import { MOTIFS } from './motifs';
 import { Scanner } from '../../components/device/Scanner';
 import { ViseurEteint } from '../../components/device/ViseurEteint';
 import { PhotoCapture } from '../../components/device/PhotoCapture';
+import { PorteSelecteur } from './PorteSelecteur';
 import { litJeton } from '../../lib/token';
 import { useAuthz } from '../../lib/authz';
 import { televerserPhoto } from '../../lib/stockage';
@@ -49,6 +51,7 @@ export function PosteControle() {
   );
 
   const [poste, setPoste] = useState<Poste | null>(null);
+  const [portesOuvert, setPortesOuvert] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [sens, setSens] = useState<Sens>('ENTREE');
   const [mode, setMode] = useState<Mode>(navigator.onLine ? 'EN_LIGNE' : 'HORS_LIGNE');
@@ -75,6 +78,16 @@ export function PosteControle() {
     const [p, c] = await Promise.all([derniersPassages(), compteursDuJour()]);
     setPassages(p);
     setCompteurs(c);
+  }, []);
+
+  // Changement de porte : recharge le poste courant (mémorisé sur l'appareil).
+  const changerPorte = useCallback(async (id: string) => {
+    try {
+      setPoste(await chargerPoste(id));
+      setErreur(null);
+    } catch (e) {
+      setErreur((e as Error).message);
+    }
   }, []);
 
   useEffect(() => {
@@ -195,7 +208,10 @@ export function PosteControle() {
 
   return (
     <div className="relative flex h-full flex-col bg-sand-100">
-      <Entete poste={poste} mode={mode} />
+      <Entete poste={poste} mode={mode} onChangerPorte={() => setPortesOuvert(true)} />
+      {portesOuvert && (
+        <PorteSelecteur posteActifId={poste.id} onChoisir={changerPorte} onClose={() => setPortesOuvert(false)} />
+      )}
 
       {mode === 'HORS_LIGNE' && (
         <div className="flex items-center gap-2 bg-amber-500 px-4 py-1.5 text-xs font-semibold text-ink">
@@ -260,15 +276,20 @@ function Etat({ icone, titre, detail }: { icone: React.ReactNode; titre: string;
 }
 
 /* ---------- En-tête ---------- */
-function Entete({ poste, mode }: { poste: Poste; mode: Mode }) {
+function Entete({ poste, mode, onChangerPorte }: { poste: Poste; mode: Mode; onChangerPorte: () => void }) {
   return (
     <header className="flex items-center justify-between border-b border-sand-200 bg-sand-50 px-4 py-3">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-bold text-ink">{poste.libelle}</p>
-        <p className="truncate text-xs text-muted">
-          {poste.siteLabel} · {poste.agentLabel}
-        </p>
-      </div>
+      <button onClick={onChangerPorte} className="group flex min-w-0 items-center gap-2 rounded-lg text-left transition-colors" title="Changer de porte">
+        <span className="min-w-0">
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-bold text-ink">{poste.libelle}</span>
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted transition-colors group-hover:text-forest-600" />
+          </span>
+          <span className="block truncate text-xs text-muted">
+            {poste.siteLabel} · {poste.agentLabel}
+          </span>
+        </span>
+      </button>
       <span
         className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset ${
           mode === 'EN_LIGNE'
