@@ -112,8 +112,6 @@ export function LandingPage({ onEntrer }: LandingProps) {
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <div className="flex items-baseline gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted">Atlas&nbsp;Studio</span>
-            <span className="text-sand-400">/</span>
             <Logo size="sm" className="text-forest-500" />
           </div>
           <nav className="hidden items-center gap-7 text-sm font-semibold text-muted md:flex">
@@ -125,16 +123,18 @@ export function LandingPage({ onEntrer }: LandingProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={onEntrer}
-              className="hidden rounded-full px-4 py-2 text-sm font-bold text-forest-600 transition-colors hover:bg-forest-50 sm:inline-flex"
+              className="inline-flex rounded-full px-3 py-2 text-sm font-bold text-forest-600 transition-colors hover:bg-forest-50 sm:px-4"
             >
               Se connecter
             </button>
-            <button
-              onClick={onEntrer}
+            <a
+              href={PORTAIL_ATLAS_STUDIO}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-4 py-2 text-sm font-extrabold text-ink shadow-[0_8px_22px_-10px_rgba(210,255,0,0.8)] ring-1 ring-amber-500/40 transition-all duration-200 ease-premium hover:-translate-y-0.5 hover:bg-amber-300"
             >
-              Accéder <ArrowRight className="h-4 w-4" />
-            </button>
+              Souscrire
+            </a>
           </div>
         </div>
       </header>
@@ -392,8 +392,6 @@ export function LandingPage({ onEntrer }: LandingProps) {
         <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1.6fr,1fr,1fr]">
           <div>
             <div className="flex items-baseline gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted">Atlas&nbsp;Studio</span>
-              <span className="text-sand-400">/</span>
               <Logo size="sm" className="text-forest-500" />
             </div>
             <p className="mt-3 max-w-sm text-sm text-muted">
