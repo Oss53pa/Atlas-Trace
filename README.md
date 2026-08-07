@@ -7,7 +7,7 @@ Maquette interactive (statique, sans backend) couvrant l'intégralité du cahier
 ## Stack
 
 - Vite · React 18 · TypeScript · Tailwind CSS
-- Polices : **Urbanist** (interface) · **Grand Hotel** (nom de l'application)
+- Polices : **Dosis** (interface Atlas Trace) · **Grand Hotel** (signature Atlas Studio)
 - Aucune dépendance UI lourde (icônes : `lucide-react`)
 
 ## Démarrer

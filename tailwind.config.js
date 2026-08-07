@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Urbanist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Dosis', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         display: ['"Grand Hotel"', 'cursive'],
       },
       colors: {
