@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   FileSpreadsheet, Filter, Search, Clock, CheckCircle2, XCircle,
-  ShieldAlert, WifiOff, Download, Loader2, Lock, MoonStar, Printer,
+  ShieldAlert, WifiOff, Download, Loader2, Lock, MoonStar, Printer, LogIn,
 } from 'lucide-react';
 import type { Resultat, Sens } from '../../types';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
 import { useAuthz } from '../../lib/authz';
-import { MOTIFS } from '../poste/motifs';
-import { MOUVEMENTS_JOUR } from '../../data/registre';
 import { RapportsAuto } from './RapportsAuto';
 import { chargerAcces, telechargerCSV, EXPORTS, type AccesLigne } from './api';
 import { imprimerRapport, chargerEnteteSite, type EnteteSite } from '../../lib/impression';
@@ -19,14 +17,9 @@ const COLONNES_ACCES = ['Heure', 'Personne', 'Entreprise', 'Sens', 'Résultat', 
 type FiltreResultat = 'TOUS' | Resultat;
 type FiltreSens = 'TOUS' | Sens;
 
-const MOCK: AccesLigne[] = MOUVEMENTS_JOUR.map((m) => ({
-  id: m.id, horodatage: m.horodatage, personneLabel: m.personneLabel, entrepriseLabel: m.entrepriseLabel,
-  sens: m.sens, resultat: m.resultat, motif: m.motif ? MOTIFS[m.motif].libelle : null, mode: m.mode, constatee: true,
-}));
-
 export function Registres() {
   const { connecte, a } = useAuthz();
-  const [mvts, setMvts] = useState<AccesLigne[]>(MOCK);
+  const [mvts, setMvts] = useState<AccesLigne[]>([]);
   const [live, setLive] = useState(false);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -42,7 +35,7 @@ export function Registres() {
   }, [connecte]);
 
   useEffect(() => {
-    if (!connecte) { setMvts(MOCK); setLive(false); return; }
+    if (!connecte) { setMvts([]); setLive(false); return; }
     let annule = false;
     setChargement(true);
     chargerAcces()
@@ -96,6 +89,16 @@ export function Registres() {
         m.sens === 'SORTIE' ? (m.constatee ? 'Constatée' : 'Non constatée') : '']),
     }, entete);
     flash('Impression du registre d’accès préparée');
+  }
+
+  if (!connecte) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-3 px-6 text-center text-muted">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-forest-600 shadow-card ring-1 ring-sand-200/60"><LogIn className="h-7 w-7" /></span>
+        <p className="text-base font-bold text-ink">Connexion requise</p>
+        <p className="text-sm">Les registres agrègent les données réelles du site. Connectez-vous pour y accéder.</p>
+      </div>
+    );
   }
 
   return (
