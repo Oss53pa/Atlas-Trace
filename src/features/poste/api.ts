@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { urlPhotoSignee } from '../../lib/stockage';
 import type { MotifCode, Resultat, Sens } from '../../types';
 import type { MotifSortieCode } from './motifs';
 
@@ -104,6 +105,7 @@ export async function enregistrerAcces(p: {
   commentaire?: string;
   mode: 'EN_LIGNE' | 'HORS_LIGNE';
   photoForcage?: boolean;
+  photoUrl?: string | null;
 }): Promise<VerdictEnregistre> {
   const { data, error } = await supabase.rpc('at_enregistrer_acces', {
     p_poste_id: p.posteId,
@@ -113,9 +115,25 @@ export async function enregistrerAcces(p: {
     p_commentaire: p.commentaire ?? null,
     p_mode: p.mode,
     p_photo_forcage: p.photoForcage ?? false,
+    p_photo_url: p.photoUrl ?? null,
   });
   if (error) throw new Error(error.message);
   return data as VerdictEnregistre;
+}
+
+/** Photo du sac/effets prise à la dernière ENTRÉE de la personne — pour comparaison à la sortie. */
+export async function chargerPhotoSacEntree(personneId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('at_mouvements_acces')
+    .select('photo_url')
+    .eq('personne_id', personneId)
+    .eq('sens', 'ENTREE')
+    .not('photo_url', 'is', null)
+    .order('horodatage', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const chemin = (data as { photo_url?: string | null } | null)?.photo_url;
+  return chemin ? urlPhotoSignee(chemin) : null;
 }
 
 export async function derniersPassages(limite = 8): Promise<Passage[]> {

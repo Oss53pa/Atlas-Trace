@@ -25,7 +25,9 @@ import { ViseurEteint } from '../../components/device/ViseurEteint';
 import { PhotoCapture } from '../../components/device/PhotoCapture';
 import { litJeton } from '../../lib/token';
 import { useAuthz } from '../../lib/authz';
+import { televerserPhoto } from '../../lib/stockage';
 import {
+  chargerPhotoSacEntree,
   chargerPoste,
   compteursDuJour,
   derniersPassages,
@@ -37,9 +39,14 @@ import {
 } from './api';
 
 export function PosteControle() {
-  const { connecte, chargement: authEnCours, a } = useAuthz();
+  const { connecte, chargement: authEnCours, a, portees } = useAuthz();
   const peutControler = a('CONTROLER_AU_POSTE');
   const peutForcer = a('FORCER_ACCES');
+  const orgId = portees[0]?.organisationId ?? '';
+  // Photo du sac / des effets : prise au contrôle, comparée entrée ↔ sortie.
+  const [sac, setSac] = useState<{ path: string | null; pris: boolean; telev: boolean; entree: string | null }>(
+    { path: null, pris: false, telev: false, entree: null },
+  );
 
   const [poste, setPoste] = useState<Poste | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -108,6 +115,27 @@ export function PosteControle() {
     }
   }
 
+  // À chaque nouveau contrôle : on repart d'une photo vierge ; à la sortie, on
+  // récupère la photo du sac prise à l'entrée pour la comparer.
+  useEffect(() => {
+    setSac({ path: null, pris: false, telev: false, entree: null });
+    const v = courant?.verdict;
+    if (v && v.sens === 'SORTIE' && v.personne_id) {
+      chargerPhotoSacEntree(v.personne_id).then((url) => setSac((s) => ({ ...s, entree: url }))).catch(() => {});
+    }
+  }, [courant]);
+
+  async function capturerSac(dataUrl: string) {
+    setSac((s) => ({ ...s, pris: true, telev: !!orgId }));
+    if (!orgId) return;
+    try {
+      const chemin = await televerserPhoto(dataUrl, orgId, 'sacs');
+      setSac((s) => ({ ...s, path: chemin, telev: false }));
+    } catch {
+      setSac((s) => ({ ...s, telev: false }));
+    }
+  }
+
   async function agir(action: 'VALIDER' | 'REFUSER' | 'FORCER', commentaire?: string, photo?: boolean) {
     if (!poste || !courant) return;
     setEnvoi(true);
@@ -120,6 +148,7 @@ export function PosteControle() {
         commentaire,
         mode,
         photoForcage: photo,
+        photoUrl: sac.path,
       });
       setCourant(null);
       setForceOuvert(false);
@@ -193,6 +222,10 @@ export function PosteControle() {
           verdict={courant.verdict}
           occupe={envoi}
           peutForcer={peutForcer}
+          sacEntree={sac.entree}
+          sacPris={sac.pris}
+          sacTelev={sac.telev}
+          onSacCapture={capturerSac}
           onValider={() => agir('VALIDER')}
           onRefuser={() => agir('REFUSER')}
           onForcer={() => setForceOuvert(true)}
@@ -407,6 +440,10 @@ function ResultatOverlay({
   verdict,
   occupe,
   peutForcer,
+  sacEntree,
+  sacPris,
+  sacTelev,
+  onSacCapture,
   onValider,
   onRefuser,
   onForcer,
@@ -415,6 +452,10 @@ function ResultatOverlay({
   verdict: Verdict;
   occupe: boolean;
   peutForcer: boolean;
+  sacEntree: string | null;
+  sacPris: boolean;
+  sacTelev: boolean;
+  onSacCapture: (dataUrl: string) => void;
   onValider: () => void;
   onRefuser: () => void;
   onForcer: () => void;
@@ -486,6 +527,25 @@ function ResultatOverlay({
             <span>
               <b>{MOTIFS[verdict.alerte].libelle}.</b> {MOTIFS[verdict.alerte].consigne}
             </span>
+          </div>
+        )}
+        {/* Sac / effets : photo à l'entrée, comparée à la sortie */}
+        {!inconnu && (
+          <div className="mt-4 w-full rounded-2xl bg-white p-3 shadow-card ring-1 ring-sand-200">
+            <p className="mb-2 text-xs font-semibold text-muted">
+              {verdict.sens === 'SORTIE'
+                ? 'Sac / effets — comparez avec la photo prise à l’entrée'
+                : 'Photographier le sac / les effets — conservé pour comparaison à la sortie'}
+            </p>
+            {verdict.sens === 'SORTIE' && (
+              sacEntree
+                ? <img src={sacEntree} alt="Sac à l’entrée" className="mb-2 max-h-40 w-full rounded-lg object-contain ring-1 ring-sand-200" />
+                : <p className="mb-2 text-[11px] text-muted">Aucune photo de sac à l’entrée pour cette personne.</p>
+            )}
+            <PhotoCapture
+              label={sacTelev ? 'Enregistrement…' : sacPris ? 'Reprendre la photo' : (verdict.sens === 'SORTIE' ? 'Photographier à la sortie' : 'Photographier le sac')}
+              onCapture={onSacCapture}
+            />
           </div>
         )}
       </div>
