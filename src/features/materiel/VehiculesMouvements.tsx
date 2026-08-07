@@ -10,6 +10,7 @@ import {
   Camera,
   Plus,
   Loader2,
+  Users,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -307,6 +308,26 @@ function MouvementRow({ m }: { m: MouvementVehicule }) {
       </span>
       {m.anomalie && <Badge tone="danger">{m.force ? 'Forcé' : 'Anomalie'}</Badge>}
       <span className="ml-auto shrink-0 text-xs tabular-nums text-muted">{heure(m.horodatage)}</span>
+      {m.occupants.length > 0 && (
+        <div className="flex basis-full flex-wrap items-center gap-1.5 pl-6 pt-0.5">
+          <Users className="h-3.5 w-3.5 shrink-0 text-muted" aria-label="Occupants" />
+          {m.occupants.map((o) => (
+            <span
+              key={o.badge}
+              title={o.connu ? undefined : 'Badge inconnu au référentiel'}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${
+                o.role === 'CONDUCTEUR'
+                  ? 'bg-forest-50 text-forest-700 ring-forest-100'
+                  : 'bg-sand-100 text-ink ring-sand-300/70'
+              }`}
+            >
+              <span className="font-semibold">{o.role === 'CONDUCTEUR' ? 'Cond.' : 'Pass.'}</span>
+              <span className="max-w-[9rem] truncate">{o.label}</span>
+              {!o.connu && <AlertTriangle className="h-3 w-3 text-danger-500" />}
+            </span>
+          ))}
+        </div>
+      )}
     </li>
   );
 }

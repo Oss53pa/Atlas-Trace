@@ -267,6 +267,13 @@ export interface Vehicule {
   photoEntreeUrl?: string | null;
 }
 
+export interface OccupantLabel {
+  label: string;
+  badge: string;
+  role: 'CONDUCTEUR' | 'PASSAGER';
+  connu: boolean;
+}
+
 export interface MouvementVehicule {
   id: string;
   immatriculation: string;
@@ -281,6 +288,7 @@ export interface MouvementVehicule {
   agent: string;
   photo: boolean;
   horodatage: string;
+  occupants: OccupantLabel[];
 }
 
 export async function chargerVehicules(): Promise<Vehicule[]> {
@@ -315,7 +323,31 @@ export async function chargerMouvementsVehicule(limite = 12): Promise<MouvementV
     .order('horodatage', { ascending: false })
     .limit(limite);
   if (error) throw new Error(error.message);
-  return (data ?? []).map((m) => ({
+  const mouvements = data ?? [];
+
+  // Occupants badgés rattachés à ces mouvements, en une requête, groupés par mouvement.
+  const parMouvement = new Map<string, OccupantLabel[]>();
+  const ids = mouvements.map((m) => m.id);
+  if (ids.length) {
+    const { data: occ, error: e2 } = await supabase
+      .from('at_occupants_vehicule')
+      .select('mouvement_vehicule_id, personne_label, badge_numero, role, personne_id')
+      .in('mouvement_vehicule_id', ids)
+      .order('created_at', { ascending: true });
+    if (e2) throw new Error(e2.message);
+    for (const o of occ ?? []) {
+      const liste = parMouvement.get(o.mouvement_vehicule_id) ?? [];
+      liste.push({
+        label: o.personne_label,
+        badge: o.badge_numero,
+        role: (o.role === 'CONDUCTEUR' ? 'CONDUCTEUR' : 'PASSAGER'),
+        connu: o.personne_id != null,
+      });
+      parMouvement.set(o.mouvement_vehicule_id, liste);
+    }
+  }
+
+  return mouvements.map((m) => ({
     id: m.id,
     immatriculation: m.immatriculation,
     entreprise: m.entreprise,
@@ -329,6 +361,7 @@ export async function chargerMouvementsVehicule(limite = 12): Promise<MouvementV
     agent: m.agent,
     photo: m.photo,
     horodatage: m.horodatage,
+    occupants: parMouvement.get(m.id) ?? [],
   }));
 }
 

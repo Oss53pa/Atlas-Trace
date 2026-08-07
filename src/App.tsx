@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import {
@@ -262,7 +263,7 @@ function ConnexionSheet({ onClose }: { onClose: () => void }) {
     else onClose();
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
       <div
         className="max-h-[90dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-card-lg ring-1 ring-sand-300/60 sm:rounded-3xl"
@@ -297,7 +298,8 @@ function ConnexionSheet({ onClose }: { onClose: () => void }) {
           {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />} Se connecter
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
