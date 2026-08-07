@@ -24,10 +24,12 @@ import {
   chargerMouvementsVehicule,
   enregistrerVehicule,
   enregistrerMouvementVehicule,
+  lierOccupantVehicule,
   type Vehicule,
   type MouvementVehicule,
   type EtatCharge,
   type ControleEffectue,
+  type OccupantVehicule,
 } from './api';
 
 const CONTROLE_LABEL: Record<ControleEffectue, string> = {
@@ -106,9 +108,14 @@ export function VehiculesMouvements() {
     force?: boolean;
     photo?: boolean;
     photoUrl?: string | null;
+    occupants?: OccupantVehicule[];
   }) {
     try {
-      const res = await enregistrerMouvementVehicule(p);
+      const { occupants, ...mv } = p;
+      const res = await enregistrerMouvementVehicule(mv);
+      for (const o of occupants ?? []) {
+        try { await lierOccupantVehicule(res.mouvementId, o.badge, o.role); } catch { /* occupant ignoré individuellement */ }
+      }
       setCible(null);
       await rafraichir();
       flash(
@@ -338,6 +345,7 @@ function MouvementSheet({
     force?: boolean;
     photo?: boolean;
     photoUrl?: string | null;
+    occupants?: OccupantVehicule[];
   }) => void;
 }) {
   const { portees } = useAuthz();
@@ -351,6 +359,19 @@ function MouvementSheet({
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [telev, setTelev] = useState(false);
   const [entreeSignee, setEntreeSignee] = useState<string | null>(null);
+  const [occupants, setOccupants] = useState<OccupantVehicule[]>([]);
+  const [badgeSaisi, setBadgeSaisi] = useState('');
+  const [roleSaisi, setRoleSaisi] = useState<'CONDUCTEUR' | 'PASSAGER'>('CONDUCTEUR');
+
+  function ajouterOccupant() {
+    const b = badgeSaisi.trim().toUpperCase();
+    if (!b || occupants.some((o) => o.badge === b)) return;
+    // Le conducteur est unique : si déjà pris, le nouveau devient passager.
+    const role = roleSaisi === 'CONDUCTEUR' && occupants.some((o) => o.role === 'CONDUCTEUR') ? 'PASSAGER' : roleSaisi;
+    setOccupants((l) => [...l, { badge: b, role }]);
+    setBadgeSaisi('');
+    setRoleSaisi('PASSAGER');
+  }
 
   // À la sortie : récupère la photo prise à l'entrée pour comparaison.
   useEffect(() => {
@@ -392,6 +413,7 @@ function MouvementSheet({
       force: force || undefined,
       photo: photo || undefined,
       photoUrl: photoPath,
+      occupants: occupants.length ? occupants : undefined,
     });
   }
 
@@ -444,6 +466,37 @@ function MouvementSheet({
             {Object.entries(CONTROLE_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select>
         </label>
+
+        {/* Occupants badgés : conducteur + passagers rattachés au passage du véhicule */}
+        <div className="mb-3 rounded-xl bg-sand-50 p-3 ring-1 ring-sand-200">
+          <p className="mb-2 text-xs font-semibold text-muted">Occupants badgés (conducteur + passagers)</p>
+          {occupants.length > 0 && (
+            <ul className="mb-2 space-y-1">
+              {occupants.map((o) => (
+                <li key={o.badge} className="flex items-center gap-2 text-xs">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-semibold ${o.role === 'CONDUCTEUR' ? 'bg-forest-100 text-forest-700' : 'bg-sand-200 text-ink'}`}>
+                    {o.role === 'CONDUCTEUR' ? 'Conducteur' : 'Passager'}
+                  </span>
+                  <span className="font-mono text-ink">{o.badge}</span>
+                  <button onClick={() => setOccupants((l) => l.filter((x) => x.badge !== o.badge))} className="ml-auto text-muted hover:text-danger-500" aria-label="Retirer"><X className="h-3.5 w-3.5" /></button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex gap-2">
+            <input value={badgeSaisi} onChange={(e) => setBadgeSaisi(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); ajouterOccupant(); } }}
+              placeholder="N° de badge"
+              className="min-w-0 flex-1 rounded-lg border border-sand-300 bg-white px-2.5 py-1.5 text-sm uppercase text-ink outline-none placeholder:normal-case placeholder:text-muted focus:border-forest-400" />
+            <select value={roleSaisi} onChange={(e) => setRoleSaisi(e.target.value as 'CONDUCTEUR' | 'PASSAGER')}
+              className="rounded-lg border border-sand-300 bg-white px-2 py-1.5 text-sm font-medium text-ink outline-none focus:border-forest-400">
+              <option value="CONDUCTEUR">Conducteur</option>
+              <option value="PASSAGER">Passager</option>
+            </select>
+            <button onClick={ajouterOccupant} className="inline-flex shrink-0 items-center rounded-lg bg-forest-500 px-2.5 py-1.5 text-white hover:bg-forest-600" aria-label="Ajouter l'occupant"><Plus className="h-4 w-4" /></button>
+          </div>
+          <p className="mt-1 text-[11px] text-muted">Le numéro de badge est résolu en identité côté serveur.</p>
+        </div>
 
         {sens === 'SORTIE' && etat === 'CHARGE' && (
           <label className="mb-3 block">

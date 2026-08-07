@@ -360,7 +360,7 @@ export async function enregistrerMouvementVehicule(p: {
   force?: boolean;
   photo?: boolean;
   photoUrl?: string | null;
-}): Promise<{ anomalie: boolean; force: boolean; statut: StatutVehicule }> {
+}): Promise<{ mouvementId: string; anomalie: boolean; force: boolean; statut: StatutVehicule }> {
   const { data, error } = await supabase.rpc('at_enregistrer_mouvement_vehicule', {
     p_vehicule_id: p.vehiculeId,
     p_sens: p.sens,
@@ -373,7 +373,22 @@ export async function enregistrerMouvementVehicule(p: {
     p_photo_url: p.photoUrl ?? null,
   });
   if (error) throw new Error(error.message);
-  return data as { anomalie: boolean; force: boolean; statut: StatutVehicule };
+  const d = data as { mouvement_id: string; anomalie: boolean; force: boolean; statut: StatutVehicule };
+  return { mouvementId: d.mouvement_id, anomalie: d.anomalie, force: d.force, statut: d.statut };
+}
+
+export interface OccupantVehicule { badge: string; role: 'CONDUCTEUR' | 'PASSAGER' }
+
+/** Rattache un occupant badgé (conducteur/passager) au mouvement du véhicule. */
+export async function lierOccupantVehicule(mouvementId: string, badge: string, role: 'CONDUCTEUR' | 'PASSAGER'): Promise<{ personneLabel: string; connu: boolean }> {
+  const { data, error } = await supabase.rpc('at_lier_occupant_vehicule', {
+    p_mouvement_id: mouvementId,
+    p_badge_numero: badge,
+    p_role: role,
+  });
+  if (error) throw new Error(error.message);
+  const d = data as { personne_label: string; connu: boolean };
+  return { personneLabel: d.personne_label, connu: d.connu };
 }
 
 /* ===================== Évacuations & contrôle inopiné (M14) ===================== */
