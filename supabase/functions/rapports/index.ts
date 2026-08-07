@@ -14,8 +14,11 @@ import { PDFDocument, PDFFont, PDFImage, PDFPage, StandardFonts, rgb } from 'npm
 import fontkit from 'npm:@pdf-lib/fontkit@1.1.1';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-// Signature Atlas Studio (Grand Hotel) pour le wordmark de couverture. Chargement
-// best-effort : si le réseau échoue, on retombe sur Helvetica-Bold (jamais bloquant).
+// Polices du projet, chargées à la volée (best-effort, repli Helvetica si le
+// réseau échoue → jamais bloquant). Dosis = corps de texte de l'interface ;
+// Grand Hotel = signature du wordmark de couverture.
+const DOSIS_REGULAR_URL = 'https://unpkg.com/@expo-google-fonts/dosis@0.2.3/Dosis_400Regular.ttf';
+const DOSIS_BOLD_URL = 'https://unpkg.com/@expo-google-fonts/dosis@0.2.3/Dosis_700Bold.ttf';
 const GRAND_HOTEL_URL = 'https://raw.githubusercontent.com/google/fonts/main/ofl/grandhotel/GrandHotel-Regular.ttf';
 
 const CORS = {
@@ -68,7 +71,8 @@ class Document {
   normal!: PDFFont;
   gras!: PDFFont;
   italique!: PDFFont;
-  wordmark!: PDFFont; // Grand Hotel si disponible, sinon Helvetica-Bold
+  wordmark!: PDFFont; // Grand Hotel si disponible, sinon la police grasse courante
+  wordmarkEstGrandHotel = false;
   y = 0;
   pages: PDFPage[] = [];
   reference = '';
@@ -79,17 +83,27 @@ class Document {
     const d = new Document();
     d.doc = await PDFDocument.create();
     d.doc.registerFontkit(fontkit);
+    // Repli sûr : polices standard, jamais bloquant.
     d.normal = await d.doc.embedFont(StandardFonts.Helvetica);
     d.gras = await d.doc.embedFont(StandardFonts.HelveticaBold);
     d.italique = await d.doc.embedFont(StandardFonts.HelveticaOblique);
-    d.wordmark = d.gras;
-    try {
-      const ctrl = AbortSignal.timeout(4000);
-      const bytes = await fetch(GRAND_HOTEL_URL, { signal: ctrl }).then((r) => (r.ok ? r.arrayBuffer() : null));
-      if (bytes) d.wordmark = await d.doc.embedFont(bytes);
-    } catch {
-      // Police indisponible : le wordmark reste en Helvetica-Bold.
-    }
+
+    // Polices du projet en parallèle, chacune best-effort.
+    const charger = async (url: string): Promise<PDFFont | null> => {
+      try {
+        const b = await fetch(url, { signal: AbortSignal.timeout(4500) }).then((r) => (r.ok ? r.arrayBuffer() : null));
+        return b ? await d.doc.embedFont(b) : null;
+      } catch {
+        return null;
+      }
+    };
+    const [dosis, dosisGras, grandHotel] = await Promise.all([
+      charger(DOSIS_REGULAR_URL), charger(DOSIS_BOLD_URL), charger(GRAND_HOTEL_URL),
+    ]);
+    // Dosis n'est adopté que si les DEUX graisses sont disponibles (sinon on
+    // garderait un mélange Dosis/Helvetica incohérent).
+    if (dosis && dosisGras) { d.normal = dosis; d.gras = dosisGras; }
+    if (grandHotel) { d.wordmark = grandHotel; d.wordmarkEstGrandHotel = true; } else { d.wordmark = d.gras; }
     return d;
   }
 
@@ -167,8 +181,8 @@ class Document {
     // Filet Volt sous le bandeau (signature électrique Atlas Studio).
     this.page.drawRectangle({ x: 0, y: HAUTEUR - 136, width: LARGEUR, height: 4, color: OR });
 
-    // Wordmark en Grand Hotel (« Atlas Trace ») ; retombe en Helvetica-Bold sinon.
-    const grandHotel = this.wordmark !== this.gras;
+    // Wordmark en Grand Hotel (« Atlas Trace ») ; retombe en gras standard sinon.
+    const grandHotel = this.wordmarkEstGrandHotel;
     this.page.drawText(grandHotel ? 'Atlas Trace' : 'ATLAS TRACE', {
       x: MARGE, y: HAUTEUR - 58, size: grandHotel ? 30 : 22, font: this.wordmark, color: BLANC,
     });

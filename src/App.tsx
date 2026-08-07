@@ -5,7 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 import {
   Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound, HelpCircle, Eye, EyeOff,
+  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound, HelpCircle, Eye, EyeOff, Sparkles,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
 import { AlertesTempsReel } from './components/AlertesTempsReel';
@@ -41,12 +41,13 @@ const Cloture = lazy(() => import('./features/cloture/Cloture').then((m) => ({ d
 const InscriptionPortail = lazy(() => import('./features/inscription/InscriptionPortail').then((m) => ({ default: m.InscriptionPortail })));
 const Plafonds = lazy(() => import('./features/plafonds/Plafonds').then((m) => ({ default: m.Plafonds })));
 const Vivier = lazy(() => import('./features/vivier/Vivier').then((m) => ({ default: m.Vivier })));
+const ConfigurationChantier = lazy(() => import('./features/configuration/ConfigurationChantier').then((m) => ({ default: m.ConfigurationChantier })));
 import { ActivationCompte } from './features/admin/ActivationCompte';
 import { ReinitialiserMotDePasse } from './features/admin/ReinitialiserMotDePasse';
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
-  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription' | 'plafonds' | 'vivier';
+  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription' | 'plafonds' | 'vivier' | 'configuration';
 
 /** Familles de destinations, dans l'ordre d'affichage de la feuille « Plus ». */
 type Groupe = 'terrain' | 'matiere' | 'suivi' | 'personnes' | 'organisation' | 'admin';
@@ -89,6 +90,7 @@ const DESTINATIONS: Dest[] = [
   { vue: 'entites', label: 'Registre des entreprises', court: 'Sociétés', groupe: 'organisation', icon: <Building2 className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'invitations', label: 'Invitations référents', court: 'Invitations', groupe: 'organisation', icon: <Link2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'ADMINISTRER_ORGANISATION'] },
   { vue: 'referent', label: 'Portail référent', court: 'Référent', groupe: 'organisation', icon: <Link2 className="h-5 w-5" /> },
+  { vue: 'configuration', label: 'Configurer mon chantier', court: 'Config', groupe: 'admin', icon: <Sparkles className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'espaces', label: 'Espaces & profils', court: 'Espaces', groupe: 'admin', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'comptes', label: 'Comptes internes', court: 'Comptes', groupe: 'admin', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
   { vue: 'roles', label: 'Rôles & pouvoirs', court: 'Rôles', groupe: 'admin', icon: <KeyRound className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
@@ -102,6 +104,7 @@ const destOf = (v: Vue) => DESTINATIONS.find((d) => d.vue === v)!;
 function renderVue(vue: Vue, go: (v: string) => void, primaires: Vue[]): ReactNode {
   switch (vue) {
     case 'espaces': return <Espaces onOpen={go} />;
+    case 'configuration': return <ConfigurationChantier onOpen={go} />;
     case 'preneurs': return <PreneursLive />;
     case 'entites': return <EntreprisesRegistre />;
     case 'roles': return <RolesLive />;

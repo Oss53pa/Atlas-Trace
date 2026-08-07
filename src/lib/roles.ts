@@ -36,7 +36,7 @@ export function familleDe(pouvoirs: Set<string>): Famille {
  */
 export const LONGUEUR_BARRE = 4;
 export const PRIMAIRES_PAR_FAMILLE: Record<Famille, string[]> = {
-  DIRECTION: ['accueil', 'tableau', 'registres', 'admin', 'entreprises', 'preneurs', 'espaces'],
+  DIRECTION: ['accueil', 'configuration', 'tableau', 'registres', 'admin', 'entreprises', 'preneurs', 'espaces'],
   TERRAIN: ['accueil', 'poste', 'materiel', 'maincourante', 'inscription', 'cloture'],
   VALIDATION: ['accueil', 'materiel', 'entreprises', 'tableau', 'maincourante', 'listes'],
   REFERENT: ['accueil', 'entreprises', 'materiel', 'listes', 'personnes', 'badges'],
