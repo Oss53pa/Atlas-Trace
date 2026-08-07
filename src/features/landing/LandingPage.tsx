@@ -139,29 +139,35 @@ export function LandingPage({ onEntrer }: LandingProps) {
         </div>
       </header>
 
-      {/* ---------------- Hero ---------------- */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#282C20] via-[#3E4A0C] to-[#5C6B12] px-5 pb-24 pt-36 text-white">
-        <div className="animate-pulse-slow pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-volt/25 blur-3xl" />
-        <div className="animate-pulse-slow pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-volt/15 blur-3xl" style={{ animationDelay: '3.5s' }} />
-        <div className="relative mx-auto max-w-4xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/85 ring-1 ring-inset ring-white/15 backdrop-blur">
-            <ShieldCheck className="h-4 w-4 text-volt" />
+      {/* ---------------- Hero (clair, accent Volt) ---------------- */}
+      <section className="relative overflow-hidden px-5 pb-16 pt-32 sm:pt-40">
+        {/* Décor discret : lavis Volt en haut à droite, léger voile olive en bas */}
+        <div
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{
+            backgroundImage:
+              'radial-gradient(1100px 560px at 88% -12%, rgba(210,255,0,0.22), transparent 62%), radial-gradient(760px 420px at -8% 118%, rgba(174,190,106,0.20), transparent 60%)',
+          }}
+        />
+        <div className="relative mx-auto max-w-5xl">
+          <span className="inline-flex items-center gap-2 rounded-full bg-sand-200 px-4 py-1.5 text-xs font-semibold text-ink/80 ring-1 ring-inset ring-sand-300">
+            <ShieldCheck className="h-4 w-4 text-forest-500" />
             Contrôle d’accès & traçabilité matière · suite Atlas&nbsp;Studio
           </span>
-          <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-6xl">
-            Le contrôle d’accès de vos sites,
-            <span className="relative mx-2 inline-block text-volt">
-              sans faille
-              <span className="absolute inset-x-0 -bottom-1 h-1 rounded-full bg-volt/40" />
-            </span>
-            .
+          <h1 className="mt-6 max-w-4xl text-5xl font-extrabold leading-[1.02] tracking-tight text-ink sm:text-7xl">
+            Le contrôle d’accès<br className="hidden sm:block" /> de vos sites,
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/75 sm:text-lg">
+          <p className="mt-2 leading-none">
+            <span className="brand-wordmark inline-block -rotate-1 rounded-lg bg-volt px-4 pb-2 pt-1 text-5xl text-ink shadow-[0_10px_30px_-12px_rgba(210,255,0,0.9)] sm:text-7xl">
+              sans faille.
+            </span>
+          </p>
+          <p className="mt-8 max-w-2xl text-base leading-relaxed text-muted sm:text-lg">
             Atlas Trace verrouille l’accès à vos chantiers et sites industriels : habilitations, badges,
             poste de contrôle, traçabilité de la matière. Une règle métier imparable —
-            <span className="text-white"> appliquée par le serveur, pas par l’écran.</span>
+            <span className="font-semibold text-ink"> appliquée par le serveur, pas par l’écran.</span>
           </p>
-          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-9 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
             <button
               onClick={onEntrer}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-7 py-3.5 text-sm font-extrabold text-ink shadow-[0_12px_30px_-10px_rgba(210,255,0,0.85)] ring-1 ring-amber-500/40 transition-all duration-200 ease-premium hover:-translate-y-0.5 hover:bg-amber-300 sm:w-auto"
@@ -170,12 +176,12 @@ export function LandingPage({ onEntrer }: LandingProps) {
             </button>
             <a
               href="#etapes"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 px-7 py-3.5 text-sm font-bold text-white ring-1 ring-inset ring-white/20 backdrop-blur transition-colors hover:bg-white/15 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-ink ring-1 ring-sand-300 transition-colors hover:bg-sand-50 sm:w-auto"
             >
               Voir comment ça marche
             </a>
           </div>
-          <p className="mt-6 text-xs text-white/50">
+          <p className="mt-6 text-xs text-muted">
             Administré par la MOA · les entreprises, preneurs et employés obéissent aux mêmes règles.
           </p>
         </div>
@@ -263,7 +269,7 @@ export function LandingPage({ onEntrer }: LandingProps) {
           <div className="grid gap-4 sm:grid-cols-2">
             {GARANTIES.map((g) => (
               <div key={g.titre} className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-sand-300/50">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-forest-800 text-volt">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-ink text-volt">
                   <g.icon className="h-5 w-5" />
                 </div>
                 <h3 className="mt-3 text-base font-bold">{g.titre}</h3>
@@ -276,22 +282,25 @@ export function LandingPage({ onEntrer }: LandingProps) {
 
       {/* ---------------- PWA / mobile-first ---------------- */}
       <section className="px-5 pb-20">
-        <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-[#282C20] via-[#3E4A0C] to-[#5C6B12] px-8 py-14 text-white">
+        <div
+          className="mx-auto max-w-6xl overflow-hidden rounded-3xl bg-sand-50 px-8 py-14 ring-1 ring-sand-300"
+          style={{ backgroundImage: 'radial-gradient(680px 340px at 92% 0%, rgba(210,255,0,0.16), transparent 62%)' }}
+        >
           <div className="grid items-center gap-8 md:grid-cols-[1.4fr,1fr]">
             <div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold ring-1 ring-inset ring-white/15">
-                <Smartphone className="h-4 w-4 text-volt" /> Pensé pour le terrain
+              <span className="inline-flex items-center gap-2 rounded-full bg-sand-200 px-3 py-1 text-xs font-semibold text-ink/80 ring-1 ring-inset ring-sand-300">
+                <Smartphone className="h-4 w-4 text-forest-500" /> Pensé pour le terrain
               </span>
               <h2 className="mt-4 text-3xl font-extrabold tracking-tight">Sur le téléphone de l’agent, pas dans un bureau.</h2>
-              <p className="mt-3 max-w-xl text-white/75">
+              <p className="mt-3 max-w-xl text-muted">
                 Atlas Trace s’installe en un lien sur l’écran d’accueil — sans store — et tient le poste
                 même sans réseau. L’agent scanne, décide, trace. La donnée se resynchronise toute seule.
               </p>
             </div>
             <ul className="space-y-3 text-sm">
               {['Installable (PWA) sur Android et iOS', 'Fonctionne hors ligne au poste', 'Scan caméra réel des badges', 'Se resynchronise au retour du réseau'].map((t) => (
-                <li key={t} className="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 ring-1 ring-inset ring-white/10">
-                  <Check className="h-4 w-4 shrink-0 text-volt" /> {t}
+                <li key={t} className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 font-semibold text-ink ring-1 ring-sand-300">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-volt text-ink"><Check className="h-4 w-4" /></span> {t}
                 </li>
               ))}
             </ul>
@@ -348,12 +357,15 @@ export function LandingPage({ onEntrer }: LandingProps) {
 
       {/* ---------------- CTA final ---------------- */}
       <section className="px-5 pb-20">
-        <div className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl bg-gradient-to-br from-[#282C20] via-[#3E4A0C] to-[#5C6B12] px-8 py-16 text-center text-white">
-          <div className="animate-pulse-slow pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-volt/20 blur-3xl" />
-          <h2 className="relative mx-auto max-w-2xl text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Prêt à verrouiller l’accès à vos sites ?
+        <div
+          className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl bg-sand-50 px-8 py-16 text-center ring-1 ring-sand-300"
+          style={{ backgroundImage: 'radial-gradient(700px 360px at 50% -20%, rgba(210,255,0,0.20), transparent 60%)' }}
+        >
+          <h2 className="relative mx-auto max-w-2xl text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+            Prêt à verrouiller l’accès à vos sites,
+            <span className="brand-wordmark ml-2 inline-block -rotate-1 rounded-lg bg-volt px-3 pb-1 text-3xl text-ink sm:text-4xl">sans faille</span> ?
           </h2>
-          <p className="relative mx-auto mt-4 max-w-xl text-white/75">
+          <p className="relative mx-auto mt-4 max-w-xl text-muted">
             Habilitations, badges, poste de contrôle, matière — une seule application, une règle imparable.
           </p>
           <div className="relative mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -367,7 +379,7 @@ export function LandingPage({ onEntrer }: LandingProps) {
               href={PORTAIL_ATLAS_STUDIO}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 px-8 py-3.5 text-sm font-bold text-white ring-1 ring-inset ring-white/20 backdrop-blur transition-colors hover:bg-white/15 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-ink ring-1 ring-sand-300 transition-colors hover:bg-sand-100 sm:w-auto"
             >
               Souscrire sur Atlas Studio
             </a>
