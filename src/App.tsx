@@ -11,7 +11,7 @@ import { Logo } from './components/ui/Logo';
 import { AlertesTempsReel } from './components/AlertesTempsReel';
 import { supabase } from './lib/supabase';
 import { useAuthz } from './lib/authz';
-import { primairesPour, familleDe, type Famille } from './lib/roles';
+import { primairesPour, familleDe, LONGUEUR_BARRE, type Famille } from './lib/roles';
 import { CommentCaMarche } from './features/aide/CommentCaMarche';
 
 // Chargement à la demande : chaque écran forme son propre chunk, seul l'écran
@@ -148,8 +148,12 @@ export default function App() {
   // laisse voir que ce que les pouvoirs autorisent.
   const autorise = (d: Dest) => !connecte || !d.pouvoir || d.pouvoir.some((p) => pouvoirs.has(p));
 
-  // Barre du bas composée pour la famille de rôle, puis filtrée par accès réel.
-  const primaires = (primairesPour(pouvoirs, connecte) as Vue[]).filter((v) => autorise(destOf(v)));
+  // Barre du bas composée pour la famille de rôle : on retire les destinations
+  // non autorisées puis on garde les premières, si bien que la barre se complète
+  // avec la suivante autorisée au lieu de rétrécir.
+  const primaires = (primairesPour(pouvoirs, connecte) as Vue[])
+    .filter((v) => autorise(destOf(v)))
+    .slice(0, LONGUEUR_BARRE);
 
   const go = (v: string) => {
     setVue(v as Vue);

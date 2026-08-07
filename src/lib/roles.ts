@@ -27,16 +27,20 @@ export function familleDe(pouvoirs: Set<string>): Famille {
 }
 
 /**
- * Destinations mises « au pouce » (barre du bas) par famille. 'accueil' est
- * toujours en tête ; les entrées non autorisées sont ensuite filtrées à
- * l'affichage, le reste bascule dans « Plus ».
+ * Ordre de préférence des destinations « au pouce » (barre du bas) par famille.
+ * 'accueil' est toujours en tête. La liste est plus longue que la barre : à
+ * l'affichage on retire les entrées non autorisées PUIS on garde les premières
+ * (voir LONGUEUR_BARRE). Ainsi la barre se complète toujours avec la
+ * destination suivante autorisée au lieu de rétrécir quand un rôle n'a pas le
+ * pouvoir d'une entrée par défaut.
  */
+export const LONGUEUR_BARRE = 4;
 export const PRIMAIRES_PAR_FAMILLE: Record<Famille, string[]> = {
-  DIRECTION: ['accueil', 'tableau', 'registres', 'admin'],
-  TERRAIN: ['accueil', 'poste', 'materiel', 'maincourante'],
-  VALIDATION: ['accueil', 'materiel', 'entreprises', 'tableau'],
-  REFERENT: ['accueil', 'entreprises', 'materiel', 'listes'],
-  BASE: ['accueil'],
+  DIRECTION: ['accueil', 'tableau', 'registres', 'admin', 'entreprises', 'preneurs', 'espaces'],
+  TERRAIN: ['accueil', 'poste', 'materiel', 'maincourante', 'inscription', 'cloture'],
+  VALIDATION: ['accueil', 'materiel', 'entreprises', 'tableau', 'maincourante', 'listes'],
+  REFERENT: ['accueil', 'entreprises', 'materiel', 'listes', 'personnes', 'badges'],
+  BASE: ['accueil', 'referent'],
 };
 
 /**
