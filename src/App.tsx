@@ -271,9 +271,9 @@ function EcranConnexion() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#282C20] via-[#3E4A0C] to-[#5C6B12] px-5 py-10">
-      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-volt/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-28 -left-24 h-72 w-72 rounded-full bg-volt/10 blur-3xl" />
-      <div className="relative w-full max-w-sm">
+      <div className="animate-pulse-slow pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-volt/25 blur-3xl" />
+      <div className="animate-pulse-slow pointer-events-none absolute -bottom-28 -left-24 h-72 w-72 rounded-full bg-volt/15 blur-3xl" style={{ animationDelay: '3.5s' }} />
+      <div className="relative w-full max-w-sm animate-fade-up-slow">
         <div className="mb-7 text-center">
           <Logo size="lg" className="text-white" />
           <p className="mt-2 text-sm text-white/70">Contrôle d’accès de site — connectez-vous pour continuer.</p>
@@ -312,7 +312,7 @@ function EcranConnexion() {
           <button
             onClick={connexion}
             disabled={envoi}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 py-3 text-sm font-bold text-ink shadow-soft transition-colors hover:bg-amber-300 disabled:opacity-60"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 py-3.5 text-sm font-extrabold text-ink shadow-[0_10px_28px_-10px_rgba(210,255,0,0.75)] ring-1 ring-amber-500/40 transition-all duration-200 ease-premium hover:-translate-y-0.5 hover:bg-amber-300 hover:shadow-[0_14px_32px_-10px_rgba(210,255,0,0.9)] active:translate-y-0 active:scale-[0.99] disabled:opacity-60"
           >
             {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />} Se connecter
           </button>

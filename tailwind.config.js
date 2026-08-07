@@ -82,9 +82,15 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(6px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'pulse-slow': {
+          '0%, 100%': { opacity: '0.35', transform: 'scale(1)' },
+          '50%': { opacity: '0.65', transform: 'scale(1.12)' },
+        },
       },
       animation: {
         'fade-up': 'fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'fade-up-slow': 'fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'pulse-slow': 'pulse-slow 7s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
     },
   },
