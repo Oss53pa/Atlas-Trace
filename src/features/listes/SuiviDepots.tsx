@@ -124,7 +124,7 @@ export function SuiviDepots() {
 
       <p className="mt-4 text-xs text-muted">
         Statuts indicatifs : aucun verrouillage horaire. Le registre reste vivant — un dépôt plus tard
-        dans la journée est normal, et le référent ajoute, retire ou remplace à tout moment (M4).
+        dans la journée est normal, et le référent ajoute, retire ou remplace à tout moment.
       </p>
     </div>
   );

@@ -147,7 +147,7 @@ export default function App() {
   );
   const [more, setMore] = useState(false);
   const [aide, setAide] = useState(false);
-  const { connecte, pouvoirs } = useAuthz();
+  const { connecte, pouvoirs, chargement } = useAuthz();
 
   // Interface par rôle : hors session on montre tout (démo) ; connecté, on ne
   // laisse voir que ce que les pouvoirs autorisent.
@@ -191,6 +191,20 @@ export default function App() {
       />
     );
 
+  // Portail référent : entrée publique par lien signé (/?r=jeton), sans compte.
+  const lienReferent = new URLSearchParams(window.location.search).has('r');
+  if (lienReferent && !connecte)
+    return (
+      <Suspense fallback={<EcranChargement />}>
+        <PortailReferent />
+      </Suspense>
+    );
+
+  // Mur d'authentification : on attend la vérification de session (pas de flash),
+  // puis on exige la connexion avant tout accès à l'application.
+  if (chargement) return <EcranChargement />;
+  if (!connecte) return <EcranConnexion />;
+
   return (
     <div className="min-h-screen bg-sand-100">
       <TopBar vue={vue} onAide={() => setAide(true)} />
@@ -209,6 +223,99 @@ function ChargementVue() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center text-muted">
       <Loader2 className="h-6 w-6 animate-spin" />
+    </div>
+  );
+}
+
+/* ---------- Écran de chargement (vérification de session) ---------- */
+function EcranChargement() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#282C20] via-[#3E4A0C] to-[#5C6B12]">
+      <Loader2 className="h-7 w-7 animate-spin text-white/80" />
+    </div>
+  );
+}
+
+/* ---------- Mur d'authentification (plein écran) ---------- */
+function EcranConnexion() {
+  const [email, setEmail] = useState('');
+  const [mdp, setMdp] = useState('');
+  const [err, setErr] = useState<string | null>(null);
+  const [envoi, setEnvoi] = useState(false);
+  const [resetEnvoye, setResetEnvoye] = useState(false);
+
+  async function connexion() {
+    if (envoi) return;
+    setEnvoi(true);
+    setErr(null);
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: mdp });
+    setEnvoi(false);
+    // Succès : onAuthStateChange rafraîchit l'AuthzProvider → l'application s'affiche.
+    if (error) setErr(error.message === 'Invalid login credentials' ? 'E-mail ou mot de passe incorrect.' : error.message);
+  }
+
+  async function premiereConnexion() {
+    if (!email.trim()) {
+      setErr('Saisissez d’abord votre e-mail, puis « Première connexion / mot de passe oublié ».');
+      return;
+    }
+    setErr(null);
+    // Courriel de réinitialisation propre à Atlas Trace (fonction Resend). Le lien
+    // ramène ici pour définir le mot de passe — sert aussi de première connexion.
+    await supabase.functions
+      .invoke('mot-de-passe', { body: { email: email.trim(), app_url: window.location.origin } })
+      .catch(() => {});
+    setResetEnvoye(true);
+  }
+
+  return (
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#282C20] via-[#3E4A0C] to-[#5C6B12] px-5 py-10">
+      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-volt/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-28 -left-24 h-72 w-72 rounded-full bg-volt/10 blur-3xl" />
+      <div className="relative w-full max-w-sm">
+        <div className="mb-7 text-center">
+          <Logo size="lg" className="text-white" />
+          <p className="mt-2 text-sm text-white/70">Contrôle d’accès de site — connectez-vous pour continuer.</p>
+        </div>
+
+        <div className="rounded-3xl bg-white p-6 shadow-card-lg ring-1 ring-black/5">
+          <h1 className="mb-1 text-lg font-extrabold text-ink">Connexion</h1>
+          <p className="mb-5 text-xs text-muted">L’application n’affiche que ce que votre rôle autorise.</p>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted">E-mail</span>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" autoFocus
+              className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2.5 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
+          </label>
+          <label className="mt-3 block">
+            <span className="mb-1 block text-xs font-semibold text-muted">Mot de passe</span>
+            <input type="password" value={mdp} onChange={(e) => setMdp(e.target.value)} autoComplete="current-password"
+              onKeyDown={(e) => { if (e.key === 'Enter') connexion(); }}
+              className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2.5 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
+          </label>
+
+          {err && <p className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">{err}</p>}
+          {resetEnvoye && (
+            <p className="mt-3 rounded-xl bg-forest-50 px-3 py-2 text-xs font-semibold text-forest-700 ring-1 ring-forest-100">
+              Si un compte existe pour cette adresse, un courriel vient d’être envoyé. Le lien ramène ici pour définir votre mot de passe.
+            </p>
+          )}
+
+          <button
+            onClick={connexion}
+            disabled={envoi}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 py-3 text-sm font-bold text-ink shadow-soft transition-colors hover:bg-amber-300 disabled:opacity-60"
+          >
+            {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />} Se connecter
+          </button>
+
+          <button onClick={premiereConnexion} className="mt-3 w-full text-center text-xs font-semibold text-forest-600 underline-offset-2 hover:underline">
+            Première connexion / mot de passe oublié
+          </button>
+        </div>
+
+        <p className="mt-6 text-center text-xs text-white/50">Atlas Trace · accès réservé au personnel habilité</p>
+      </div>
     </div>
   );
 }

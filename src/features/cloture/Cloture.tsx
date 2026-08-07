@@ -217,7 +217,7 @@ function ResumeCard({ resume }: { resume: ResumeCloture }) {
   const lignes = [
     { label: 'Sorties non constatées générées', value: resume.sortiesNonConstatees, ic: <LogOut className="h-4 w-4" /> },
     { label: 'Présences prolongées (motivées)', value: resume.prolongations, ic: <Clock className="h-4 w-4" /> },
-    { label: 'Lignes portail confirmées par silence (M4)', value: resume.confirmeesParSilence, ic: <Check className="h-4 w-4" /> },
+    { label: 'Lignes portail confirmées par silence', value: resume.confirmeesParSilence, ic: <Check className="h-4 w-4" /> },
     { label: 'Matériels passés en retard', value: resume.materielsRetard, ic: <Package className="h-4 w-4" /> },
     { label: 'Badges temporaires non restitués', value: resume.badgesTempNonRestitues, ic: <CreditCard className="h-4 w-4" /> },
   ];

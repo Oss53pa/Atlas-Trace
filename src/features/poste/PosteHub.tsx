@@ -17,11 +17,11 @@ export function PosteHub() {
 
   return (
     <div className={`flex flex-col ${HAUTEUR_UTILE}`}>
-      {/* Sous-navigation M5 / M10 */}
+      {/* Sous-navigation : accès / sorties matière */}
       <div className="shrink-0 border-b border-sand-300/60 bg-sand-50 px-3 py-2">
         <div className="mx-auto flex max-w-md gap-1 rounded-2xl bg-sand-200 p-1">
-          {onglet('acces', 'Accès (M5)', <LogIn className="h-3.5 w-3.5" />)}
-          {onglet('sorties', 'Sorties matière (M10)', <PackageOpen className="h-3.5 w-3.5" />)}
+          {onglet('acces', 'Accès', <LogIn className="h-3.5 w-3.5" />)}
+          {onglet('sorties', 'Sorties matière', <PackageOpen className="h-3.5 w-3.5" />)}
         </div>
       </div>
 
