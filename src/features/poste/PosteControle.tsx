@@ -198,7 +198,7 @@ export function PosteControle() {
       <Entete poste={poste} mode={mode} />
 
       {mode === 'HORS_LIGNE' && (
-        <div className="flex items-center gap-2 bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white">
+        <div className="flex items-center gap-2 bg-amber-500 px-4 py-1.5 text-xs font-semibold text-ink">
           <WifiOff className="h-3.5 w-3.5" />
           Hors ligne — le contrôle serveur est indisponible
         </div>

@@ -277,7 +277,7 @@ function EntreeItem({ e, nouveau, onRapport }: { e: Entree; nouveau?: boolean; o
     <li className="relative">
       <span
         className={`absolute -left-[27px] top-3 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-sand-100 ${
-          incident ? (majeur ? 'bg-danger-500 text-white' : 'bg-amber-500 text-white') : 'bg-forest-500 text-white'
+          incident ? (majeur ? 'bg-danger-500 text-white' : 'bg-amber-500 text-ink') : 'bg-forest-500 text-white'
         }`}
       >
         {ICON[e.categorie]}

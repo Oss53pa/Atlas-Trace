@@ -42,16 +42,16 @@ export default {
           600: '#7E9A00',
         },
 
-        // Or — attente, action à traiter (couleur fonctionnelle, conservée)
+        // Volt — attente, action à traiter (aplat Volt + texte ink, jamais blanc)
         amber: {
-          50: '#FBEFCF', // Teinte or
-          100: '#F8E4B0',
-          200: '#F4D274',
-          300: '#F2C14E', // Or
-          400: '#E6B23C',
-          500: '#D19E28', // remplissage bouton (texte blanc lisible)
-          600: '#A87C1E',
-          700: '#7E5D18',
+          50: '#F7FFCE', // Teinte volt
+          100: '#EEFEA6',
+          200: '#E1F86A',
+          300: '#D2FF00', // Volt pur
+          400: '#C0EB00', // remplissage bouton accent (texte ink)
+          500: '#7C9200', // remplissage sombre / pastilles
+          600: '#5E7000',
+          700: '#47560A',
         },
 
         // Rouge — refus

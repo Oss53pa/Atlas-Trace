@@ -365,7 +365,7 @@ function AnomalieItem({ icon, label, value }: { icon: React.ReactNode; label: st
   const alerte = value > 0;
   return (
     <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ring-1 ${alerte ? 'bg-amber-50 ring-amber-200' : 'bg-sand-50 ring-sand-200'}`}>
-      <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${alerte ? 'bg-amber-500 text-white' : 'bg-white text-muted ring-1 ring-sand-200'}`}>
+      <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${alerte ? 'bg-amber-500 text-ink' : 'bg-white text-muted ring-1 ring-sand-200'}`}>
         {icon}
       </span>
       <div className="min-w-0">
@@ -379,7 +379,7 @@ function AnomalieItem({ icon, label, value }: { icon: React.ReactNode; label: st
 function RessourceItem({ icon, label, value, sub, alerte }: { icon: React.ReactNode; label: string; value: number; sub?: string; alerte?: boolean }) {
   return (
     <div className={`rounded-xl px-3 py-3 ring-1 ${alerte ? 'bg-amber-50 ring-amber-200' : 'bg-sand-50 ring-sand-200'}`}>
-      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${alerte ? 'bg-amber-500 text-white' : 'bg-white text-forest-600 ring-1 ring-sand-200'}`}>
+      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${alerte ? 'bg-amber-500 text-ink' : 'bg-white text-forest-600 ring-1 ring-sand-200'}`}>
         {icon}
       </span>
       <p className="mt-2 text-2xl font-extrabold leading-none tracking-tight text-ink">{value}</p>
@@ -393,7 +393,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
   const { label, value, unit, tone, icon, trend, spark } = kpi;
   const bg: Record<Tone, string> = {
     forest: 'bg-forest-500 text-white',
-    amber: 'bg-amber-500 text-white',
+    amber: 'bg-amber-500 text-ink',
     danger: 'bg-danger-500 text-white',
     plain: 'bg-white text-ink',
   };

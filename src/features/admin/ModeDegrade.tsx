@@ -49,7 +49,7 @@ export function ModeDegrade() {
 
       <div className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4 ring-1 ${actif ? 'bg-amber-50 ring-amber-200' : 'bg-white shadow-card ring-sand-300/70'}`}>
         <div className="flex items-center gap-3">
-          <span className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${actif ? 'bg-amber-500 text-white' : 'bg-forest-50 text-forest-600'}`}>
+          <span className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${actif ? 'bg-amber-500 text-ink' : 'bg-forest-50 text-forest-600'}`}>
             {actif ? <WifiOff className="h-5 w-5" /> : <Wifi className="h-5 w-5" />}
           </span>
           <div>
