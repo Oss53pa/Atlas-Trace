@@ -5,7 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 import {
   Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound, HelpCircle,
+  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound, HelpCircle, Eye, EyeOff,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
 import { AlertesTempsReel } from './components/AlertesTempsReel';
@@ -243,6 +243,7 @@ function EcranConnexion() {
   const [err, setErr] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [resetEnvoye, setResetEnvoye] = useState(false);
+  const [voirMdp, setVoirMdp] = useState(false);
 
   async function connexion() {
     if (envoi) return;
@@ -289,9 +290,16 @@ function EcranConnexion() {
           </label>
           <label className="mt-3 block">
             <span className="mb-1 block text-xs font-semibold text-muted">Mot de passe</span>
-            <input type="password" value={mdp} onChange={(e) => setMdp(e.target.value)} autoComplete="current-password"
-              onKeyDown={(e) => { if (e.key === 'Enter') connexion(); }}
-              className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2.5 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
+            <div className="relative">
+              <input type={voirMdp ? 'text' : 'password'} value={mdp} onChange={(e) => setMdp(e.target.value)} autoComplete="current-password"
+                onKeyDown={(e) => { if (e.key === 'Enter') connexion(); }}
+                className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2.5 pr-10 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
+              <button type="button" onClick={() => setVoirMdp((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted hover:text-ink"
+                aria-label={voirMdp ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}>
+                {voirMdp ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </label>
 
           {err && <p className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">{err}</p>}
