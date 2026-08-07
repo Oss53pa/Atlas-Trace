@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, AlertTriangle, XCircle, Calendar, Clock, Loader2, Wifi } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, XCircle, Calendar, Loader2, LogIn } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { StatCard } from '../../components/ui/StatCard';
 import { useAuthz } from '../../lib/authz';
-import { DEPOTS, LISTE_CONFIG, type DepotEntreprise, type StatutListe } from '../../data/listes';
-import { chargerRegistres } from './api';
+import { chargerRegistres, type DepotEntreprise, type StatutListe } from './api';
 
 const CFG: Record<StatutListe, { tone: 'forest' | 'amber' | 'danger' | 'neutral'; label: string }> = {
   DEPOSEE: { tone: 'forest', label: 'Enregistré' },
@@ -15,39 +14,20 @@ const CFG: Record<StatutListe, { tone: 'forest' | 'amber' | 'danger' | 'neutral'
 
 export function SuiviDepots() {
   const { connecte } = useAuthz();
-  const [depots, setDepots] = useState<DepotEntreprise[]>(DEPOTS);
-  const [dateLabel, setDateLabel] = useState<string>(LISTE_CONFIG.dateLabel);
-  const [live, setLive] = useState(false);
-  const [chargement, setChargement] = useState(connecte);
+  const [depots, setDepots] = useState<DepotEntreprise[]>([]);
+  const [dateLabel, setDateLabel] = useState<string>('');
+  const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!connecte) {
-      setDepots(DEPOTS);
-      setDateLabel(LISTE_CONFIG.dateLabel);
-      setLive(false);
-      setChargement(false);
-      return;
-    }
+    if (!connecte) { setChargement(false); return; }
     let annule = false;
     setChargement(true);
     chargerRegistres()
-      .then((r) => {
-        if (annule) return;
-        setDepots(r.depots);
-        setDateLabel(r.dateLabel);
-        setLive(true);
-        setErreur(null);
-      })
-      .catch((e) => {
-        if (!annule) setErreur((e as Error).message);
-      })
-      .finally(() => {
-        if (!annule) setChargement(false);
-      });
-    return () => {
-      annule = true;
-    };
+      .then((r) => { if (annule) return; setDepots(r.depots); setDateLabel(r.dateLabel); setErreur(null); })
+      .catch((e) => { if (!annule) setErreur((e as Error).message); })
+      .finally(() => { if (!annule) setChargement(false); });
+    return () => { annule = true; };
   }, [connecte]);
 
   const stats = useMemo(() => {
@@ -62,6 +42,16 @@ export function SuiviDepots() {
 
   const defaillantes = depots.filter((d) => d.statut === 'MANQUANTE' || d.statut === 'HORS_DELAI');
 
+  if (!connecte) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-3 px-6 text-center text-muted">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-forest-600 shadow-card ring-1 ring-sand-200/60"><LogIn className="h-7 w-7" /></span>
+        <p className="text-base font-bold text-ink">Connexion requise</p>
+        <p className="text-sm">Le suivi des registres de présence agrège les données réelles du site.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-5 py-8">
       <div className="mb-5">
@@ -69,22 +59,11 @@ export function SuiviDepots() {
         <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-ink">Registre de présence — suivi</h1>
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
           <span className="inline-flex items-center gap-1.5">
-            <Calendar className="h-4 w-4" /> {dateLabel}
+            <Calendar className="h-4 w-4" /> {dateLabel || (chargement ? '' : 'Aucun registre déposé')}
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Clock className="h-4 w-4" /> Heure indicative de dépôt {LISTE_CONFIG.heureLimite}
-          </span>
-          {chargement ? (
+          {chargement && (
             <span className="inline-flex items-center gap-1.5 text-forest-600">
               <Loader2 className="h-4 w-4 animate-spin" /> Chargement…
-            </span>
-          ) : live ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-forest-50 px-2 py-0.5 text-[11px] font-semibold text-forest-700 ring-1 ring-forest-200">
-              <Wifi className="h-3 w-3" /> Données réelles
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-sand-100 px-2 py-0.5 text-[11px] font-semibold text-muted ring-1 ring-sand-300">
-              Aperçu · connectez-vous pour le suivi réel
             </span>
           )}
         </p>
@@ -99,7 +78,6 @@ export function SuiviDepots() {
         <DangerCard value={stats.manquantes} />
       </div>
 
-      {/* Alerte défaillantes */}
       {defaillantes.length > 0 && (
         <div className="mb-5 rounded-2xl border border-danger-100 bg-danger-50 p-4">
           <p className="flex items-center gap-2 text-sm font-bold text-danger-600">
@@ -116,7 +94,6 @@ export function SuiviDepots() {
         </div>
       )}
 
-      {/* Tableau */}
       <div className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-sand-300/70">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
@@ -135,7 +112,9 @@ export function SuiviDepots() {
               ))}
               {depots.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted">Aucun registre déposé pour l'instant.</td>
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted">
+                    {chargement ? 'Chargement…' : 'Aucun registre déposé pour l’instant.'}
+                  </td>
                 </tr>
               )}
             </tbody>

@@ -1,11 +1,19 @@
 import { supabase } from '../../lib/supabase';
-import type { DepotEntreprise, StatutListe } from '../../data/listes';
 
 /**
  * M4 — lecture réelle du registre de présence (encadrement).
  * Le suivi croise les entreprises du site avec les registres déposés du jour :
  * une entreprise sans registre apparaît « non déposé » (indicatif, jamais bloquant).
  */
+
+export type StatutListe = 'DEPOSEE' | 'HORS_DELAI' | 'MANQUANTE' | 'ATTENDUE';
+export interface DepotEntreprise {
+  entreprise: string;
+  statut: StatutListe;
+  effectif: number | null;
+  heureDepot: string | null;
+  auteur: string | null;
+}
 
 const heure = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null;

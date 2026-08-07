@@ -2,7 +2,24 @@ import { useState } from 'react';
 import { WifiOff, Wifi, Lock, Plus, Check, X, FileWarning } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { PROCEDURE_DEGRADE, type Rattrapage } from '../../data/admin';
+
+interface Rattrapage {
+  id: string;
+  horodatage: string;
+  description: string;
+  agent: string;
+  valide: boolean;
+}
+
+/** Procédure de secours affichée au poste — contenu opérationnel, pas des données. */
+const PROCEDURE_DEGRADE = [
+  'Basculer sur le registre papier de secours affiché au poste.',
+  'Vérifier chaque badge visuellement : photo, nom, entreprise.',
+  'Consigner chaque passage sur le registre : nom, entreprise, sens, heure.',
+  'Retenir les pièces d’identité pour les badges temporaires comme en temps normal.',
+  'Prévenir le chef de poste et noter l’heure de début de panne.',
+  'À la reprise, saisir les mouvements papier en « rattrapage » (non modifiable après validation).',
+];
 
 export function ModeDegrade() {
   const [actif, setActif] = useState(false);
@@ -15,7 +32,7 @@ export function ModeDegrade() {
     setTimeout(() => setToast(null), 2400);
   }
   function ajouter(horodatage: string, description: string) {
-    setRattrapages((rs) => [{ id: `r-${rs.length}`, horodatage, description, agent: 'M. Koné', valide: true }, ...rs]);
+    setRattrapages((rs) => [{ id: `r-${rs.length}`, horodatage, description, agent: 'poste', valide: true }, ...rs]);
     setSheet(false);
     flash('Mouvement de rattrapage validé · verrouillé');
   }
