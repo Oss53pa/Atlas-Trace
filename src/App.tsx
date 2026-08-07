@@ -47,41 +47,53 @@ type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
   | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription' | 'plafonds' | 'vivier';
 
+/** Familles de destinations, dans l'ordre d'affichage de la feuille « Plus ». */
+type Groupe = 'terrain' | 'matiere' | 'suivi' | 'personnes' | 'organisation' | 'admin';
+const GROUPES: { cle: Groupe; titre: string }[] = [
+  { cle: 'terrain', titre: 'Terrain & poste' },
+  { cle: 'matiere', titre: 'Matière & mouvements' },
+  { cle: 'suivi', titre: 'Suivi & registres' },
+  { cle: 'personnes', titre: 'Personnes & accès' },
+  { cle: 'organisation', titre: 'Entreprises & preneurs' },
+  { cle: 'admin', titre: 'Administration' },
+];
+
 interface Dest {
   vue: Vue;
   label: string;
   court: string;
   icon: ReactNode;
+  groupe: Groupe;
   /** Pouvoir(s) donnant accès (l'un suffit). Absent = accessible à tous les connectés. */
   pouvoir?: string[];
 }
 
 const DESTINATIONS: Dest[] = [
-  { vue: 'accueil', label: 'Accueil', court: 'Accueil', icon: <Home className="h-5 w-5" /> },
-  { vue: 'poste', label: 'Poste de contrôle', court: 'Poste', icon: <ScanLine className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE'] },
-  { vue: 'inscription', label: 'Inscription au poste', court: 'Inscription', icon: <UserPlus className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE'] },
-  { vue: 'cloture', label: 'Clôture de journée', court: 'Clôture', icon: <Moon className="h-5 w-5" />, pouvoir: ['CLOTURER_JOURNEE', 'CONTROLER_AU_POSTE'] },
-  { vue: 'materiel', label: 'Matière', court: 'Matière', icon: <Package className="h-5 w-5" />, pouvoir: ['DECLARER_MATERIEL', 'DEMANDER_SORTIE', 'VISER_SORTIE', 'APPROUVER_SORTIE', 'RECEPTIONNER', 'VALIDER_CRENEAU', 'AUTORISER_EVACUATION', 'DEMANDER_LIVRAISON'] },
-  { vue: 'tableau', label: 'Tableau de bord', court: 'Tableau', icon: <LayoutDashboard className="h-5 w-5" />, pouvoir: ['CONSULTER_TABLEAU'] },
-  { vue: 'espaces', label: 'Espaces & profils', court: 'Espaces', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
-  { vue: 'entreprises', label: 'Entreprises', court: 'Entreprises', icon: <Building2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'VISER_HABILITATION', 'APPROUVER_HABILITATION', 'GERER_CONDITIONS_BLOQUANTES'] },
-  { vue: 'preneurs', label: 'Preneurs & emprises', court: 'Preneurs', icon: <Store className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION', 'GERER_CONDITIONS_BLOQUANTES'] },
-  { vue: 'entites', label: 'Registre des entreprises', court: 'Sociétés', icon: <Building2 className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
-  { vue: 'roles', label: 'Rôles & pouvoirs', court: 'Rôles', icon: <KeyRound className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
-  { vue: 'comptes', label: 'Comptes internes', court: 'Comptes', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
-  { vue: 'invitations', label: 'Invitations référents', court: 'Invitations', icon: <Link2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'ADMINISTRER_ORGANISATION'] },
-  { vue: 'personnes', label: 'Personnes & badges', court: 'Personnes', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DECLARER_PERSONNEL', 'DELIVRER_BADGE'] },
-  { vue: 'plafonds', label: 'Plafonds d’effectif', court: 'Plafonds', icon: <Gauge className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
-  { vue: 'vivier', label: 'Vivier de personnel', court: 'Vivier', icon: <UsersRound className="h-5 w-5" />, pouvoir: ['DECLARER_PERSONNEL', 'DEPOSER_LISTE', 'DELIVRER_BADGE'] },
-  { vue: 'listes', label: 'Registre de présence', court: 'Registre', icon: <ClipboardList className="h-5 w-5" />, pouvoir: ['DEPOSER_LISTE', 'CONSULTER_TABLEAU'] },
-  { vue: 'badges', label: 'Impression & visiteurs', court: 'Badges', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE', 'DECLARER_PERSONNEL'] },
-  { vue: 'maincourante', label: 'Main courante', court: 'Main courante', icon: <BookText className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE', 'CONSULTER_TABLEAU', 'SUIVRE_INCIDENTS'] },
-  { vue: 'cles', label: 'Clés & zones', court: 'Clés', icon: <Key className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE'] },
-  { vue: 'admin', label: 'Administration', court: 'Admin', icon: <Settings className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION', 'CONSULTER_AUDIT'] },
-  { vue: 'parametrage', label: 'Paramétrage', court: 'Paramétrage', icon: <SlidersHorizontal className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
-  { vue: 'live', label: 'Console Live', court: 'Live', icon: <Cloud className="h-5 w-5" />, pouvoir: ['CONSULTER_TABLEAU'] },
-  { vue: 'referent', label: 'Portail référent', court: 'Référent', icon: <Link2 className="h-5 w-5" /> },
-  { vue: 'registres', label: 'Registres & exports', court: 'Registres', icon: <Table2 className="h-5 w-5" />, pouvoir: ['EXPORTER', 'CONSULTER_AUDIT'] },
+  { vue: 'accueil', label: 'Accueil', court: 'Accueil', groupe: 'terrain', icon: <Home className="h-5 w-5" /> },
+  { vue: 'poste', label: 'Poste de contrôle', court: 'Poste', groupe: 'terrain', icon: <ScanLine className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE'] },
+  { vue: 'inscription', label: 'Inscription au poste', court: 'Inscription', groupe: 'terrain', icon: <UserPlus className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE'] },
+  { vue: 'cloture', label: 'Clôture de journée', court: 'Clôture', groupe: 'terrain', icon: <Moon className="h-5 w-5" />, pouvoir: ['CLOTURER_JOURNEE', 'CONTROLER_AU_POSTE'] },
+  { vue: 'maincourante', label: 'Main courante', court: 'Main courante', groupe: 'terrain', icon: <BookText className="h-5 w-5" />, pouvoir: ['CONTROLER_AU_POSTE', 'CONSULTER_TABLEAU', 'SUIVRE_INCIDENTS'] },
+  { vue: 'materiel', label: 'Matière', court: 'Matière', groupe: 'matiere', icon: <Package className="h-5 w-5" />, pouvoir: ['DECLARER_MATERIEL', 'DEMANDER_SORTIE', 'VISER_SORTIE', 'APPROUVER_SORTIE', 'RECEPTIONNER', 'VALIDER_CRENEAU', 'AUTORISER_EVACUATION', 'DEMANDER_LIVRAISON'] },
+  { vue: 'tableau', label: 'Tableau de bord', court: 'Tableau', groupe: 'suivi', icon: <LayoutDashboard className="h-5 w-5" />, pouvoir: ['CONSULTER_TABLEAU'] },
+  { vue: 'listes', label: 'Registre de présence', court: 'Registre', groupe: 'suivi', icon: <ClipboardList className="h-5 w-5" />, pouvoir: ['DEPOSER_LISTE', 'CONSULTER_TABLEAU'] },
+  { vue: 'registres', label: 'Registres & exports', court: 'Registres', groupe: 'suivi', icon: <Table2 className="h-5 w-5" />, pouvoir: ['EXPORTER', 'CONSULTER_AUDIT'] },
+  { vue: 'live', label: 'Console Live', court: 'Live', groupe: 'suivi', icon: <Cloud className="h-5 w-5" />, pouvoir: ['CONSULTER_TABLEAU'] },
+  { vue: 'personnes', label: 'Personnes & badges', court: 'Personnes', groupe: 'personnes', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DECLARER_PERSONNEL', 'DELIVRER_BADGE'] },
+  { vue: 'badges', label: 'Impression & visiteurs', court: 'Badges', groupe: 'personnes', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE', 'DECLARER_PERSONNEL'] },
+  { vue: 'vivier', label: 'Vivier de personnel', court: 'Vivier', groupe: 'personnes', icon: <UsersRound className="h-5 w-5" />, pouvoir: ['DECLARER_PERSONNEL', 'DEPOSER_LISTE', 'DELIVRER_BADGE'] },
+  { vue: 'cles', label: 'Clés & zones', court: 'Clés', groupe: 'personnes', icon: <Key className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE'] },
+  { vue: 'entreprises', label: 'Entreprises', court: 'Entreprises', groupe: 'organisation', icon: <Building2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'VISER_HABILITATION', 'APPROUVER_HABILITATION', 'GERER_CONDITIONS_BLOQUANTES'] },
+  { vue: 'preneurs', label: 'Preneurs & emprises', court: 'Preneurs', groupe: 'organisation', icon: <Store className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION', 'GERER_CONDITIONS_BLOQUANTES'] },
+  { vue: 'entites', label: 'Registre des entreprises', court: 'Sociétés', groupe: 'organisation', icon: <Building2 className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
+  { vue: 'invitations', label: 'Invitations référents', court: 'Invitations', groupe: 'organisation', icon: <Link2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'ADMINISTRER_ORGANISATION'] },
+  { vue: 'referent', label: 'Portail référent', court: 'Référent', groupe: 'organisation', icon: <Link2 className="h-5 w-5" /> },
+  { vue: 'espaces', label: 'Espaces & profils', court: 'Espaces', groupe: 'admin', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
+  { vue: 'comptes', label: 'Comptes internes', court: 'Comptes', groupe: 'admin', icon: <Users className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
+  { vue: 'roles', label: 'Rôles & pouvoirs', court: 'Rôles', groupe: 'admin', icon: <KeyRound className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
+  { vue: 'plafonds', label: 'Plafonds d’effectif', court: 'Plafonds', groupe: 'admin', icon: <Gauge className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
+  { vue: 'admin', label: 'Administration', court: 'Admin', groupe: 'admin', icon: <Settings className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION', 'CONSULTER_AUDIT'] },
+  { vue: 'parametrage', label: 'Paramétrage', court: 'Paramétrage', groupe: 'admin', icon: <SlidersHorizontal className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
 ];
 
 const destOf = (v: Vue) => DESTINATIONS.find((d) => d.vue === v)!;
@@ -337,37 +349,49 @@ function Onglet({ actif, label, icon, onClick }: { actif: boolean; label: string
 /* ---------- Feuille « Plus » (destinations autorisées) ---------- */
 function MoreSheet({ vue, onGo, onClose, autorise, primaires }: { vue: Vue; onGo: (v: string) => void; onClose: () => void; autorise: (d: Dest) => boolean; primaires: Vue[] }) {
   const autres = DESTINATIONS.filter((d) => !primaires.includes(d.vue) && autorise(d));
+  const sections = GROUPES
+    .map((g) => ({ ...g, items: autres.filter((d) => d.groupe === g.cle) }))
+    .filter((g) => g.items.length > 0);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-md animate-fade-up rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-card-lg ring-1 ring-sand-300/60"
+        className="flex max-h-[85dvh] w-full max-w-md flex-col animate-fade-up rounded-t-3xl bg-white shadow-card-lg ring-1 ring-sand-300/60"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-sand-300" />
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-extrabold text-ink">Toutes les destinations</h2>
-          <button onClick={onClose} aria-label="Fermer" className="rounded-full p-1.5 text-muted transition-colors hover:bg-sand-100 hover:text-ink">
-            <X className="h-5 w-5" />
-          </button>
+        <div className="shrink-0 px-5 pt-4">
+          <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-sand-300" />
+          <div className="mb-1 flex items-center justify-between">
+            <h2 className="text-base font-extrabold text-ink">Toutes les destinations</h2>
+            <button onClick={onClose} aria-label="Fermer" className="rounded-full p-1.5 text-muted transition-colors hover:bg-sand-100 hover:text-ink">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
-        <div className="grid grid-cols-3 gap-2.5">
-          {autres.map((d) => {
-            const actif = vue === d.vue;
-            return (
-              <button
-                key={d.vue}
-                onClick={() => onGo(d.vue)}
-                className={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all duration-150 ease-premium ${
-                  actif ? 'bg-forest-50 ring-1 ring-forest-200' : 'bg-sand-50 ring-1 ring-sand-300/50 hover:bg-sand-100'
-                }`}
-              >
-                <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${actif ? 'bg-forest-500 text-white' : 'bg-white text-forest-600 ring-1 ring-sand-300/60'}`}>
-                  {d.icon}
-                </span>
-                <span className="text-[11px] font-semibold leading-tight text-ink">{d.court}</span>
-              </button>
-            );
-          })}
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3">
+          {sections.map((section) => (
+            <section key={section.cle}>
+              <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">{section.titre}</h3>
+              <div className="grid grid-cols-3 gap-2.5">
+                {section.items.map((d) => {
+                  const actif = vue === d.vue;
+                  return (
+                    <button
+                      key={d.vue}
+                      onClick={() => onGo(d.vue)}
+                      className={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all duration-150 ease-premium ${
+                        actif ? 'bg-forest-50 ring-1 ring-forest-200' : 'bg-sand-50 ring-1 ring-sand-300/50 hover:bg-sand-100'
+                      }`}
+                    >
+                      <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${actif ? 'bg-forest-500 text-white' : 'bg-white text-forest-600 ring-1 ring-sand-300/60'}`}>
+                        {d.icon}
+                      </span>
+                      <span className="text-[11px] font-semibold leading-tight text-ink">{d.court}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
       </div>
     </div>
