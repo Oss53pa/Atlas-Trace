@@ -42,6 +42,7 @@ const InscriptionPortail = lazy(() => import('./features/inscription/Inscription
 const Plafonds = lazy(() => import('./features/plafonds/Plafonds').then((m) => ({ default: m.Plafonds })));
 const Vivier = lazy(() => import('./features/vivier/Vivier').then((m) => ({ default: m.Vivier })));
 import { ActivationCompte } from './features/admin/ActivationCompte';
+import { ReinitialiserMotDePasse } from './features/admin/ReinitialiserMotDePasse';
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
@@ -140,6 +141,10 @@ export default function App() {
   });
   // QR d'invitation de compte (/?invitation=jeton) : l'activation prend tout l'écran.
   const jetonInvitation = new URLSearchParams(window.location.search).get('invitation');
+  // Lien de réinitialisation de mot de passe (redirectTo → ?reset=1#type=recovery).
+  const [recovery, setRecovery] = useState(
+    () => window.location.hash.includes('type=recovery') || new URLSearchParams(window.location.search).has('reset'),
+  );
   const [more, setMore] = useState(false);
   const [aide, setAide] = useState(false);
   const { connecte, pouvoirs } = useAuthz();
@@ -167,7 +172,24 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connecte, vue, pouvoirs]);
 
+  // L'évènement PASSWORD_RECOVERY peut arriver après le montage (hash traité en asynchrone).
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((e) => {
+      if (e === 'PASSWORD_RECOVERY') setRecovery(true);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   if (jetonInvitation) return <ActivationCompte jeton={jetonInvitation} />;
+  if (recovery)
+    return (
+      <ReinitialiserMotDePasse
+        onFini={() => {
+          window.history.replaceState({}, '', window.location.pathname);
+          setRecovery(false);
+        }}
+      />
+    );
 
   return (
     <div className="min-h-screen bg-sand-100">
@@ -269,6 +291,7 @@ function ConnexionSheet({ onClose }: { onClose: () => void }) {
   const [mdp, setMdp] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  const [resetEnvoye, setResetEnvoye] = useState(false);
 
   async function connexion() {
     setEnvoi(true);
@@ -277,6 +300,20 @@ function ConnexionSheet({ onClose }: { onClose: () => void }) {
     setEnvoi(false);
     if (error) setErr(error.message);
     else onClose();
+  }
+
+  async function motDePasseOublie() {
+    if (!email.trim()) {
+      setErr('Saisissez d’abord votre e-mail, puis cliquez sur « Mot de passe oublié ».');
+      return;
+    }
+    setErr(null);
+    // redirectTo pointe sur Atlas Trace : le lien du courriel revient ici, pas ailleurs.
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/?reset=1`,
+    });
+    // Message neutre : on ne révèle pas si l'adresse a un compte.
+    setResetEnvoye(true);
   }
 
   return createPortal(
@@ -305,6 +342,11 @@ function ConnexionSheet({ onClose }: { onClose: () => void }) {
         </label>
 
         {err && <p className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">{err}</p>}
+        {resetEnvoye && (
+          <p className="mt-3 rounded-xl bg-forest-50 px-3 py-2 text-xs font-semibold text-forest-700 ring-1 ring-forest-100">
+            Si un compte existe pour cette adresse, un courriel de réinitialisation vient d’être envoyé. Le lien ramène ici.
+          </p>
+        )}
 
         <button
           onClick={connexion}
@@ -312,6 +354,13 @@ function ConnexionSheet({ onClose }: { onClose: () => void }) {
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-forest-500 py-3 text-sm font-bold text-white shadow-soft transition-colors hover:bg-forest-600 disabled:opacity-60"
         >
           {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />} Se connecter
+        </button>
+
+        <button
+          onClick={motDePasseOublie}
+          className="mt-3 w-full text-center text-xs font-semibold text-forest-600 underline-offset-2 hover:underline"
+        >
+          Mot de passe oublié ?
         </button>
       </div>
     </div>,

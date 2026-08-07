@@ -51,7 +51,7 @@ interface Kpi {
   unit?: string;
   tone: Tone;
   icon: React.ReactNode;
-  trend?: { actuel: number; precedent: number };
+  trend?: { actuel: number; precedent: number; neutre?: boolean };
   spark?: number[];
 }
 
@@ -112,7 +112,7 @@ export function Tableau() {
     // direction
     return [
       { id: 'presents', label: 'Présents sur site', value: tb.present, unit: `/ ${tb.declare} déclarés`, tone: 'forest', icon: <Users className="h-5 w-5" /> },
-      { id: 'entrees', label: `Entrées (${sfx})`, value: tb.entrees, tone: 'plain', icon: <Users className="h-5 w-5" />, trend: undefined, spark: sEntrees },
+      { id: 'entrees', label: `Entrées (${sfx})`, value: tb.entrees, tone: 'plain', icon: <Users className="h-5 w-5" />, trend: { actuel: tb.entrees, precedent: p.entrees, neutre: true }, spark: sEntrees },
       { id: 'ecart', label: 'Écart déclaré / entré', value: tb.ecart, tone: 'amber', icon: <UserMinus className="h-5 w-5" /> },
       { id: 'anomalies', label: `Anomalies (${sfx})`, value: tb.anomalies.total, tone: 'danger', icon: <Activity className="h-5 w-5" />, trend: { actuel: tb.anomalies.total, precedent: p.anomalies } },
     ];
@@ -335,14 +335,24 @@ export function Tableau() {
 }
 
 /* ---------- Sous-composants ---------- */
-function Tendance({ actuel, precedent }: { actuel: number; precedent: number }) {
+function Tendance({ actuel, precedent, neutre, clair }: { actuel: number; precedent: number; neutre?: boolean; clair?: boolean }) {
   const delta = actuel - precedent;
   if (actuel === 0 && precedent === 0) return null;
   const flat = delta === 0;
   const pire = delta > 0; // hausse d'un indicateur négatif (refus, anomalies…) = dégradation
   const pct = precedent === 0 ? null : Math.abs(Math.round((delta / precedent) * 100));
-  const Icon = flat ? Minus : pire ? ArrowUpRight : ArrowDownRight;
-  const cls = flat ? 'bg-white/20 text-white/80' : pire ? 'bg-danger-600/80 text-white' : 'bg-white/25 text-white';
+  const Icon = flat ? Minus : delta > 0 ? ArrowUpRight : ArrowDownRight;
+  // Tendance neutre : simple direction, sans jugement (ni rouge ni vert).
+  let cls: string;
+  if (neutre) {
+    cls = clair ? 'bg-sand-100 text-muted' : 'bg-white/20 text-white/85';
+  } else if (flat) {
+    cls = clair ? 'bg-sand-100 text-muted' : 'bg-white/20 text-white/80';
+  } else if (pire) {
+    cls = clair ? 'bg-danger-50 text-danger-600' : 'bg-danger-600/80 text-white';
+  } else {
+    cls = clair ? 'bg-forest-50 text-forest-600' : 'bg-white/25 text-white';
+  }
   return (
     <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${cls}`} title="Par rapport à la période précédente">
       <Icon className="h-3 w-3" />
@@ -400,7 +410,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
       <div className="mt-3 flex items-baseline gap-1.5">
         <span className="text-3xl font-extrabold tracking-tight">{value}</span>
         {unit && <span className={`text-xs font-medium ${inverted ? 'text-white/70' : 'text-muted'}`}>{unit}</span>}
-        {trend && inverted && <span className="ml-auto"><Tendance actuel={trend.actuel} precedent={trend.precedent} /></span>}
+        {trend && <span className="ml-auto"><Tendance actuel={trend.actuel} precedent={trend.precedent} neutre={trend.neutre} clair={!inverted} /></span>}
       </div>
       {spark && spark.length > 1 && (
         <div className="mt-2 -mb-1">
