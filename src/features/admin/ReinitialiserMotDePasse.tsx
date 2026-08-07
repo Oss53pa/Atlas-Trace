@@ -23,19 +23,32 @@ export function ReinitialiserMotDePasse({ onFini }: { onFini: () => void }) {
 
   useEffect(() => {
     let vivant = true;
-    // La session de récupération peut déjà être posée (hash consommé au boot)
-    // ou arriver via l'évènement PASSWORD_RECOVERY.
-    supabase.auth.getSession().then(({ data }) => {
+    const tokenHash = new URLSearchParams(window.location.search).get('token_hash');
+
+    async function etablir() {
+      // Nouveau flux : le token de récupération est dans l'URL. On ouvre la
+      // session nous-mêmes — aucune redirection GoTrue, donc indépendant du
+      // Site URL du projet partagé (plus de renvoi vers une autre appli).
+      if (tokenHash) {
+        const { error } = await supabase.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash });
+        if (vivant) setSession(!error);
+        return;
+      }
+      // Repli (ancien lien action_link) : session déjà posée au boot, ou via
+      // l'évènement PASSWORD_RECOVERY.
+      const { data } = await supabase.auth.getSession();
       if (vivant && data.session) setSession(true);
-    });
+    }
+    etablir();
+
     const { data: sub } = supabase.auth.onAuthStateChange((e, s) => {
       if (!vivant) return;
       if (e === 'PASSWORD_RECOVERY' || s) setSession(true);
     });
-    // Si rien n'établit de session dans un délai raisonnable, le lien est invalide/expiré.
+    // Si rien n'établit de session dans le délai, le lien est invalide/expiré.
     const t = setTimeout(() => {
       if (vivant) setSession((v) => (v === null ? false : v));
-    }, 3000);
+    }, 4000);
     return () => {
       vivant = false;
       clearTimeout(t);

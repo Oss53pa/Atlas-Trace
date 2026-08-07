@@ -3,8 +3,9 @@
  * Atlas Studio (via Resend).
  *
  *   { email, app_url?, app_name?, app_tagline?, theme? }  ← public (connexion)
- *     app_url     : domaine de l'appli (redirectTo → app_url/?reset=1). Doit
- *                   figurer dans les « Redirect URLs » du projet Supabase.
+ *     app_url     : domaine de l'appli. Le lien pointe sur app_url/?reset=1 avec
+ *                   le token de récupération (verifyOtp côté page) — aucune
+ *                   redirection GoTrue, donc AUCUN besoin d'allowlist/Site URL.
  *     app_name    : nom affiché dans le courriel (défaut « Atlas Trace »).
  *     app_tagline : accroche sous le nom (défaut « Contrôle d'accès et de flux »).
  *     theme       : couleurs de marque { marque, marqueTexte, sousTitre,
@@ -106,14 +107,14 @@ Deno.serve(async (req) => {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: true });
 
   try {
-    const { data, error } = await admin.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: { redirectTo: `${base}/?reset=1` },
-    });
-    const lien = (data as { properties?: { action_link?: string } } | null)?.properties?.action_link;
+    const { data, error } = await admin.auth.admin.generateLink({ type: 'recovery', email });
+    const hashed = (data as { properties?: { hashed_token?: string } } | null)?.properties?.hashed_token;
+    // Lien DIRECT vers l'appli avec le token de récupération : la page appelle
+    // verifyOtp(token_hash). Aucune redirection GoTrue → indépendant du Site URL
+    // et des « Redirect URLs » du projet partagé (plus de renvoi vers une autre appli).
+    const lien = hashed ? `${base}/?reset=1&token_hash=${encodeURIComponent(hashed)}&type=recovery` : null;
 
-    // Compte inexistant → error : on n'envoie rien, mais on répond pareil.
+    // Compte inexistant / token absent → on n'envoie rien, mais réponse neutre.
     if (!error && lien) {
       const cle = Deno.env.get('RESEND_API_KEY');
       const expediteur = Deno.env.get('RESEND_FROM');
