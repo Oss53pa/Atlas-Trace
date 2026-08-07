@@ -308,10 +308,11 @@ function ConnexionSheet({ onClose }: { onClose: () => void }) {
       return;
     }
     setErr(null);
-    // redirectTo pointe sur Atlas Trace : le lien du courriel revient ici, pas ailleurs.
-    await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/?reset=1`,
-    });
+    // Courriel de réinitialisation propre à Atlas Trace (fonction Resend), pas le
+    // gabarit par défaut du projet partagé. Le lien revient ici (redirectTo).
+    await supabase.functions
+      .invoke('mot-de-passe', { body: { email: email.trim(), app_url: window.location.origin } })
+      .catch(() => {});
     // Message neutre : on ne révèle pas si l'adresse a un compte.
     setResetEnvoye(true);
   }
