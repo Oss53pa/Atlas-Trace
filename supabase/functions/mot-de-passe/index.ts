@@ -1,15 +1,20 @@
 /**
- * mot-de-passe — courriel de réinitialisation propre à Atlas Trace (via Resend).
+ * mot-de-passe — courriel de réinitialisation mutualisé pour les applis mobiles
+ * Atlas Studio (via Resend).
  *
- *   { email, app_url? }   ← public (appelé depuis l'écran de connexion)
+ *   { email, app_url?, app_name?, app_tagline? }   ← public (écran de connexion)
+ *     app_url     : domaine de l'appli (redirectTo → app_url/?reset=1). Doit
+ *                   figurer dans les « Redirect URLs » du projet Supabase.
+ *     app_name    : nom affiché dans le courriel (défaut « Atlas Trace »).
+ *     app_tagline : accroche sous le nom (défaut « Contrôle d'accès et de flux »).
  *
  * On génère nous-mêmes le lien de récupération (admin.generateLink) puis on
- * l'envoie dans un gabarit Atlas Trace en français : le gabarit par défaut du
- * projet Supabase (partagé avec d'autres applications) n'est jamais touché.
+ * l'envoie dans un gabarit de marque : signature « Atlas Studio » constante
+ * (Grand Hotel, palette Volt & Olive), nom d'appli personnalisé. Le gabarit par
+ * défaut du projet Supabase (partagé) n'est jamais touché.
  *
  * Réponse toujours neutre { ok: true } : on ne révèle jamais si l'adresse a un
- * compte (pas d'énumération). Le redirectTo pointe sur Atlas Trace ; il doit
- * figurer dans les « Redirect URLs » autorisées du projet.
+ * compte (pas d'énumération).
  *
  * Secrets : RESEND_API_KEY, RESEND_FROM.
  */
@@ -25,18 +30,21 @@ const json = (c: unknown, s = 200) =>
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-// Polices de marque : Dosis (interface Atlas Trace) + Grand Hotel (signature
-// Atlas Studio). Les clients qui ne chargent pas les webfonts retombent sur une
-// pile sûre. Couleurs : tokens officiels (vert pin #5C6B12, crème, encre).
-const gabarit = (lien: string) => `<style>@import url('https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Dosis:wght@400;500;600;700&display=swap');</style>
+const echappe = (t: string) =>
+  String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// Gabarit mutualisé pour toutes les applis mobiles Atlas Studio.
+// Constant : signature « Atlas Studio » (Grand Hotel), palette Volt & Olive,
+// police Dosis. Personnalisé par appli : le nom (appNom) et son accroche.
+const gabarit = (lien: string, appNom: string, accroche: string) => `<style>@import url('https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Dosis:wght@400;500;600;700&display=swap');</style>
 <div style="font-family:'Dosis','Segoe UI',system-ui,sans-serif;max-width:520px;margin:0 auto;color:#16170F;background:#FFFDF8;border:1px solid #E0E0D3;border-radius:16px;overflow:hidden">
   <div style="background:#5C6B12;padding:22px 24px">
     <div style="font-family:'Grand Hotel',cursive;font-size:28px;line-height:1;color:#FFFDF8">Atlas Studio</div>
-    <div style="font-size:12px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#AEBE6A;margin-top:4px">Atlas Trace · Contrôle d'accès et de flux</div>
+    <div style="font-size:12px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#AEBE6A;margin-top:4px">${echappe(appNom)}${accroche ? ' · ' + echappe(accroche) : ''}</div>
   </div>
   <div style="padding:24px">
     <p style="font-size:16px;margin:0 0 12px">Bonjour,</p>
-    <p style="font-size:15px;line-height:1.7;margin:0 0 12px">Vous avez demandé la réinitialisation de votre mot de passe Atlas Trace.</p>
+    <p style="font-size:15px;line-height:1.7;margin:0 0 12px">Vous avez demandé la réinitialisation de votre mot de passe ${echappe(appNom)}.</p>
     <p style="font-size:15px;line-height:1.7;margin:0 0 20px"><b>Cliquez sur le bouton ci-dessous</b> pour choisir un nouveau mot de passe. Vous seul le connaîtrez : personne d'autre, pas même un administrateur.</p>
     <p style="margin:24px 0">
       <a href="${lien}" style="background:#D2FF00;color:#16170F;padding:13px 24px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block">Réinitialiser mon mot de passe</a>
@@ -56,6 +64,9 @@ Deno.serve(async (req) => {
   const corps = await req.json().catch(() => ({}));
   const email = String(corps.email ?? '').trim().toLowerCase();
   const base = (corps.app_url ?? 'https://trace.atlas-studio.org').replace(/\/$/, '');
+  // Personnalisation par appli mobile Atlas Studio (défaut : Atlas Trace).
+  const appNom = String(corps.app_name ?? 'Atlas Trace').slice(0, 60);
+  const accroche = String(corps.app_tagline ?? "Contrôle d'accès et de flux").slice(0, 80);
 
   // Validation minimale ; en cas d'échec on reste neutre (pas d'énumération).
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: true });
@@ -79,8 +90,8 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             from: expediteur,
             to: [email],
-            subject: 'Atlas Trace — reinitialisation de votre mot de passe',
-            html: gabarit(lien),
+            subject: `${appNom} — réinitialisation de votre mot de passe`,
+            html: gabarit(lien, appNom, accroche),
           }),
         });
       }
