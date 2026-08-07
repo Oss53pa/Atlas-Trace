@@ -11,7 +11,12 @@
  * Secrets : RESEND_API_KEY, RESEND_FROM.
  */
 import { PDFDocument, PDFFont, PDFImage, PDFPage, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1';
+import fontkit from 'npm:@pdf-lib/fontkit@1.1.1';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+
+// Signature Atlas Studio (Grand Hotel) pour le wordmark de couverture. Chargement
+// best-effort : si le réseau échoue, on retombe sur Helvetica-Bold (jamais bloquant).
+const GRAND_HOTEL_URL = 'https://raw.githubusercontent.com/google/fonts/main/ofl/grandhotel/GrandHotel-Regular.ttf';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -26,13 +31,15 @@ const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE
 /* ============================================================
  * Charte
  * ========================================================== */
-const FOREST = rgb(0.047, 0.259, 0.22);
-const FOREST_CLAIR = rgb(0.898, 0.933, 0.918);
-const OR = rgb(0.78, 0.6, 0.21);
-const ENCRE = rgb(0.11, 0.12, 0.12);
-const GRIS = rgb(0.45, 0.46, 0.46);
-const GRIS_CLAIR = rgb(0.937, 0.933, 0.922);
-const ROUGE = rgb(0.72, 0.19, 0.14);
+// Charte « Vert Volt & Olive » (Atlas Studio). Noms conservés, valeurs re-routées.
+const FOREST = rgb(0.361, 0.420, 0.071);      // Olive #5C6B12 — marque / en-têtes
+const FOREST_FONCE = rgb(0.157, 0.173, 0.125); // Ink #282C20 — bandeau de couverture
+const FOREST_CLAIR = rgb(0.894, 0.910, 0.780); // Teinte olive #E4E8C7
+const OR = rgb(0.824, 1.0, 0.0);              // Volt #D2FF00 — filets d'accent
+const ENCRE = rgb(0.086, 0.090, 0.059);       // Texte #16170F
+const GRIS = rgb(0.416, 0.420, 0.373);        // Muted #6A6B5F
+const GRIS_CLAIR = rgb(0.925, 0.925, 0.890);  // Surface alt #ECECE3
+const ROUGE = rgb(0.72, 0.19, 0.14);          // Refus (signal conservé)
 const ROUGE_CLAIR = rgb(0.976, 0.918, 0.906);
 const BLANC = rgb(1, 1, 1);
 
@@ -61,6 +68,7 @@ class Document {
   normal!: PDFFont;
   gras!: PDFFont;
   italique!: PDFFont;
+  wordmark!: PDFFont; // Grand Hotel si disponible, sinon Helvetica-Bold
   y = 0;
   pages: PDFPage[] = [];
   reference = '';
@@ -70,9 +78,18 @@ class Document {
   static async creer(): Promise<Document> {
     const d = new Document();
     d.doc = await PDFDocument.create();
+    d.doc.registerFontkit(fontkit);
     d.normal = await d.doc.embedFont(StandardFonts.Helvetica);
     d.gras = await d.doc.embedFont(StandardFonts.HelveticaBold);
     d.italique = await d.doc.embedFont(StandardFonts.HelveticaOblique);
+    d.wordmark = d.gras;
+    try {
+      const ctrl = AbortSignal.timeout(4000);
+      const bytes = await fetch(GRAND_HOTEL_URL, { signal: ctrl }).then((r) => (r.ok ? r.arrayBuffer() : null));
+      if (bytes) d.wordmark = await d.doc.embedFont(bytes);
+    } catch {
+      // Police indisponible : le wordmark reste en Helvetica-Bold.
+    }
     return d;
   }
 
@@ -144,16 +161,19 @@ class Document {
     this.nouvellePage(false);
     this.reference = o.reference;
     this.entete = { titre: o.titre, site: o.site };
-    const teinte = o.urgent ? ROUGE : FOREST;
+    const teinte = o.urgent ? ROUGE : FOREST_FONCE;
 
     this.page.drawRectangle({ x: 0, y: HAUTEUR - 132, width: LARGEUR, height: 132, color: teinte });
+    // Filet Volt sous le bandeau (signature électrique Atlas Studio).
     this.page.drawRectangle({ x: 0, y: HAUTEUR - 136, width: LARGEUR, height: 4, color: OR });
 
-    this.page.drawText('ATLAS TRACE', {
-      x: MARGE, y: HAUTEUR - 54, size: 22, font: this.gras, color: BLANC,
+    // Wordmark en Grand Hotel (« Atlas Trace ») ; retombe en Helvetica-Bold sinon.
+    const grandHotel = this.wordmark !== this.gras;
+    this.page.drawText(grandHotel ? 'Atlas Trace' : 'ATLAS TRACE', {
+      x: MARGE, y: HAUTEUR - 58, size: grandHotel ? 30 : 22, font: this.wordmark, color: BLANC,
     });
     this.page.drawText(propre('Controle d acces et de flux'), {
-      x: MARGE, y: HAUTEUR - 70, size: 8.5, font: this.normal, color: rgb(1, 1, 1),
+      x: MARGE, y: HAUTEUR - 74, size: 8.5, font: this.normal, color: rgb(0.9, 0.93, 0.85),
     });
     this.page.drawText(propre(o.titre.toUpperCase()), {
       x: MARGE, y: HAUTEUR - 102, size: 15, font: this.gras, color: BLANC,
@@ -565,6 +585,51 @@ async function pdfIncident(i: Incident, reference: string, logo: { bytes: Uint8A
 }
 
 /* ============================================================
+ * Courriels de marque (HTML)
+ * ========================================================== */
+const ESC = (s: unknown) =>
+  String(s ?? '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c]!);
+
+/** Coquille commune : bandeau Ink→Olive, filet Volt, corps, pied de page. */
+function coquilleEmail(o: { badge: string; corps: string; urgent?: boolean }): string {
+  const bandeau = o.urgent
+    ? 'linear-gradient(120deg,#5A1009,#8A1A12 70%,#C0392B)'
+    : 'linear-gradient(120deg,#282C20,#3E4A0C 60%,#5C6B12)';
+  const filet = o.urgent ? '#C0392B' : '#D2FF00';
+  const surtitre = o.urgent ? '#FFD7D1' : '#D2FF00';
+  return `<!doctype html><html lang="fr"><body style="margin:0;padding:0;background:#F4F4ED;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F4ED;padding:24px 0;">
+    <tr><td align="center">
+      <table role="presentation" cellpadding="0" cellspacing="0" style="width:600px;max-width:94%;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E4E4D6;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+        <tr><td style="background:#282C20;background:${bandeau};padding:26px 32px;">
+          <div style="font-size:27px;font-weight:800;color:#ffffff;letter-spacing:.3px;">Atlas Trace</div>
+          <div style="margin-top:3px;font-size:11.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${surtitre};">${ESC(o.badge)}</div>
+        </td></tr>
+        <tr><td style="height:4px;line-height:4px;font-size:0;background:${filet};">&nbsp;</td></tr>
+        <tr><td style="padding:28px 32px;color:#16170F;font-size:14px;line-height:1.55;">${o.corps}</td></tr>
+        <tr><td style="padding:16px 32px;background:#ECECE3;color:#6A6B5F;font-size:11px;line-height:1.5;">
+          Message automatique d'Atlas Trace &middot; les chiffres proviennent des registres, sans saisie manuelle &middot; diffusion restreinte.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+/** Carte de chiffre clé (pilule) pour la rangée de synthèse. */
+function pilule(valeur: number | string, libelle: string, alerte = false): string {
+  const couleur = alerte ? '#C0392B' : '#5C6B12';
+  const fond = alerte ? '#F8E7E4' : '#F4F4ED';
+  return `<td width="33.33%" style="padding:5px;"><div style="background:${fond};border-radius:12px;padding:16px 6px;text-align:center;">
+    <div style="font-size:28px;line-height:1;font-weight:800;color:${couleur};">${ESC(valeur)}</div>
+    <div style="margin-top:6px;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:#6A6B5F;">${ESC(libelle)}</div>
+  </div></td>`;
+}
+
+const ligneInfo = (k: string, v: unknown) =>
+  `<tr><td style="padding:5px 14px 5px 0;color:#6A6B5F;white-space:nowrap;vertical-align:top;">${ESC(k)}</td><td style="padding:5px 0;color:#16170F;font-weight:700;">${ESC(v)}</td></tr>`;
+
+/* ============================================================
  * Dépôt et transmission
  * ========================================================== */
 async function transmettre(o: {
@@ -636,20 +701,19 @@ Deno.serve(async (req) => {
     if (eUp) return json({ erreur: `depot : ${eUp.message}` }, 500);
 
     const adresses = await adressesDe(i.organisation_id);
+    const majeur = i.gravite === 'MAJEUR';
+    const corps = `<p style="margin:0 0 6px;">Bonjour,</p>
+<p style="margin:0 0 18px;color:#6A6B5F;">Un incident <b style="color:${majeur ? '#C0392B' : '#16170F'};">${majeur ? 'majeur' : 'mineur'}</b> vient d'être consigné sur <b style="color:#16170F;">${ESC(i.site)}</b>.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:13.5px;">
+${ligneInfo('Référence', i.numero ?? '-')}${ligneInfo('Constat', i.horodatage)}${ligneInfo('Objet', i.titre)}${ligneInfo('Agent', i.agent)}
+</table>
+${majeur ? `<div style="margin-top:18px;padding:12px 16px;border-radius:10px;background:#F8E7E4;border:1px solid #E9C4BE;color:#8A2A20;font-size:13px;"><b>Transmission immédiate</b> à la chaîne de commandement (HSE, Directeur de la Construction).</div>` : ''}
+<p style="margin:18px 0 0;font-size:13px;color:#6A6B5F;">Rapport complet en pièce jointe. L'incident sera consolidé dans le rapport journalier de poste.</p>`;
     const { envoyeAt, erreur } = await transmettre({
-      sujet: `${i.gravite === 'MAJEUR' ? '[MAJEUR] ' : ''}Incident ${i.numero ?? ''} - ${i.site}`,
+      sujet: `${majeur ? '[MAJEUR] ' : ''}Incident ${i.numero ?? ''} - ${i.site}`,
       fichier: `incident-${i.numero ?? i.id}.pdf`,
       pdf, adresses,
-      html: `<p>Bonjour,</p>
-<p>Un incident <b>${i.gravite === 'MAJEUR' ? 'majeur' : 'mineur'}</b> vient d'etre consigne sur <b>${i.site}</b>.</p>
-<table style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
-<tr><td style="padding:4px 12px 4px 0;color:#666">Reference</td><td><b>${i.numero ?? '-'}</b></td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#666">Constat</td><td>${i.horodatage}</td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#666">Objet</td><td><b>${i.titre}</b></td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#666">Agent</td><td>${i.agent}</td></tr>
-</table>
-<p>Le rapport complet est en piece jointe. L'incident sera egalement consolide dans le rapport journalier de poste.</p>
-<p style="color:#666;font-size:12px">Message automatique d'Atlas Trace.</p>`,
+      html: coquilleEmail({ badge: `Rapport d'incident ${majeur ? 'majeur' : ''}`.trim(), corps, urgent: majeur }),
     });
 
     await admin.from('at_rapports').upsert(
@@ -689,18 +753,25 @@ Deno.serve(async (req) => {
     if (eUp) { bilan.push({ site: s.id, erreur: `depot : ${eUp.message}` }); continue; }
 
     const adresses = await adressesDe(r.organisation_id);
+    const points: string[] = [];
+    if (r.incidents_ouverts) points.push(`${r.incidents_ouverts} incident(s) encore ouvert(s)`);
+    if (r.sorties_matiere.non_couvertes) points.push(`${r.sorties_matiere.non_couvertes} présentation(s) non couverte(s) à la sortie (R1)`);
+    if (r.acces.forcages) points.push(`${r.acces.forcages} forçage(s) motivé(s)`);
+    const callout = points.length
+      ? `<div style="margin-top:18px;padding:12px 16px;border-radius:10px;background:#F8E7E4;border:1px solid #E9C4BE;color:#8A2A20;font-size:13px;"><b>À suivre :</b> ${ESC(points.join(' ; '))}.</div>`
+      : `<div style="margin-top:18px;padding:12px 16px;border-radius:10px;background:#EFF3DC;border:1px solid #D6E08C;color:#4E5C10;font-size:13px;"><b>RAS :</b> journée sans incident majeur ouvert ni présentation non couverte.</div>`;
+    const corps = `<p style="margin:0 0 6px;">Bonjour,</p>
+<p style="margin:0 0 20px;color:#6A6B5F;">Rapport de poste du <b style="color:#16170F;">${ESC(dateLongue(dateRapport))}</b> pour <b style="color:#16170F;">${ESC(r.site)}</b>. Le document complet est en pièce jointe.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+${pilule(r.acces.entrees, 'Entrées')}${pilule(r.acces.sorties, 'Sorties')}${pilule(r.acces.refus, 'Refus consignés', r.acces.refus > 0)}
+</tr></table>
+${callout}
+<p style="margin:22px 0 0;font-size:13px;color:#6A6B5F;">Pièce jointe : <b style="color:#16170F;">rapport-${dateRapport}.pdf</b></p>`;
     const { envoyeAt, erreur } = await transmettre({
       sujet: `Rapport de poste - ${r.site} - ${dateRapport}`,
       fichier: `rapport-${dateRapport}.pdf`,
       pdf, adresses,
-      html: `<p>Bonjour,</p>
-<p>Le rapport de poste du <b>${dateRapport}</b> pour <b>${r.site}</b> est en piece jointe.</p>
-<ul>
-  <li>${r.acces.entrees} entrees, ${r.acces.sorties} sorties, <b>${r.acces.refus} refus</b></li>
-  <li>${r.incidents.length} incident(s) du jour, <b>${r.incidents_ouverts} encore ouvert(s)</b></li>
-  <li>${r.sorties_matiere.non_couvertes} presentation(s) non couverte(s) a la sortie matiere</li>
-</ul>
-<p style="color:#666;font-size:12px">Message automatique d'Atlas Trace. Les chiffres proviennent des registres.</p>`,
+      html: coquilleEmail({ badge: 'Rapport journalier de poste', corps }),
     });
 
     await admin.from('at_rapports').upsert(
