@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
     const role = (inv.role as unknown as { libelle: string } | null)?.libelle ?? 'compte interne';
     const site = (inv.site as unknown as { libelle: string } | null)?.libelle ?? '';
-    const base = (corps.app_url ?? 'https://atlas-trace.vercel.app').replace(/\/$/, '');
+    const base = (corps.app_url ?? 'https://trace.atlas-studio.org').replace(/\/$/, '');
     const lien = `${base}/?invitation=${encodeURIComponent(corps.jeton)}`;
 
     const dataUrl: string = await QRCode.toDataURL(lien, { width: 640, margin: 2, errorCorrectionLevel: 'M' });

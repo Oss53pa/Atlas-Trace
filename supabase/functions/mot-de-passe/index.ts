@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
   const corps = await req.json().catch(() => ({}));
   const email = String(corps.email ?? '').trim().toLowerCase();
-  const base = (corps.app_url ?? 'https://atlas-trace.vercel.app').replace(/\/$/, '');
+  const base = (corps.app_url ?? 'https://trace.atlas-studio.org').replace(/\/$/, '');
 
   // Validation minimale ; en cas d'échec on reste neutre (pas d'énumération).
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: true });
