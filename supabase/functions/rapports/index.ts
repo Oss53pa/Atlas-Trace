@@ -702,7 +702,7 @@ Deno.serve(async (req) => {
 
     const adresses = await adressesDe(i.organisation_id);
     const majeur = i.gravite === 'MAJEUR';
-    const corps = `<p style="margin:0 0 6px;">Bonjour,</p>
+    const corpsEmail = `<p style="margin:0 0 6px;">Bonjour,</p>
 <p style="margin:0 0 18px;color:#6A6B5F;">Un incident <b style="color:${majeur ? '#C0392B' : '#16170F'};">${majeur ? 'majeur' : 'mineur'}</b> vient d'être consigné sur <b style="color:#16170F;">${ESC(i.site)}</b>.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" style="font-size:13.5px;">
 ${ligneInfo('Référence', i.numero ?? '-')}${ligneInfo('Constat', i.horodatage)}${ligneInfo('Objet', i.titre)}${ligneInfo('Agent', i.agent)}
@@ -713,7 +713,7 @@ ${majeur ? `<div style="margin-top:18px;padding:12px 16px;border-radius:10px;bac
       sujet: `${majeur ? '[MAJEUR] ' : ''}Incident ${i.numero ?? ''} - ${i.site}`,
       fichier: `incident-${i.numero ?? i.id}.pdf`,
       pdf, adresses,
-      html: coquilleEmail({ badge: `Rapport d'incident ${majeur ? 'majeur' : ''}`.trim(), corps, urgent: majeur }),
+      html: coquilleEmail({ badge: `Rapport d'incident ${majeur ? 'majeur' : ''}`.trim(), corps: corpsEmail, urgent: majeur }),
     });
 
     await admin.from('at_rapports').upsert(
@@ -760,7 +760,7 @@ ${majeur ? `<div style="margin-top:18px;padding:12px 16px;border-radius:10px;bac
     const callout = points.length
       ? `<div style="margin-top:18px;padding:12px 16px;border-radius:10px;background:#F8E7E4;border:1px solid #E9C4BE;color:#8A2A20;font-size:13px;"><b>À suivre :</b> ${ESC(points.join(' ; '))}.</div>`
       : `<div style="margin-top:18px;padding:12px 16px;border-radius:10px;background:#EFF3DC;border:1px solid #D6E08C;color:#4E5C10;font-size:13px;"><b>RAS :</b> journée sans incident majeur ouvert ni présentation non couverte.</div>`;
-    const corps = `<p style="margin:0 0 6px;">Bonjour,</p>
+    const corpsEmail = `<p style="margin:0 0 6px;">Bonjour,</p>
 <p style="margin:0 0 20px;color:#6A6B5F;">Rapport de poste du <b style="color:#16170F;">${ESC(dateLongue(dateRapport))}</b> pour <b style="color:#16170F;">${ESC(r.site)}</b>. Le document complet est en pièce jointe.</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
 ${pilule(r.acces.entrees, 'Entrées')}${pilule(r.acces.sorties, 'Sorties')}${pilule(r.acces.refus, 'Refus consignés', r.acces.refus > 0)}
@@ -771,7 +771,7 @@ ${callout}
       sujet: `Rapport de poste - ${r.site} - ${dateRapport}`,
       fichier: `rapport-${dateRapport}.pdf`,
       pdf, adresses,
-      html: coquilleEmail({ badge: 'Rapport journalier de poste', corps }),
+      html: coquilleEmail({ badge: 'Rapport journalier de poste', corps: corpsEmail }),
     });
 
     await admin.from('at_rapports').upsert(
