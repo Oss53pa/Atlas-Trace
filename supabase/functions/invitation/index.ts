@@ -73,14 +73,14 @@ Deno.serve(async (req) => {
           subject: `Votre acces Atlas Trace — ${role}`,
           attachments: [{ filename: 'invitation-atlas-trace.png', content: png }],
           html: `<div style="font-family:system-ui,sans-serif;max-width:520px;color:#1b1c1c">
-<h2 style="color:#0C4238;margin-bottom:4px">Atlas Trace</h2>
+<h2 style="color:#3E4A0C;margin-bottom:4px">Atlas Trace</h2>
 <p style="color:#666;margin-top:0;font-size:13px">Controle d'acces et de flux</p>
 <p>Bonjour ${echappe(inv.nom)},</p>
 <p>Un acces vous est ouvert sur <b>${echappe(site)}</b> avec le role <b>${echappe(role)}</b>.</p>
 <p><b>Scannez le QR code joint</b> avec votre telephone, ou utilisez le bouton ci-dessous.
 Vous choisirez vous-meme votre mot de passe : personne d'autre ne le connait.</p>
 <p style="margin:24px 0">
-  <a href="${lien}" style="background:#0C4238;color:#fff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:600">
+  <a href="${lien}" style="background:#3E4A0C;color:#fff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:600">
     Creer mon compte
   </a>
 </p>

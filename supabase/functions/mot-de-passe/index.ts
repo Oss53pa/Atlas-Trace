@@ -27,25 +27,25 @@ const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE
 
 // Polices de marque : Dosis (interface Atlas Trace) + Grand Hotel (signature
 // Atlas Studio). Les clients qui ne chargent pas les webfonts retombent sur une
-// pile sûre. Couleurs : tokens officiels (vert pin #0F5044, crème, encre).
+// pile sûre. Couleurs : tokens officiels (vert pin #5C6B12, crème, encre).
 const gabarit = (lien: string) => `<style>@import url('https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Dosis:wght@400;500;600;700&display=swap');</style>
-<div style="font-family:'Dosis','Segoe UI',system-ui,sans-serif;max-width:520px;margin:0 auto;color:#12211D;background:#FFFDF8;border:1px solid #EAE4D6;border-radius:16px;overflow:hidden">
-  <div style="background:#0F5044;padding:22px 24px">
+<div style="font-family:'Dosis','Segoe UI',system-ui,sans-serif;max-width:520px;margin:0 auto;color:#16170F;background:#FFFDF8;border:1px solid #E0E0D3;border-radius:16px;overflow:hidden">
+  <div style="background:#5C6B12;padding:22px 24px">
     <div style="font-family:'Grand Hotel',cursive;font-size:28px;line-height:1;color:#FFFDF8">Atlas Studio</div>
-    <div style="font-size:12px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#A7CEC3;margin-top:4px">Atlas Trace · Contrôle d'accès et de flux</div>
+    <div style="font-size:12px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#AEBE6A;margin-top:4px">Atlas Trace · Contrôle d'accès et de flux</div>
   </div>
   <div style="padding:24px">
     <p style="font-size:16px;margin:0 0 12px">Bonjour,</p>
     <p style="font-size:15px;line-height:1.7;margin:0 0 12px">Vous avez demandé la réinitialisation de votre mot de passe Atlas Trace.</p>
     <p style="font-size:15px;line-height:1.7;margin:0 0 20px"><b>Cliquez sur le bouton ci-dessous</b> pour choisir un nouveau mot de passe. Vous seul le connaîtrez : personne d'autre, pas même un administrateur.</p>
     <p style="margin:24px 0">
-      <a href="${lien}" style="background:#0F5044;color:#FFFDF8;padding:13px 24px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block">Réinitialiser mon mot de passe</a>
+      <a href="${lien}" style="background:#D2FF00;color:#16170F;padding:13px 24px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block">Réinitialiser mon mot de passe</a>
     </p>
-    <p style="font-size:13px;color:#6F7C75;line-height:1.7;margin:0 0 16px">Ce lien est <b>personnel</b> et <b>temporaire</b>.<br>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.</p>
+    <p style="font-size:13px;color:#6A6B5F;line-height:1.7;margin:0 0 16px">Ce lien est <b>personnel</b> et <b>temporaire</b>.<br>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.</p>
     <p style="font-size:12px;color:#9AA39E;word-break:break-all;margin:0">${lien}</p>
   </div>
-  <div style="border-top:1px solid #EAE4D6;background:#FAF6EC;padding:14px 24px">
-    <span style="font-size:12px;color:#6F7C75">Une application </span><span style="font-family:'Grand Hotel',cursive;font-size:18px;color:#0F5044;vertical-align:-2px">Atlas Studio</span>
+  <div style="border-top:1px solid #E0E0D3;background:#F4F4ED;padding:14px 24px">
+    <span style="font-size:12px;color:#6A6B5F">Une application </span><span style="font-family:'Grand Hotel',cursive;font-size:18px;color:#5C6B12;vertical-align:-2px">Atlas Studio</span>
   </div>
 </div>`;
 

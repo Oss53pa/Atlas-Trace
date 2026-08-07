@@ -13,14 +13,14 @@ const alerteVue: Record<string, string> = {
 
 /** Carte d'action rapide par destination — l'accueil surface les onglets du rôle. */
 const ACTION_META: Record<string, { label: string; sous: string; icon: ReactNode; from: string; to: string }> = {
-  poste: { label: 'Poste de contrôle', sous: 'Scanner un badge', icon: <ScanLine className="h-5 w-5" />, from: '#0F5044', to: '#0A2E28' },
+  poste: { label: 'Poste de contrôle', sous: 'Scanner un badge', icon: <ScanLine className="h-5 w-5" />, from: '#5C6B12', to: '#282C20' },
   materiel: { label: 'Matière', sous: 'Bordereau, sorties', icon: <Package className="h-5 w-5" />, from: '#E0B23C', to: '#C08A2A' },
-  tableau: { label: 'Tableau de bord', sous: 'Vue temps réel', icon: <LayoutDashboard className="h-5 w-5" />, from: '#17795E', to: '#0A2E28' },
-  entreprises: { label: 'Entreprises', sous: 'Habilitations', icon: <Building2 className="h-5 w-5" />, from: '#2E7C68', to: '#0F5044' },
-  listes: { label: 'Registre du jour', sous: 'Présence & suivi', icon: <ClipboardList className="h-5 w-5" />, from: '#2E7C68', to: '#0F5044' },
-  maincourante: { label: 'Main courante', sous: 'Événements & incidents', icon: <BookText className="h-5 w-5" />, from: '#0C4238', to: '#0A2E28' },
-  registres: { label: 'Registres & exports', sous: 'Produire les registres', icon: <Table2 className="h-5 w-5" />, from: '#17795E', to: '#0A2E28' },
-  admin: { label: 'Administration', sous: 'Comptes, audit', icon: <Settings className="h-5 w-5" />, from: '#0C4238', to: '#0A2E28' },
+  tableau: { label: 'Tableau de bord', sous: 'Vue temps réel', icon: <LayoutDashboard className="h-5 w-5" />, from: '#7E9330', to: '#282C20' },
+  entreprises: { label: 'Entreprises', sous: 'Habilitations', icon: <Building2 className="h-5 w-5" />, from: '#7E9330', to: '#5C6B12' },
+  listes: { label: 'Registre du jour', sous: 'Présence & suivi', icon: <ClipboardList className="h-5 w-5" />, from: '#7E9330', to: '#5C6B12' },
+  maincourante: { label: 'Main courante', sous: 'Événements & incidents', icon: <BookText className="h-5 w-5" />, from: '#3E4A0C', to: '#282C20' },
+  registres: { label: 'Registres & exports', sous: 'Produire les registres', icon: <Table2 className="h-5 w-5" />, from: '#7E9330', to: '#282C20' },
+  admin: { label: 'Administration', sous: 'Comptes, audit', icon: <Settings className="h-5 w-5" />, from: '#3E4A0C', to: '#282C20' },
 };
 
 const ACTIONS_DEMO = ['poste', 'listes', 'materiel', 'tableau'];
@@ -83,7 +83,7 @@ export function Accueil({ onOpen, primaires }: { onOpen: (vue: string) => void; 
   return (
     <div className="min-h-screen bg-sand-50">
       {/* ---- Hero dégradé (prolonge la barre d'app) ---- */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#0A2E28] via-[#0C4238] to-[#0F5044] px-5 pb-16 pt-6">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#282C20] via-[#3E4A0C] to-[#5C6B12] px-5 pb-16 pt-6">
         <div className="pointer-events-none absolute -right-16 -top-12 h-56 w-56 rounded-full bg-amber-400/25 blur-3xl" />
         <div className="pointer-events-none absolute -left-12 top-24 h-52 w-52 rounded-full bg-forest-300/20 blur-3xl" />
 

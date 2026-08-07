@@ -46,15 +46,15 @@ function esc(v: string | number | null | undefined): string {
 const CSS = `
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #14201c; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #16170F; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   @page { size: A4; margin: 14mm; }
-  .bandeau { display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #0F5044; padding-bottom: 10px; margin-bottom: 14px; }
+  .bandeau { display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #5C6B12; padding-bottom: 10px; margin-bottom: 14px; }
   .logo { height: 46px; width: auto; max-width: 160px; object-fit: contain; }
   .ident { flex: 1; min-width: 0; }
-  .org { font-size: 15px; font-weight: 800; color: #0A2E28; line-height: 1.1; }
+  .org { font-size: 15px; font-weight: 800; color: #282C20; line-height: 1.1; }
   .site { font-size: 10px; color: #5b6b64; margin-top: 2px; }
   .meta { text-align: right; white-space: nowrap; }
-  .titre { font-size: 13px; font-weight: 700; color: #0F5044; }
+  .titre { font-size: 13px; font-weight: 700; color: #5C6B12; }
   .ref { font-size: 9px; color: #5b6b64; margin-top: 3px; }
   table { width: 100%; border-collapse: collapse; }
   thead { display: table-header-group; }

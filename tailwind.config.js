@@ -8,34 +8,41 @@ export default {
         display: ['"Grand Hotel"', 'cursive'],
       },
       colors: {
-        // ——— Tokens de Jalon ———
-        ink: '#12211D', // Encre — texte principal
-        muted: '#6F7C75', // Texte secondaire
+        // ——— Palette Atlas Studio « Vert Volt & Olive » ———
+        ink: '#16170F', // Texte — encre principale
+        muted: '#6A6B5F', // Texte secondaire
 
-        // Neutres chauds : fonds, bordures, surfaces
+        // Neutres Atlas Studio : fonds, bordures, surfaces
         sand: {
-          50: '#FFFDF8',
-          100: '#FAF6EC', // Fond — crème
-          200: '#F1EBDC', // pistes / puces
-          300: '#EAE4D6', // Bordure
-          400: '#D3CBB6',
+          50: '#FBFBF6',
+          100: '#F4F4ED', // Fond
+          200: '#ECECE3', // Surface alt / pistes / puces
+          300: '#E0E0D3', // Bordure
+          400: '#C7C7B6',
         },
 
-        // Vert pin — marque, validation, séries de données, écran de scan
+        // Olive — marque, validation, séries de données, écran de scan
         forest: {
-          50: '#EAF3EF',
-          100: '#DCEAE4', // Teinte verte (surface tint)
-          200: '#BEDDD3',
-          300: '#A7CEC3', // Série claire
-          400: '#2E7C68', // Série médiane
-          500: '#0F5044', // Vert pin — marque & validation
-          600: '#0C4238', // survol / appui
-          700: '#0A362E',
-          800: '#0A2E28', // Vert profond — écran de scan
-          900: '#0A2E28',
+          50: '#F0F2E1',
+          100: '#E4E8C9', // Teinte olive (surface tint)
+          200: '#CDD69F',
+          300: '#AEBE6A', // Série claire
+          400: '#7E9330', // Série médiane
+          500: '#5C6B12', // Accent olive — marque & validation
+          600: '#3E4A0C', // Accent foncé — survol / appui
+          700: '#333D0A',
+          800: '#282C20', // Ink — écran de scan / surface profonde
+          900: '#282C20',
         },
 
-        // Or — attente, action à traiter, accent
+        // Volt — signature électrique Atlas Studio (aplat + texte ink)
+        volt: {
+          DEFAULT: '#D2FF00',
+          100: '#ECFF9E',
+          600: '#7E9A00',
+        },
+
+        // Or — attente, action à traiter (couleur fonctionnelle, conservée)
         amber: {
           50: '#FBEFCF', // Teinte or
           100: '#F8E4B0',

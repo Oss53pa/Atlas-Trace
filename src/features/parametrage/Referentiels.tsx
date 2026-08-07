@@ -6,9 +6,9 @@ import { chargerReferentiels, majReferentielValeurs, type Referentiel } from './
 
 /** Charte des bandes de catégorie (utilisée par les badges) — référence. */
 const BADGE_CATEGORIES = [
-  { libelle: 'Chantier', hex: '#0F5044' },
+  { libelle: 'Chantier', hex: '#5C6B12' },
   { libelle: 'Aménagement preneur', hex: '#C08A2A' },
-  { libelle: 'Visiteur', hex: '#6F7C75' },
+  { libelle: 'Visiteur', hex: '#6A6B5F' },
   { libelle: 'Personnel propre', hex: '#0A362E' },
 ];
 

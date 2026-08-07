@@ -11,7 +11,7 @@ interface QRCodeProps {
 }
 
 /** Vrai QR code (lib qrcode), rendu sur canvas. Remplace l'ancien faux QR SVG. */
-export function QRCode({ value, size = 160, className, dark = '#0A2E28', light = '#FFFFFF' }: QRCodeProps) {
+export function QRCode({ value, size = 160, className, dark = '#282C20', light = '#FFFFFF' }: QRCodeProps) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const el = ref.current;

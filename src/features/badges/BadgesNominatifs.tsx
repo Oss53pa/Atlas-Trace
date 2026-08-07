@@ -10,11 +10,11 @@ const fmt = (iso?: string | null) => (iso ? iso.split('-').reverse().join('/') :
 
 /** Charte des bandes de catégorie (chap. 8), par libellé de catégorie. */
 const CAT: Record<string, { hex: string; zone: string }> = {
-  Chantier: { hex: '#0F5044', zone: 'Travaux · circulation' },
+  Chantier: { hex: '#5C6B12', zone: 'Travaux · circulation' },
   Aménagement: { hex: '#C08A2A', zone: 'Galerie · circulation' },
-  Visiteur: { hex: '#6F7C75', zone: 'Circulation accompagnée' },
+  Visiteur: { hex: '#6A6B5F', zone: 'Circulation accompagnée' },
 };
-const catDe = (c: string) => CAT[c] ?? { hex: '#0F5044', zone: c };
+const catDe = (c: string) => CAT[c] ?? { hex: '#5C6B12', zone: c };
 
 export function BadgesNominatifs() {
   const { connecte, chargement: authEnCours } = useAuthz();

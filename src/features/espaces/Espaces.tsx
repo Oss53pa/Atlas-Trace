@@ -12,8 +12,8 @@ const ICONE: Record<string, React.ReactNode> = {
   representant: <UserCog className="h-5 w-5" />, donneur_ordre: <Store className="h-5 w-5" />, moe_preneur: <Compass className="h-5 w-5" />,
 };
 const HEX: Record<string, string> = {
-  moa: '#0F5044', moe: '#2E7C68', hse: '#0A2E28', gardiennage: '#6F7C75', pilote: '#2E7C68',
-  referent: '#C08A2A', representant: '#A87C1E', donneur_ordre: '#6F7C75', moe_preneur: '#2E7C68',
+  moa: '#5C6B12', moe: '#7E9330', hse: '#282C20', gardiennage: '#6A6B5F', pilote: '#7E9330',
+  referent: '#C08A2A', representant: '#A87C1E', donneur_ordre: '#6A6B5F', moe_preneur: '#7E9330',
 };
 const PORTEE_LABEL: Record<Portee, string> = { ORGANISATION: 'Organisation', SITE: 'Site', EMPRISE: 'Emprise', POSTE: 'Poste', ENTITE: 'Entité' };
 const porteeTxt = (p: Portee | Portee[]) => (Array.isArray(p) ? p.map((x) => PORTEE_LABEL[x]).join(' / ') : PORTEE_LABEL[p]);

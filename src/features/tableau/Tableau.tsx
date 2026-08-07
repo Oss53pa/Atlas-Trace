@@ -225,8 +225,8 @@ export function Tableau() {
               <>
                 <ColumnChart data={tb.serie.map((p) => ({ label: p.label, entrees: p.entrees, sorties: p.sorties }))} />
                 <div className="mt-3 flex flex-wrap gap-4 text-xs font-medium text-muted">
-                  <Legende hex="#0F5044" label="Entrées" />
-                  <Legende hex="#A7CEC3" label="Sorties" />
+                  <Legende hex="#5C6B12" label="Entrées" />
+                  <Legende hex="#AEBE6A" label="Sorties" />
                   <span className="ml-auto inline-flex items-center gap-1.5 text-danger-600">
                     <XCircle className="h-3.5 w-3.5" /> {tb.controles.refus} refus sur la période
                   </span>
@@ -242,7 +242,7 @@ export function Tableau() {
                 centre={String(totalControles)}
                 sousTitre="contrôles"
                 segments={[
-                  { label: 'Autorisés', value: tb.controles.autorises, color: '', hex: '#2E7C68' },
+                  { label: 'Autorisés', value: tb.controles.autorises, color: '', hex: '#7E9330' },
                   { label: 'Forçages', value: tb.controles.forcages, color: '', hex: '#F2C14E' },
                   { label: 'Refus', value: tb.controles.refus, color: '', hex: '#C0392B' },
                 ]}
@@ -398,7 +398,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
     plain: 'bg-white text-ink',
   };
   const inverted = tone !== 'plain';
-  const sparkColor = inverted ? 'rgba(255,255,255,0.85)' : '#0F5044';
+  const sparkColor = inverted ? 'rgba(255,255,255,0.85)' : '#5C6B12';
   return (
     <div className={`flex flex-col rounded-2xl border border-sand-300/50 p-5 shadow-card ${bg[tone]}`}>
       <div className="flex items-start justify-between">

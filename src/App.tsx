@@ -217,7 +217,7 @@ function ChargementVue() {
 function TopBar({ vue, onAide }: { vue: Vue; onAide: () => void }) {
   const d = destOf(vue);
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-r from-[#0A2E28] via-[#0C4238] to-[#0F5044] pt-[env(safe-area-inset-top)] shadow-soft backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-r from-[#282C20] via-[#3E4A0C] to-[#5C6B12] pt-[env(safe-area-inset-top)] shadow-soft backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Logo size="sm" className="text-white" />
         <div className="flex items-center gap-2">

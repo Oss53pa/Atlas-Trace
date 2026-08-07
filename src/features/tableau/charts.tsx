@@ -24,7 +24,7 @@ export function Donut({
   return (
     <div className="flex items-center gap-4">
       <svg viewBox="0 0 100 100" className="h-32 w-32 -rotate-90">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="#F1EBDC" strokeWidth="12" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="#ECECE3" strokeWidth="12" />
         {segments.map((seg) => {
           const len = (seg.value / total) * c;
           const el = (
@@ -99,7 +99,7 @@ export function ColumnChart({ data }: { data: Colonne[] }) {
 }
 
 /** Sparkline : courbe compacte avec aire dégradée, SVG pur, sans axes. */
-export function Sparkline({ data, color = '#0F5044', className }: { data: number[]; color?: string; className?: string }) {
+export function Sparkline({ data, color = '#5C6B12', className }: { data: number[]; color?: string; className?: string }) {
   if (data.length === 0) return null;
   const max = Math.max(...data, 1);
   const w = 100;
