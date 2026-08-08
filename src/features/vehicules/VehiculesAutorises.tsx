@@ -202,6 +202,7 @@ function DeclarerSheet({ entreprises, onClose, onFait }: { entreprises: Entrepri
   const [entrepriseId, setEntrepriseId] = useState('');
   const [type, setType] = useState('');
   const [chauffeur, setChauffeur] = useState('');
+  const [chauffeurBadge, setChauffeurBadge] = useState('');
   const [validiteFin, setValiditeFin] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -216,6 +217,7 @@ function DeclarerSheet({ entreprises, onClose, onFait }: { entreprises: Entrepri
         entrepriseId: entrepriseId || null,
         type: type || null,
         chauffeur: chauffeur.trim() || null,
+        chauffeurBadge: chauffeurBadge.trim() || null,
         validiteFin: validiteFin || null,
       });
       onFait(r.immatriculation);
@@ -264,10 +266,17 @@ function DeclarerSheet({ entreprises, onClose, onFait }: { entreprises: Entrepri
           </label>
         </div>
 
-        <label className="mt-3 block">
-          <span className="mb-1 block text-xs font-semibold text-muted">Chauffeur habituel (optionnel)</span>
-          <input value={chauffeur} onChange={(e) => setChauffeur(e.target.value)} placeholder="Nom du chauffeur" className={champ} />
-        </label>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted">Chauffeur habituel</span>
+            <input value={chauffeur} onChange={(e) => setChauffeur(e.target.value)} placeholder="Nom" className={champ} />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted">Badge chauffeur</span>
+            <input value={chauffeurBadge} onChange={(e) => setChauffeurBadge(e.target.value.toUpperCase())} placeholder="N° de badge" className={`${champ} font-mono`} />
+          </label>
+        </div>
+        <p className="mt-1 text-[11px] text-muted">Le badge du chauffeur habituel pré‑remplira l’occupant « Conducteur » à l’entrée du véhicule.</p>
 
         {err && <p className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">{err}</p>}
 

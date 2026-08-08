@@ -16,6 +16,7 @@ export interface VehiculeAutorise {
   chauffeur: string | null;
   entreprise: string | null;
   entrepriseId: string | null;
+  chauffeurBadge: string | null;
   validiteDebut: string | null;
   validiteFin: string | null;
   statut: StatutVehicule;
@@ -34,7 +35,7 @@ function etatDe(statut: StatutVehicule, validiteDebut: string | null, validiteFi
 export async function chargerVehiculesAutorises(): Promise<VehiculeAutorise[]> {
   const { data, error } = await supabase
     .from('at_vehicules_autorises')
-    .select('id, immatriculation, type, chauffeur_habituel, validite_debut, validite_fin, statut, motif, entreprise_id, entreprise:at_entreprises(raison_sociale)')
+    .select('id, immatriculation, type, chauffeur_habituel, chauffeur_badge, validite_debut, validite_fin, statut, motif, entreprise_id, entreprise:at_entreprises(raison_sociale)')
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []).map((v) => {
@@ -46,6 +47,7 @@ export async function chargerVehiculesAutorises(): Promise<VehiculeAutorise[]> {
       chauffeur: v.chauffeur_habituel,
       entreprise: (v.entreprise as unknown as { raison_sociale: string } | null)?.raison_sociale ?? null,
       entrepriseId: v.entreprise_id,
+      chauffeurBadge: v.chauffeur_badge ?? null,
       validiteDebut: v.validite_debut,
       validiteFin: v.validite_fin,
       statut,
@@ -71,6 +73,7 @@ export async function declarerVehiculeAutorise(p: {
   entrepriseId?: string | null;
   type?: string | null;
   chauffeur?: string | null;
+  chauffeurBadge?: string | null;
   validiteDebut?: string | null;
   validiteFin?: string | null;
   motif?: string | null;
@@ -80,6 +83,7 @@ export async function declarerVehiculeAutorise(p: {
     p_entreprise_id: p.entrepriseId ?? null,
     p_type: p.type ?? null,
     p_chauffeur: p.chauffeur ?? null,
+    p_chauffeur_badge: p.chauffeurBadge ?? null,
     p_validite_debut: p.validiteDebut ?? null,
     p_validite_fin: p.validiteFin ?? null,
     p_motif: p.motif ?? null,
@@ -143,6 +147,7 @@ export interface Reconnaissance {
   entrepriseId?: string | null;
   type?: string | null;
   chauffeur?: string | null;
+  chauffeurBadge?: string | null;
   validiteFin?: string | null;
 }
 

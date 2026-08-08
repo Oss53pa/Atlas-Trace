@@ -385,6 +385,7 @@ function MouvementSheet({
   const [occupants, setOccupants] = useState<OccupantVehicule[]>([]);
   const [badgeSaisi, setBadgeSaisi] = useState('');
   const [roleSaisi, setRoleSaisi] = useState<'CONDUCTEUR' | 'PASSAGER'>('CONDUCTEUR');
+  const [conducteurAuto, setConducteurAuto] = useState<string | null>(null);
 
   function ajouterOccupant() {
     const b = badgeSaisi.trim().toUpperCase();
@@ -402,6 +403,21 @@ function MouvementSheet({
       urlPhotoSignee(v.photoEntreeUrl).then(setEntreeSignee).catch(() => setEntreeSignee(null));
     }
   }, [sens, v.photoEntreeUrl]);
+
+  // À l'entrée : véhicule pré-déclaré avec chauffeur habituel → pré-remplit le conducteur.
+  useEffect(() => {
+    if (sens !== 'ENTREE') return;
+    let annule = false;
+    reconnaitreVehicule(v.immatriculation)
+      .then((r) => {
+        if (annule || !r.chauffeurBadge) return;
+        const b = r.chauffeurBadge.toUpperCase();
+        setOccupants((l) => (l.some((o) => o.badge === b) ? l : [{ badge: b, role: 'CONDUCTEUR' }, ...l]));
+        setConducteurAuto(b);
+      })
+      .catch(() => {});
+    return () => { annule = true; };
+  }, [sens, v.immatriculation]);
 
   async function capturerPhoto(dataUrl: string) {
     setPhoto(true);
@@ -493,6 +509,11 @@ function MouvementSheet({
         {/* Occupants badgés : conducteur + passagers rattachés au passage du véhicule */}
         <div className="mb-3 rounded-xl bg-sand-50 p-3 ring-1 ring-sand-200">
           <p className="mb-2 text-xs font-semibold text-muted">Occupants badgés (conducteur + passagers)</p>
+          {conducteurAuto && (
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-forest-700">
+              <Check className="h-3.5 w-3.5" strokeWidth={3} /> Conducteur habituel pré-rempli — vérifiez/corrigez si besoin.
+            </p>
+          )}
           {occupants.length > 0 && (
             <ul className="mb-2 space-y-1">
               {occupants.map((o) => (
