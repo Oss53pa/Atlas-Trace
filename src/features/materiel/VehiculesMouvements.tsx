@@ -18,6 +18,7 @@ import { StatCard } from '../../components/ui/StatCard';
 import { PhotoCapture } from '../../components/device/PhotoCapture';
 import { useAuthz } from '../../lib/authz';
 import { lirePlaque } from '../../lib/ocr';
+import { reconnaitreVehicule, type Reconnaissance } from '../vehicules/api';
 import { televerserPhoto, urlPhotoSignee } from '../../lib/stockage';
 import { useEntreprises } from './referentiel';
 import {
@@ -613,15 +614,40 @@ function VehiculeSheet({
   const [type, setType] = useState('Benne');
   const [chauffeur, setChauffeur] = useState('');
   const [ocr, setOcr] = useState<{ enCours: boolean; msg: string | null }>({ enCours: false, msg: null });
+  const [reco, setReco] = useState<Reconnaissance | null>(null);
+  const [verif, setVerif] = useState(false);
   const pret = entrepriseId && immatriculation.trim().length > 0;
+
+  // Reconnaissance : la plaque est-elle un véhicule pré-déclaré ? Pré-remplit,
+  // mais n'ouvre jamais l'accès — le contrôle du passage reste obligatoire.
+  async function verifierAutorisation(immat: string) {
+    if (immat.replace(/[^A-Za-z0-9]/g, '').length < 3) { setReco(null); return; }
+    setVerif(true);
+    try {
+      const r = await reconnaitreVehicule(immat);
+      setReco(r);
+      if (r.etat !== 'INCONNU') {
+        if (r.entrepriseId && entreprises.some((e) => e.id === r.entrepriseId)) setEntrepriseId(r.entrepriseId);
+        if (r.chauffeur) setChauffeur((c) => (c.trim() ? c : r.chauffeur!));
+      }
+    } catch {
+      setReco(null);
+    } finally {
+      setVerif(false);
+    }
+  }
 
   async function scannerPlaque(dataUrl: string) {
     setOcr({ enCours: true, msg: 'Lecture de la plaque…' });
     try {
       const p = await lirePlaque(dataUrl);
-      if (p) setOcr({ enCours: false, msg: `Plaque lue : ${p} — vérifiez et corrigez si besoin.` });
-      else setOcr({ enCours: false, msg: 'Plaque illisible — saisissez-la manuellement.' });
-      if (p) setImmatriculation(p);
+      if (p) {
+        setOcr({ enCours: false, msg: `Plaque lue : ${p} — vérifiez et corrigez si besoin.` });
+        setImmatriculation(p);
+        verifierAutorisation(p);
+      } else {
+        setOcr({ enCours: false, msg: 'Plaque illisible — saisissez-la manuellement.' });
+      }
     } catch {
       setOcr({ enCours: false, msg: 'Lecture impossible — saisissez la plaque manuellement.' });
     }
@@ -647,7 +673,7 @@ function VehiculeSheet({
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="mb-1 block text-xs font-semibold text-muted">Immatriculation <span className="text-danger-500">*</span></span>
-              <input value={immatriculation} onChange={(e) => setImmatriculation(e.target.value)} placeholder="CI-2208-AB"
+              <input value={immatriculation} onChange={(e) => setImmatriculation(e.target.value)} onBlur={() => verifierAutorisation(immatriculation)} placeholder="CI-2208-AB"
                 className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm uppercase text-ink outline-none placeholder:normal-case placeholder:text-muted focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
             </label>
             <label className="block">
@@ -658,6 +684,19 @@ function VehiculeSheet({
               </select>
             </label>
           </div>
+          {(verif || reco) && (
+            <div className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold ring-1 ${
+              verif ? 'bg-sand-50 text-muted ring-sand-200'
+                : reco?.etat === 'VALIDE' ? 'bg-forest-50 text-forest-700 ring-forest-100'
+                : reco?.etat === 'SUSPENDU' || reco?.etat === 'EXPIRE' ? 'bg-amber-50 text-amber-700 ring-amber-200'
+                : 'bg-sand-50 text-muted ring-sand-200'}`}>
+              {verif ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Vérification de l’autorisation…</>)
+                : reco?.etat === 'VALIDE' ? (<><Check className="h-3.5 w-3.5" strokeWidth={3} /> Véhicule autorisé{reco.entreprise ? ` · ${reco.entreprise}` : ''}</>)
+                : reco?.etat === 'SUSPENDU' ? (<><ShieldAlert className="h-3.5 w-3.5" /> Autorisation suspendue — contrôle renforcé</>)
+                : reco?.etat === 'EXPIRE' ? (<><ShieldAlert className="h-3.5 w-3.5" /> Autorisation expirée — contrôle renforcé</>)
+                : (<><Truck className="h-3.5 w-3.5" /> Véhicule non pré-déclaré (contrôle ponctuel)</>)}
+            </div>
+          )}
           <div>
             <PhotoCapture label={ocr.enCours ? 'Lecture en cours…' : 'Scanner la plaque (photo → immatriculation)'} onCapture={scannerPlaque} />
             {ocr.msg && <p className={`mt-1 text-[11px] font-medium ${ocr.enCours ? 'text-muted' : 'text-forest-700'}`}>{ocr.msg}</p>}
