@@ -23,6 +23,8 @@ export interface TableauBord {
   sorties_attente: number;
   preavis_jour: number;
   badges_actifs: number;
+  /** Autorisations véhicule expirant sous 7 jours (encore actives). */
+  vehicules_expirant: number;
   controles: { autorises: number; refus: number; forcages: number };
   anomalies: { total: number; vehicules: number; evacuations: number; sorties_refusees: number };
   incidents: { total: number; ouverts: number; majeurs: number };

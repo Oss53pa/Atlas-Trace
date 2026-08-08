@@ -98,6 +98,42 @@ export async function suspendreVehiculeAutorise(id: string, suspendre: boolean, 
   if (error) throw new Error(error.message);
 }
 
+export interface LigneImport {
+  immatriculation: string;
+  type?: string | null;
+  chauffeur?: string | null;
+}
+
+/** Import groupé d'une flotte : normalisation + dédoublonnage côté serveur. */
+export async function importerVehiculesAutorises(
+  entrepriseId: string | null,
+  lignes: LigneImport[],
+): Promise<{ importes: number; ignores: number }> {
+  const { data, error } = await supabase.rpc('at_importer_vehicules_autorises', {
+    p_entreprise_id: entrepriseId,
+    p_lignes: lignes,
+  });
+  if (error) throw new Error(error.message);
+  const d = data as { importes: number; ignores: number };
+  return { importes: d.importes, ignores: d.ignores };
+}
+
+/** Analyse un CSV (immatriculation[,type][,chauffeur]) en lignes exploitables. */
+export function analyserCsvFlotte(texte: string): LigneImport[] {
+  const lignes: LigneImport[] = [];
+  for (const brut of texte.split(/\r?\n/)) {
+    const l = brut.trim();
+    if (!l) continue;
+    const cols = l.split(/[;,\t]/).map((c) => c.trim());
+    const immat = cols[0] ?? '';
+    // On saute une éventuelle ligne d'en-tête.
+    if (/immat|plaque|matricul/i.test(immat)) continue;
+    if (immat.replace(/[^A-Za-z0-9]/g, '').length < 3) continue;
+    lignes.push({ immatriculation: immat, type: cols[1] || null, chauffeur: cols[2] || null });
+  }
+  return lignes;
+}
+
 /** Reconnaissance au poste — utilisée par le module Véhicules (M11). */
 export interface Reconnaissance {
   etat: EtatVehicule | 'INCONNU';

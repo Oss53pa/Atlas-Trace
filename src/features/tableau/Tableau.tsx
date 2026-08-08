@@ -161,6 +161,7 @@ export function Tableau({ onOpen }: { onOpen?: (v: string) => void }) {
     { cle: 'listes', libelle: 'Entreprises sans registre', valeur: tb.entreprises_sans_liste, ton: tb.entreprises_sans_liste > 0 ? 'danger' : 'forest', vue: 'listes' },
     { cle: 'sorties', libelle: 'Autorisations de sortie en attente', valeur: tb.sorties_attente, ton: tb.sorties_attente > 0 ? 'amber' : 'forest', vue: 'materiel' },
     { cle: 'incidents', libelle: 'Incidents ouverts', valeur: tb.incidents.ouverts, ton: tb.incidents.ouverts > 0 ? 'danger' : 'forest', vue: 'maincourante' },
+    { cle: 'veh_expire', libelle: 'Autorisations véhicule à renouveler (7 j)', valeur: tb.vehicules_expirant, ton: tb.vehicules_expirant > 0 ? 'amber' : 'forest', vue: 'vehicules' },
     { cle: 'preavis', libelle: 'Préavis de livraison du jour', valeur: tb.preavis_jour, ton: 'forest', vue: 'materiel' },
   ];
 

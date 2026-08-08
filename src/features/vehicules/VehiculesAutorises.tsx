@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Truck, Plus, X, Loader2, LogIn, Search, ShieldCheck, ShieldOff, Check } from 'lucide-react';
+import { Truck, Plus, X, Loader2, LogIn, Search, ShieldCheck, ShieldOff, Check, Upload } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { useAuthz } from '../../lib/authz';
 import {
   chargerVehiculesAutorises, chargerEntreprisesSimple, declarerVehiculeAutorise, suspendreVehiculeAutorise,
+  importerVehiculesAutorises, analyserCsvFlotte,
   type VehiculeAutorise, type EntrepriseSimple, type EtatVehicule,
 } from './api';
 
@@ -25,6 +26,7 @@ export function VehiculesAutorises() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [recherche, setRecherche] = useState('');
   const [sheet, setSheet] = useState(false);
+  const [sheetImport, setSheetImport] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   function flash(m: string) {
@@ -91,9 +93,14 @@ export function VehiculesAutorises() {
           </p>
         </div>
         {peutGerer && (
-          <Button variant="primary" size="md" icon={<Plus className="h-4 w-4" />} onClick={() => setSheet(true)}>
-            Déclarer un véhicule
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="md" icon={<Upload className="h-4 w-4" />} onClick={() => setSheetImport(true)}>
+              Importer (CSV)
+            </Button>
+            <Button variant="primary" size="md" icon={<Plus className="h-4 w-4" />} onClick={() => setSheet(true)}>
+              Déclarer un véhicule
+            </Button>
+          </div>
         )}
       </div>
 
@@ -168,6 +175,14 @@ export function VehiculesAutorises() {
           entreprises={entreprises}
           onClose={() => setSheet(false)}
           onFait={(imm) => { setSheet(false); flash(`Véhicule ${imm} autorisé`); recharger(); }}
+        />
+      )}
+
+      {sheetImport && (
+        <ImportSheet
+          entreprises={entreprises}
+          onClose={() => setSheetImport(false)}
+          onFait={(n, ign) => { setSheetImport(false); flash(`${n} véhicule(s) importé(s)${ign ? ` · ${ign} ignoré(s)` : ''}`); recharger(); }}
         />
       )}
 
@@ -260,6 +275,82 @@ function DeclarerSheet({ entreprises, onClose, onFait }: { entreprises: Entrepri
           <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onClose}>Annuler</Button>
           <Button variant="primary" size="lg" block disabled={!pret} icon={envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />} onClick={valider}>
             Autoriser ce véhicule
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ImportSheet({ entreprises, onClose, onFait }: { entreprises: EntrepriseSimple[]; onClose: () => void; onFait: (importes: number, ignores: number) => void }) {
+  const [entrepriseId, setEntrepriseId] = useState('');
+  const [texte, setTexte] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const lignes = useMemo(() => analyserCsvFlotte(texte), [texte]);
+
+  function fichier(f: File | undefined) {
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => setTexte(String(r.result ?? ''));
+    r.readAsText(f);
+  }
+
+  async function importer() {
+    setEnvoi(true);
+    setErr(null);
+    try {
+      const r = await importerVehiculesAutorises(entrepriseId || null, lignes);
+      onFait(r.importes, r.ignores);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setEnvoi(false);
+    }
+  }
+
+  const champ = 'w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
+      <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-card-lg sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="text-lg font-extrabold text-ink">Importer une flotte</h3>
+          <button onClick={onClose} aria-label="Fermer" className="rounded-full p-1.5 text-muted hover:bg-sand-100 hover:text-ink"><X className="h-5 w-5" /></button>
+        </div>
+        <p className="mb-4 text-xs text-muted">
+          Une immatriculation par ligne. Colonnes optionnelles séparées par « ; » ou « , » :
+          <span className="font-mono"> immatriculation ; type ; chauffeur</span>. Les doublons actifs sont ignorés.
+        </p>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-muted">Entreprise (appliquée à toutes les lignes)</span>
+          <select value={entrepriseId} onChange={(e) => setEntrepriseId(e.target.value)} className={champ}>
+            <option value="">— Aucune / à préciser —</option>
+            {entreprises.map((e) => <option key={e.id} value={e.id}>{e.raisonSociale}</option>)}
+          </select>
+        </label>
+
+        <label className="mt-3 block">
+          <span className="mb-1 block text-xs font-semibold text-muted">Coller le CSV</span>
+          <textarea value={texte} onChange={(e) => setTexte(e.target.value)} rows={6} placeholder={'1234 AB 01 ; Poids lourd ; M. Koffi\n5678 CD 02 ; Utilitaire'}
+            className={`${champ} resize-none font-mono text-[13px]`} />
+        </label>
+
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-forest-600 hover:underline">
+            <Upload className="h-3.5 w-3.5" /> Charger un fichier .csv
+            <input type="file" accept=".csv,text/csv,text/plain" className="hidden" onChange={(e) => fichier(e.target.files?.[0])} />
+          </label>
+          <span className="text-xs text-muted">{lignes.length} ligne(s) valide(s)</span>
+        </div>
+
+        {err && <p className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">{err}</p>}
+
+        <div className="mt-4 flex gap-2">
+          <Button variant="ghost" size="lg" className="flex-none px-5" onClick={onClose}>Annuler</Button>
+          <Button variant="primary" size="lg" block disabled={lignes.length === 0 || envoi} icon={envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} onClick={importer}>
+            Importer {lignes.length > 0 ? `${lignes.length} véhicule(s)` : ''}
           </Button>
         </div>
       </div>
