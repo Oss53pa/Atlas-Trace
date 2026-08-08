@@ -25,6 +25,7 @@ import {
   chargerMouvementsVehicule,
   enregistrerVehicule,
   enregistrerMouvementVehicule,
+  estAnomalieVehicule,
   lierOccupantVehicule,
   type Vehicule,
   type MouvementVehicule,
@@ -417,7 +418,7 @@ function MouvementSheet({
 
   // Prévisualisation de l'anomalie (le serveur reste l'arbitre) : sortie d'un
   // véhicule entré vide, ressortant chargé, sans couverture.
-  const anomalie = sens === 'SORTIE' && v.etatEntree === 'VIDE' && etat === 'CHARGE' && !couverture;
+  const anomalie = estAnomalieVehicule({ sens, etatEntree: v.etatEntree, etatSortie: etat, couverture });
 
   const controleOk = controle !== '';
   const natureOk = etat === 'VIDE' || nature.trim().length > 0;

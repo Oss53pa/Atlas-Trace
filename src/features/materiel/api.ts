@@ -252,6 +252,26 @@ export type EtatCharge = 'VIDE' | 'CHARGE';
 export type ControleEffectue = 'COFFRE' | 'BENNE' | 'LES_DEUX' | 'SANS_OBJET';
 export type SensVehicule = 'ENTREE' | 'SORTIE';
 
+/**
+ * Anomalie véhicule : un véhicule entré à VIDE qui ressort CHARGÉ sans couverture
+ * documentaire. Aperçu client — le serveur (`at_enregistrer_mouvement_vehicule`)
+ * reste l'arbitre et bloque le mouvement (forçage tracé + photo requis). Miroir
+ * exact de la règle serveur : couverture vide OU blancs = pas de couverture.
+ */
+export function estAnomalieVehicule(p: {
+  sens: SensVehicule;
+  etatEntree: EtatCharge | null | undefined;
+  etatSortie: EtatCharge;
+  couverture?: string | null;
+}): boolean {
+  return (
+    p.sens === 'SORTIE' &&
+    p.etatEntree === 'VIDE' &&
+    p.etatSortie === 'CHARGE' &&
+    !(p.couverture ?? '').trim()
+  );
+}
+
 export interface Vehicule {
   id: string;
   entrepriseId: string;
