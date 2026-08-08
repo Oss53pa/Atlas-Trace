@@ -5,7 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 import {
   Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound, HelpCircle, Eye, EyeOff, Sparkles,
+  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound, HelpCircle, Eye, EyeOff, Sparkles, Truck,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
 import { AlertesTempsReel } from './components/AlertesTempsReel';
@@ -43,12 +43,13 @@ const LandingPage = lazy(() => import('./features/landing/LandingPage').then((m)
 const Plafonds = lazy(() => import('./features/plafonds/Plafonds').then((m) => ({ default: m.Plafonds })));
 const Vivier = lazy(() => import('./features/vivier/Vivier').then((m) => ({ default: m.Vivier })));
 const ConfigurationChantier = lazy(() => import('./features/configuration/ConfigurationChantier').then((m) => ({ default: m.ConfigurationChantier })));
+const VehiculesAutorises = lazy(() => import('./features/vehicules/VehiculesAutorises').then((m) => ({ default: m.VehiculesAutorises })));
 import { ActivationCompte } from './features/admin/ActivationCompte';
 import { ReinitialiserMotDePasse } from './features/admin/ReinitialiserMotDePasse';
 
 type Vue =
   | 'espaces' | 'accueil' | 'poste' | 'tableau' | 'entreprises' | 'listes' | 'badges' | 'materiel'
-  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription' | 'plafonds' | 'vivier' | 'configuration';
+  | 'maincourante' | 'cles' | 'admin' | 'parametrage' | 'live' | 'referent' | 'registres' | 'preneurs' | 'entites' | 'roles' | 'comptes' | 'invitations' | 'personnes' | 'cloture' | 'inscription' | 'plafonds' | 'vivier' | 'configuration' | 'vehicules';
 
 /** Familles de destinations, dans l'ordre d'affichage de la feuille « Plus ». */
 type Groupe = 'terrain' | 'matiere' | 'suivi' | 'personnes' | 'organisation' | 'admin';
@@ -86,6 +87,7 @@ const DESTINATIONS: Dest[] = [
   { vue: 'badges', label: 'Impression & visiteurs', court: 'Badges', groupe: 'personnes', icon: <CreditCard className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE', 'DECLARER_PERSONNEL'] },
   { vue: 'vivier', label: 'Vivier de personnel', court: 'Vivier', groupe: 'personnes', icon: <UsersRound className="h-5 w-5" />, pouvoir: ['DECLARER_PERSONNEL', 'DEPOSER_LISTE', 'DELIVRER_BADGE'] },
   { vue: 'cles', label: 'Clés & zones', court: 'Clés', groupe: 'personnes', icon: <Key className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE'] },
+  { vue: 'vehicules', label: 'Véhicules autorisés', court: 'Véhicules', groupe: 'personnes', icon: <Truck className="h-5 w-5" />, pouvoir: ['DELIVRER_BADGE'] },
   { vue: 'entreprises', label: 'Entreprises', court: 'Entreprises', groupe: 'organisation', icon: <Building2 className="h-5 w-5" />, pouvoir: ['DECLARER_ENTREPRISE', 'VISER_HABILITATION', 'APPROUVER_HABILITATION', 'GERER_CONDITIONS_BLOQUANTES'] },
   { vue: 'preneurs', label: 'Preneurs & emprises', court: 'Preneurs', groupe: 'organisation', icon: <Store className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION', 'GERER_CONDITIONS_BLOQUANTES'] },
   { vue: 'entites', label: 'Registre des entreprises', court: 'Sociétés', groupe: 'organisation', icon: <Building2 className="h-5 w-5" />, pouvoir: ['ADMINISTRER_ORGANISATION'] },
@@ -106,6 +108,7 @@ function renderVue(vue: Vue, go: (v: string) => void, primaires: Vue[]): ReactNo
   switch (vue) {
     case 'espaces': return <Espaces onOpen={go} />;
     case 'configuration': return <ConfigurationChantier onOpen={go} />;
+    case 'vehicules': return <VehiculesAutorises />;
     case 'preneurs': return <PreneursLive />;
     case 'entites': return <EntreprisesRegistre />;
     case 'roles': return <RolesLive />;

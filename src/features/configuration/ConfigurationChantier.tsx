@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
-  ScanLine, GitBranch, Truck, Package, SlidersHorizontal, Map, Building2, Users, Gauge,
+  ScanLine, GitBranch, Truck, Package, SlidersHorizontal, Map, Building2, Users, Gauge, Car,
   Check, ArrowRight, ArrowLeft, Sparkles, LayoutGrid, ListChecks, Loader2, LogIn, ChevronRight,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -35,6 +35,7 @@ const AREAS: Area[] = [
   { cle: 'entreprises', titre: 'Entreprises intervenantes', desc: 'Les sociétés présentes et leurs habilitations.', vue: 'entites', icon: <Building2 className="h-5 w-5" /> },
   { cle: 'comptes', titre: 'Comptes & rôles', desc: 'Les personnes internes et leurs droits.', vue: 'comptes', icon: <Users className="h-5 w-5" /> },
   { cle: 'plafonds', titre: 'Plafonds d’effectif', desc: 'Les effectifs maximum par entreprise.', vue: 'plafonds', icon: <Gauge className="h-5 w-5" /> },
+  { cle: 'vehicules', titre: 'Véhicules autorisés', desc: 'Les véhicules pré-déclarés reconnus au poste.', vue: 'vehicules', icon: <Car className="h-5 w-5" /> },
 ];
 
 const CLE_MODE = 'at_config_mode';
