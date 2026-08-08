@@ -106,6 +106,15 @@ Deno.serve(async (req) => {
   // Validation minimale ; en cas d'échec on reste neutre (pas d'énumération).
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: true });
 
+  // Limite de débit (anti email-bombing) : par adresse (3 / h) et par IP (15 / 10 min).
+  // En cas de dépassement, réponse neutre — aucun courriel n'est envoyé.
+  const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'ip-inconnue';
+  const [okMail, okIp] = await Promise.all([
+    admin.rpc('at_reset_debit_ok', { p_cle: 'e:' + email, p_fenetre: 3600, p_max: 3 }),
+    admin.rpc('at_reset_debit_ok', { p_cle: 'ip:' + ip, p_fenetre: 600, p_max: 15 }),
+  ]);
+  if (okMail.data === false || okIp.data === false) return json({ ok: true });
+
   try {
     const { data, error } = await admin.auth.admin.generateLink({ type: 'recovery', email });
     const hashed = (data as { properties?: { hashed_token?: string } } | null)?.properties?.hashed_token;

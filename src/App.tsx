@@ -326,16 +326,16 @@ function EcranConnexion({ onRetour }: { onRetour?: () => void }) {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#282C20] via-[#3E4A0C] to-[#5C6B12] px-5 py-10">
-      <div className="animate-pulse-slow pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-volt/25 blur-3xl" />
-      <div className="animate-pulse-slow pointer-events-none absolute -bottom-28 -left-24 h-72 w-72 rounded-full bg-volt/15 blur-3xl" style={{ animationDelay: '3.5s' }} />
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-sand-50 to-sand-100 px-5 py-10">
+      <div className="animate-pulse-slow pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-volt/30 blur-3xl" />
+      <div className="animate-pulse-slow pointer-events-none absolute -bottom-28 -left-28 h-72 w-72 rounded-full bg-forest-300/25 blur-3xl" style={{ animationDelay: '3.5s' }} />
       <div className="relative w-full max-w-sm animate-fade-up-slow">
         <div className="mb-7 text-center">
-          <Logo size="lg" className="text-white" />
-          <p className="mt-2 text-sm text-white/70">Contrôle d’accès de site — connectez-vous pour continuer.</p>
+          <Logo size="lg" className="text-ink" />
+          <p className="mt-2 text-sm text-muted">Contrôle d’accès de site — connectez-vous pour continuer.</p>
         </div>
 
-        <div className="rounded-3xl bg-white p-6 shadow-card-lg ring-1 ring-black/5">
+        <div className="rounded-3xl bg-white p-6 shadow-card-lg ring-1 ring-sand-300/60">
           <h1 className="mb-1 text-lg font-extrabold text-ink">Connexion</h1>
           <p className="mb-5 text-xs text-muted">L’application n’affiche que ce que votre rôle autorise.</p>
 
@@ -379,11 +379,11 @@ function EcranConnexion({ onRetour }: { onRetour?: () => void }) {
         </div>
 
         {onRetour && (
-          <button onClick={onRetour} className="mt-6 block w-full text-center text-xs font-semibold text-white/60 transition-colors hover:text-white/90">
+          <button onClick={onRetour} className="mt-6 block w-full text-center text-xs font-semibold text-muted transition-colors hover:text-ink">
             ← Retour à la présentation
           </button>
         )}
-        <p className="mt-4 text-center text-xs text-white/50">Atlas Trace · accès réservé au personnel habilité</p>
+        <p className="mt-4 text-center text-xs text-muted">Atlas Trace · accès réservé au personnel habilité</p>
       </div>
     </div>
   );
