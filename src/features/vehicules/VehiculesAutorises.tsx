@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Truck, Plus, X, Loader2, LogIn, Search, ShieldCheck, ShieldOff, Check, Upload } from 'lucide-react';
+import { Truck, Plus, X, Loader2, LogIn, Search, ShieldCheck, ShieldOff, Check, Upload, ChevronRight } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { useAuthz } from '../../lib/authz';
@@ -17,7 +17,7 @@ const ETAT_CFG: Record<EtatVehicule, { tone: 'forest' | 'amber' | 'neutral'; lab
   EXPIRE: { tone: 'neutral', label: 'Expiré' },
 };
 
-export function VehiculesAutorises() {
+export function VehiculesAutorises({ onOpen }: { onOpen?: (v: string) => void }) {
   const { connecte, a } = useAuthz();
   const peutGerer = a('DELIVRER_BADGE');
   const [liste, setListe] = useState<VehiculeAutorise[]>([]);
@@ -91,6 +91,11 @@ export function VehiculesAutorises() {
             Véhicules pré-déclarés, reconnus au poste par leur immatriculation. La reconnaissance accélère le contrôle —
             elle n’ouvre jamais l’accès : chaque passage reste contrôlé.
           </p>
+          {onOpen && (
+            <button onClick={() => onOpen('materiel')} className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-forest-600 hover:underline">
+              Les passages au poste se contrôlent dans « Matière → Véhicules » <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
         {peutGerer && (
           <div className="flex gap-2">

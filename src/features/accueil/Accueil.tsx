@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
   Users, ArrowRightLeft, FileOutput, TrendingUp, ScanLine, ClipboardList, Package,
   LayoutDashboard, AlertTriangle, ChevronRight, Wifi, Activity, Building2, BookText, Table2, Settings,
+  Sparkles, Store, Map, UserPlus, Moon, CreditCard, Link2,
 } from 'lucide-react';
 import { useAuthz } from '../../lib/authz';
 import { useContexteSite } from '../../lib/contexte';
@@ -21,6 +22,14 @@ const ACTION_META: Record<string, { label: string; sous: string; icon: ReactNode
   maincourante: { label: 'Main courante', sous: 'Événements & incidents', icon: <BookText className="h-5 w-5" />, from: '#3E4A0C', to: '#282C20' },
   registres: { label: 'Registres & exports', sous: 'Produire les registres', icon: <Table2 className="h-5 w-5" />, from: '#7E9330', to: '#282C20' },
   admin: { label: 'Administration', sous: 'Comptes, audit', icon: <Settings className="h-5 w-5" />, from: '#3E4A0C', to: '#282C20' },
+  configuration: { label: 'Configurer mon chantier', sous: 'Tout paramétrer, guidé', icon: <Sparkles className="h-5 w-5" />, from: '#7E9330', to: '#3E4A0C' },
+  preneurs: { label: 'Preneurs & emprises', sous: "Occupants d'emprise", icon: <Store className="h-5 w-5" />, from: '#5C6B12', to: '#282C20' },
+  espaces: { label: 'Espaces & profils', sous: 'Zones & emprises', icon: <Map className="h-5 w-5" />, from: '#7E9330', to: '#5C6B12' },
+  inscription: { label: 'Inscription au poste', sous: 'Inscrire une personne', icon: <UserPlus className="h-5 w-5" />, from: '#5C6B12', to: '#282C20' },
+  cloture: { label: 'Clôture de journée', sous: 'Fermer la journée', icon: <Moon className="h-5 w-5" />, from: '#3E4A0C', to: '#282C20' },
+  personnes: { label: 'Personnes & badges', sous: 'Déclarer, délivrer', icon: <CreditCard className="h-5 w-5" />, from: '#7E9330', to: '#5C6B12' },
+  badges: { label: 'Impression & visiteurs', sous: 'Badges & visiteurs', icon: <CreditCard className="h-5 w-5" />, from: '#5C6B12', to: '#3E4A0C' },
+  referent: { label: 'Portail référent', sous: 'Dépôt de liste', icon: <Link2 className="h-5 w-5" />, from: '#7E9330', to: '#282C20' },
 };
 
 const ACTIONS_DEMO = ['poste', 'listes', 'materiel', 'tableau'];

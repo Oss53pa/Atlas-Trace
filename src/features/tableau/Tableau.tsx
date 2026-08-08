@@ -180,6 +180,7 @@ export function Tableau({ onOpen }: { onOpen?: (v: string) => void }) {
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted" title="Aperçu de l'interface par rôle. N'affecte ni vos droits ni les données.">Vue par rôle · simulation</span>
             <div className="flex gap-1 rounded-full bg-white p-1 shadow-card ring-1 ring-sand-300">
               {ROLES.map((r) => (
                 <button

@@ -1,11 +1,10 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import {
   Table2, ClipboardList, LayoutDashboard, CreditCard, Building2,
   Package, BookText, Key, Settings, SlidersHorizontal, Home, Cloud, Link2, Users,
-  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound, HelpCircle, Eye, EyeOff, Sparkles, Truck,
+  ScanLine, LayoutGrid, X, Loader2, LogIn, LogOut, Store, KeyRound, Moon, UserPlus, Gauge, UsersRound, HelpCircle, Eye, EyeOff, Sparkles, Truck, ChevronRight,
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo';
 import { AlertesTempsReel } from './components/AlertesTempsReel';
@@ -104,11 +103,42 @@ const DESTINATIONS: Dest[] = [
 
 const destOf = (v: Vue) => DESTINATIONS.find((d) => d.vue === v)!;
 
+/** Sous-titres de destination — désambiguïsent les écrans proches dans « Plus ». */
+const DESC: Record<string, string> = {
+  accueil: 'Vue d’ensemble & actions du jour',
+  poste: 'Scanner les badges à l’entrée',
+  inscription: 'Inscrire une personne au poste',
+  cloture: 'Clôturer la journée du site',
+  maincourante: 'Journal, incidents & évacuations',
+  materiel: 'Parc, sorties, véhicules, livraisons',
+  tableau: 'Indicateurs du site en temps réel',
+  listes: 'Registres de présence déposés',
+  registres: 'Piste d’audit & exports',
+  live: 'Flux d’événements en direct',
+  personnes: 'Déclarer le personnel & délivrer les badges',
+  badges: 'Imprimer les badges & visiteurs',
+  vivier: 'Personnel récurrent réutilisable',
+  cles: 'Remise & restitution des clés',
+  vehicules: 'Flotte pré-déclarée, reconnue au poste',
+  entreprises: 'Habilitations : visa & approbation',
+  preneurs: 'Occupants d’emprise & leur chaîne',
+  entites: 'Annuaire des sociétés du site',
+  invitations: 'Inviter les référents par lien',
+  referent: 'Portail des référents (dépôt de liste)',
+  configuration: 'Tout paramétrer, guidé, en un endroit',
+  espaces: 'Zones, emprises & profils de site',
+  comptes: 'Comptes internes',
+  roles: 'Rôles & pouvoirs atomiques',
+  plafonds: 'Effectifs maximum par entreprise',
+  admin: 'Journal d’audit & mode dégradé',
+  parametrage: 'Postes, circuits, créneaux, référentiels',
+};
+
 function renderVue(vue: Vue, go: (v: string) => void, primaires: Vue[]): ReactNode {
   switch (vue) {
     case 'espaces': return <Espaces onOpen={go} />;
     case 'configuration': return <ConfigurationChantier onOpen={go} />;
-    case 'vehicules': return <VehiculesAutorises />;
+    case 'vehicules': return <VehiculesAutorises onOpen={go} />;
     case 'preneurs': return <PreneursLive />;
     case 'entites': return <EntreprisesRegistre />;
     case 'roles': return <RolesLive />;
@@ -396,7 +426,6 @@ const FAMILLE_LABEL: Record<Famille, string> = {
 function CompteBouton() {
   const { connecte, pouvoirs } = useAuthz();
   const [session, setSession] = useState<Session | null>(null);
-  const [ouvre, setOuvre] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session)).catch(() => {});
@@ -419,100 +448,9 @@ function CompteBouton() {
       </button>
     );
   }
-  return (
-    <>
-      <button
-        onClick={() => setOuvre(true)}
-        className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/15"
-      >
-        <LogIn className="h-3.5 w-3.5" /> Se connecter
-      </button>
-      {ouvre && <ConnexionSheet onClose={() => setOuvre(false)} />}
-    </>
-  );
-}
-
-function ConnexionSheet({ onClose }: { onClose: () => void }) {
-  const [email, setEmail] = useState('');
-  const [mdp, setMdp] = useState('');
-  const [err, setErr] = useState<string | null>(null);
-  const [envoi, setEnvoi] = useState(false);
-  const [resetEnvoye, setResetEnvoye] = useState(false);
-
-  async function connexion() {
-    setEnvoi(true);
-    setErr(null);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: mdp });
-    setEnvoi(false);
-    if (error) setErr(error.message);
-    else onClose();
-  }
-
-  async function motDePasseOublie() {
-    if (!email.trim()) {
-      setErr('Saisissez d’abord votre e-mail, puis cliquez sur « Mot de passe oublié ».');
-      return;
-    }
-    setErr(null);
-    // Courriel de réinitialisation propre à Atlas Trace (fonction Resend), pas le
-    // gabarit par défaut du projet partagé. Le lien revient ici (redirectTo).
-    await supabase.functions
-      .invoke('mot-de-passe', { body: { email: email.trim(), app_url: window.location.origin } })
-      .catch(() => {});
-    // Message neutre : on ne révèle pas si l'adresse a un compte.
-    setResetEnvoye(true);
-  }
-
-  return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
-      <div
-        className="max-h-[90dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-card-lg ring-1 ring-sand-300/60 sm:rounded-3xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-1 flex items-center justify-between">
-          <h3 className="text-lg font-extrabold text-ink">Connexion</h3>
-          <button onClick={onClose} aria-label="Fermer" className="rounded-full p-1.5 text-muted transition-colors hover:bg-sand-100 hover:text-ink">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <p className="mb-4 text-xs text-muted">Une fois connecté, l'appli n'affiche que ce que votre rôle autorise.</p>
-
-        <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-muted">E-mail</span>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username"
-            className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
-        </label>
-        <label className="mt-3 block">
-          <span className="mb-1 block text-xs font-semibold text-muted">Mot de passe</span>
-          <input type="password" value={mdp} onChange={(e) => setMdp(e.target.value)} autoComplete="current-password"
-            className="w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink outline-none focus:border-forest-400 focus:ring-2 focus:ring-forest-100" />
-        </label>
-
-        {err && <p className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs font-semibold text-danger-600 ring-1 ring-danger-100">{err}</p>}
-        {resetEnvoye && (
-          <p className="mt-3 rounded-xl bg-forest-50 px-3 py-2 text-xs font-semibold text-forest-700 ring-1 ring-forest-100">
-            Si un compte existe pour cette adresse, un courriel de réinitialisation vient d’être envoyé. Le lien ramène ici.
-          </p>
-        )}
-
-        <button
-          onClick={connexion}
-          disabled={envoi}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-forest-500 py-3 text-sm font-bold text-white shadow-soft transition-colors hover:bg-forest-600 disabled:opacity-60"
-        >
-          {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />} Se connecter
-        </button>
-
-        <button
-          onClick={motDePasseOublie}
-          className="mt-3 w-full text-center text-xs font-semibold text-forest-600 underline-offset-2 hover:underline"
-        >
-          Mot de passe oublié ?
-        </button>
-      </div>
-    </div>,
-    document.body,
-  );
+  // Hors session, la coque n'est pas rendue (EcranConnexion prend l'écran) —
+  // ce cas ne survient qu'au bref flash de chargement de la session.
+  return null;
 }
 
 /* ---------- Barre d'onglets (bas, au pouce) ---------- */
@@ -571,21 +509,25 @@ function MoreSheet({ vue, onGo, onClose, autorise, primaires }: { vue: Vue; onGo
           {sections.map((section) => (
             <section key={section.cle}>
               <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">{section.titre}</h3>
-              <div className="grid grid-cols-3 gap-2.5">
+              <div className="space-y-2">
                 {section.items.map((d) => {
                   const actif = vue === d.vue;
                   return (
                     <button
                       key={d.vue}
                       onClick={() => onGo(d.vue)}
-                      className={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all duration-150 ease-premium ${
+                      className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-all duration-150 ease-premium ${
                         actif ? 'bg-forest-50 ring-1 ring-forest-200' : 'bg-sand-50 ring-1 ring-sand-300/50 hover:bg-sand-100'
                       }`}
                     >
-                      <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${actif ? 'bg-forest-500 text-white' : 'bg-white text-forest-600 ring-1 ring-sand-300/60'}`}>
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${actif ? 'bg-forest-500 text-white' : 'bg-white text-forest-600 ring-1 ring-sand-300/60'}`}>
                         {d.icon}
                       </span>
-                      <span className="text-[11px] font-semibold leading-tight text-ink">{d.court}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-bold leading-tight text-ink">{d.label}</span>
+                        {DESC[d.vue] && <span className="mt-0.5 block text-[11px] leading-tight text-muted">{DESC[d.vue]}</span>}
+                      </span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-sand-400" />
                     </button>
                   );
                 })}
